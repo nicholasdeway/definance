@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-provider"
 import { Spinner } from "@/components/ui/spinner"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated } = useAuth()
@@ -81,5 +82,17 @@ export default function GoogleCallbackPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Spinner className="h-12 w-12 text-primary" />
+      </div>
+    }>
+      <GoogleCallbackContent />
+    </Suspense>
   )
 }
