@@ -4,7 +4,6 @@ using definance_backend.Domain.Entities;
 using definance_backend.Features.Auth.DTOs;
 using definance_backend.Features.Auth.Repositories;
 using definance_backend.Common.Helpers;
-
 using definance_backend.Common.Interfaces;
 using Microsoft.Extensions.Configuration;
 
@@ -184,7 +183,7 @@ namespace definance_backend.Features.Auth.Services
             await _repository.UpdateAsync(user);
 
             var frontendUrl = _configuration["Google:FrontendBaseUrl"] ?? "http://localhost:3000";
-            var resetLink = $"{frontendUrl}/auth/reset-password?email={user.Email}&token={token}";
+            var resetLink = $"{frontendUrl}/reset-password?email={user.Email}&token={token}";
 
             Console.WriteLine($"\n[DEBUG] Token GERADO para {user.Email} -> {token}\n");
 
