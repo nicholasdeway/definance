@@ -1,0 +1,176 @@
+:root {
+  --notfound-grey: oklch(0.13 0.02 260);
+  --notfound-red: oklch(0.577 0.245 27.325);
+  --notfound-green: oklch(0.65 0.2 145);
+}
+
+.not-found-body {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--notfound-grey);
+  color: white;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "liga", "ss05" on, "ss07" on;
+  font-size: 20px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.not-found-main a {
+  display: block;
+  cursor: pointer;
+  animation: pulseColor 1000ms linear 3100ms forwards;
+  font-weight: 500;
+  text-decoration: none;
+  color: inherit;
+}
+
+.not-found-main a:hover b,
+.not-found-main a:focus b {
+  color: var(--notfound-red);
+}
+
+.not-found-main a:active b {
+  color: var(--notfound-green);
+}
+
+.not-found-main svg {
+  width: 50px;
+  height: auto;
+}
+
+.crack {
+  position: relative;
+  z-index: 4;
+  margin-left: -50px;
+}
+
+.crack polyline {
+  fill: none;
+  stroke: var(--notfound-red);
+  stroke-width: 10px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1649.099;
+  stroke-dashoffset: 1649.099;
+  animation: drawStroke 1500ms ease-out 500ms forwards;
+}
+
+.not-found-main {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+
+.not-found-main > div {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.not-found-main > div svg {
+  position: relative;
+  z-index: 1;
+}
+
+.not-found-main > div svg polygon {
+  fill: var(--notfound-grey);
+}
+
+.not-found-main > div span {
+  display: block;
+  position: relative;
+  z-index: 0;
+  padding: 0 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.not-found-main > div:first-child {
+  text-align: right;
+  z-index: 1;
+}
+
+.not-found-main > div:first-child span:first-child {
+  opacity: 0;
+  transform: translateX(100%);
+  animation: translateLeft 1000ms linear 1250ms forwards;
+}
+
+.not-found-main > div:first-child span:last-child {
+  opacity: 0;
+  transform: translateX(100%);
+  animation: translateLeft 1000ms linear 1450ms forwards;
+}
+
+.not-found-main > div:first-child svg polygon {
+  animation: removeFill 10ms ease-out 1600ms forwards;
+}
+
+.not-found-main > div:last-child {
+  z-index: 0;
+  margin-left: -50px;
+}
+
+.not-found-main > div:last-child span:first-child {
+  opacity: 0;
+  transform: translateX(-100%);
+  animation: translateRight 1000ms linear 1650ms forwards;
+}
+
+.not-found-main > div:last-child span:last-child {
+  opacity: 0;
+  transform: translateX(-100%);
+  animation: translateRight 1000ms linear 1850ms forwards;
+}
+
+@keyframes drawStroke {
+  0% { stroke-dashoffset: 1649.099; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes removeFill {
+  0% { fill: var(--notfound-grey); }
+  100% { fill: transparent; }
+}
+
+@keyframes pulseColor {
+  0% { color: white; }
+  25% { color: var(--notfound-green); }
+  50% { color: white; }
+  75% { color: var(--notfound-green); }
+  100% { color: white; }
+}
+
+@keyframes translateLeft {
+  0% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 150, 0, 0, 1); opacity: 1; }
+  7.61% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 69.561, 0, 0, 1); }
+  11.41% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 39.355, 0, 0, 1); }
+  15.12% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 17.801, 0, 0, 1); }
+  18.92% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3.02, 0, 0, 1); }
+  22.72% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -5.661, 0, 0, 1); }
+  30.23% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -10.852, 0, 0, 1); }
+  50.25% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -2.282, 0, 0, 1); }
+  70.27% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.519, 0, 0, 1); }
+  100% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); opacity: 1; }
+}
+
+@keyframes translateRight {
+  0% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -150, 0, 0, 1); opacity: 1; }
+  7.61% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -69.561, 0, 0, 1); }
+  11.41% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -39.355, 0, 0, 1); }
+  15.12% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -17.801, 0, 0, 1); }
+  18.92% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -3.02, 0, 0, 1); }
+  22.72% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5.661, 0, 0, 1); }
+  30.23% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10.852, 0, 0, 1); }
+  50.25% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2.282, 0, 0, 1); }
+  70.27% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.519, 0, 0, 1); }
+  100% { transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); opacity: 1; }
+}
