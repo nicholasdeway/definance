@@ -14,14 +14,34 @@ export interface User {
   createdAt: string
 }
 
+export interface RegisterData {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  confirmPassword: string
+  phone?: string | null
+}
+
+export interface ConfirmResetData {
+  email: string
+  token: string
+  newPassword: string
+  confirmNewPassword: string
+}
+
+interface AuthResponse {
+  message?: string
+}
+
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (identifier: string, password: string) => Promise<{ success: boolean; message?: string }>
-  register: (data: any) => Promise<{ success: boolean; message?: string }>
+  register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>
   loginWithGoogle: () => Promise<boolean>
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>
-  confirmPasswordReset: (data: any) => Promise<{ success: boolean; message?: string }>
+  confirmPasswordReset: (data: ConfirmResetData) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   isAuthenticated: boolean
 }
@@ -37,10 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const profile = await apiClient<User>("/api/Auth/me")
       setUser(profile)
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUser(null)
+      const errorMessage = error instanceof Error ? error.message : String(error)
       // Não logamos 401 (não autenticado) pois é o estado esperado ao carregar a página deslogado
-      if (error.message !== "Não autenticado") {
+      if (errorMessage !== "Não autenticado") {
         console.error("Auth check failed:", error)
       }
     } finally {
@@ -62,14 +83,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await checkAuth()
       return { success: true }
-    } catch (error: any) {
-      return { success: false, message: error.message }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao realizar login"
+      return { success: false, message }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const register = async (data: any): Promise<{ success: boolean; message?: string }> => {
+  const register = async (data: RegisterData): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true)
     try {
       const payload = {
@@ -88,8 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await checkAuth()
       return { success: true }
-    } catch (error: any) {
-      return { success: false, message: error.message }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao criar conta"
+      return { success: false, message }
     } finally {
       setIsLoading(false)
     }
@@ -103,28 +126,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestPasswordReset = async (email: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true)
     try {
-      const response = await apiClient<any>("/api/Auth/password-reset/request", {
+      const response = await apiClient<AuthResponse>("/api/Auth/password-reset/request", {
         method: "POST",
         body: JSON.stringify({ email }),
       })
       return { success: true, message: response.message }
-    } catch (error: any) {
-      return { success: false, message: error.message }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao solicitar recuperação de senha"
+      return { success: false, message }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const confirmPasswordReset = async (data: any): Promise<{ success: boolean; message?: string }> => {
+  const confirmPasswordReset = async (data: ConfirmResetData): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true)
     try {
-      const response = await apiClient<any>("/api/Auth/password-reset/confirm", {
+      const response = await apiClient<AuthResponse>("/api/Auth/password-reset/confirm", {
         method: "POST",
         body: JSON.stringify(data),
       })
       return { success: true, message: response.message }
-    } catch (error: any) {
-      return { success: false, message: error.message }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao redefinir senha"
+      return { success: false, message }
     } finally {
       setIsLoading(false)
     }

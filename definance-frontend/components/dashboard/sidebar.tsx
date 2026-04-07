@@ -53,9 +53,11 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
-  const initials = user?.name
-    ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-    : "US"
+  const initials = user?.firstName && user?.lastName
+    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    : user?.firstName 
+      ? user.firstName.slice(0, 2).toUpperCase()
+      : "US"
 
   return (
     <Sidebar collapsible="icon">
@@ -109,7 +111,7 @@ export function DashboardSidebar() {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                     <span className="flex items-center gap-1.5 truncate font-semibold text-sidebar-foreground">
-                      {user?.name || "Usuário"}
+                      {user ? `${user.firstName} ${user.lastName}` : "Usuário"}
                       {user?.role === "admin" && (
                         <Shield className="h-3 w-3 text-primary" />
                       )}
@@ -153,4 +155,3 @@ export function DashboardSidebar() {
     </Sidebar>
   )
 }
-
