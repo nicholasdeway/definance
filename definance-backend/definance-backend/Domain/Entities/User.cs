@@ -31,5 +31,7 @@ namespace definance_backend.Domain.Entities
         public DateTime? LockoutEnd { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public bool HasCompletedOnboarding { get; set; } = false;
+        public string? OnboardingData { get; set; }
     }
 }

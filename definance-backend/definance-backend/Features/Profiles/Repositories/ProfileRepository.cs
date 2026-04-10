@@ -30,7 +30,9 @@ namespace definance_backend.Features.Profiles.Repositories
                     picture_url            AS ""PictureUrl"",
                     created_at             AS ""CreatedAt"",
                     updated_at             AS ""UpdatedAt"",
-                    is_active              AS ""IsActive""
+                    is_active              AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE id = @Id;
             ";
@@ -56,7 +58,9 @@ namespace definance_backend.Features.Profiles.Repositories
                     picture_url            AS ""PictureUrl"",
                     created_at             AS ""CreatedAt"",
                     updated_at             AS ""UpdatedAt"",
-                    is_active              AS ""IsActive""
+                    is_active              AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE email = @Email;
             ";
@@ -82,7 +86,9 @@ namespace definance_backend.Features.Profiles.Repositories
                     picture_url            AS ""PictureUrl"",
                     created_at             AS ""CreatedAt"",
                     updated_at             AS ""UpdatedAt"",
-                    is_active              AS ""IsActive""
+                    is_active              AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE phone = @Phone AND is_active = TRUE;
             ";
@@ -104,6 +110,8 @@ namespace definance_backend.Features.Profiles.Repositories
                     provider_user_id = @ProviderUserId,
                     provider_email   = @ProviderEmail,
                     picture_url      = @PictureUrl,
+                    has_completed_onboarding = @HasCompletedOnboarding,
+                    onboarding_data = @OnboardingData::jsonb,
                     updated_at       = NOW(),
                     is_active        = @IsActive
                 WHERE id = @Id;

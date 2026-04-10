@@ -40,7 +40,9 @@ namespace definance_backend.Features.Auth.Repositories
                     last_login_at           AS ""LastLoginAt"",
                     failed_login_attempts   AS ""FailedLoginAttempts"",
                     lockout_end             AS ""LockoutEnd"",
-                    is_active               AS ""IsActive""
+                    is_active               AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE LOWER(email) = LOWER(@Email);
             ";
@@ -72,7 +74,9 @@ namespace definance_backend.Features.Auth.Repositories
                     last_login_at           AS ""LastLoginAt"",
                     failed_login_attempts   AS ""FailedLoginAttempts"",
                     lockout_end             AS ""LockoutEnd"",
-                    is_active               AS ""IsActive""
+                    is_active               AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE phone = @Phone
                   AND is_active = TRUE
@@ -105,7 +109,9 @@ namespace definance_backend.Features.Auth.Repositories
                     lockout_end,
                     created_at,
                     last_login_at,
-                    is_active
+                    is_active,
+                    has_completed_onboarding,
+                    onboarding_data
                 )
                 VALUES (
                     @FirstName,
@@ -124,7 +130,9 @@ namespace definance_backend.Features.Auth.Repositories
                     @LockoutEnd,
                     now(),
                     @LastLoginAt,
-                    TRUE
+                    TRUE,
+                    @HasCompletedOnboarding,
+                    @OnboardingData::jsonb
                 )
                 RETURNING
                     id          AS ""Id"",
@@ -150,7 +158,9 @@ namespace definance_backend.Features.Auth.Repositories
                 user.PasswordResetExpiresAt,
                 user.FailedLoginAttempts,
                 user.LockoutEnd,
-                user.LastLoginAt
+                user.LastLoginAt,
+                user.HasCompletedOnboarding,
+                user.OnboardingData
             });
 
             user.Id = result.Id;
@@ -219,6 +229,8 @@ namespace definance_backend.Features.Auth.Repositories
                     failed_login_attempts   = @FailedLoginAttempts,
                     lockout_end             = @LockoutEnd,
                     is_active               = @IsActive,
+                    has_completed_onboarding = @HasCompletedOnboarding,
+                    onboarding_data         = @OnboardingData::jsonb,
                     updated_at              = now()
                 WHERE id = @Id;
             ";
@@ -243,7 +255,9 @@ namespace definance_backend.Features.Auth.Repositories
                 user.PasswordResetExpiresAt,
                 user.FailedLoginAttempts,
                 user.LockoutEnd,
-                user.IsActive
+                user.IsActive,
+                user.HasCompletedOnboarding,
+                user.OnboardingData
             });
 
             return user;
@@ -272,7 +286,9 @@ namespace definance_backend.Features.Auth.Repositories
                     last_login_at           AS ""LastLoginAt"",
                     failed_login_attempts   AS ""FailedLoginAttempts"",
                     lockout_end             AS ""LockoutEnd"",
-                    is_active               AS ""IsActive""
+                    is_active               AS ""IsActive"",
+                    has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE id = @Id
                   AND is_active = TRUE;

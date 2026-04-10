@@ -32,7 +32,6 @@ export function RegisterForm() {
     e.preventDefault()
     setError("")
     
-    // Validação da senha
     const hasMinLength = formData.password.length >= 8
     const hasUpperCase = /[A-Z]/.test(formData.password)
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
@@ -51,7 +50,7 @@ export function RegisterForm() {
     const result = await register(formData)
     
     if (result.success) {
-      router.push("/login")
+      router.push("/onboarding")
     } else {
       setError(result.message || "Erro ao criar conta")
       setIsLoading(false)

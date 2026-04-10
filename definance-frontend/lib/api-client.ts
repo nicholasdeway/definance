@@ -1,5 +1,28 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5137"
 
+// Fila para gerenciar múltiplas requisições durante o refresh
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value: any) => void
+  reject: (reason?: any) => void
+  endpoint: string
+  options: RequestInit
+}> = []
+
+const processQueue = (error: Error | null, token: boolean = false) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      // Re-executa a requisição original
+      apiClient(prom.endpoint, prom.options)
+        .then(prom.resolve)
+        .catch(prom.reject)
+    }
+  })
+  failedQueue = []
+}
+
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -20,37 +43,74 @@ export async function apiClient<T>(
     defaultOptions.credentials = "include"
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, defaultOptions)
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, defaultOptions)
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("Não autenticado")
-    }
+    if (!response.ok) {
+      // Interceptador de 401 para Refresh Token
+      if (response.status === 401 && !endpoint.includes("/api/Auth/refresh") && !isServer) {
+        if (isRefreshing) {
+          // Já existe um refresh em curso, enfileira esta requisição
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject, endpoint, options })
+          })
+        }
 
-    const text = await response.text()
-    let message = "Ocorreu um erro na requisição"
-
-    try {
-      const errorData = JSON.parse(text)
-      message = errorData.message || errorData.title || errorData.error || message
-
-      // Caso o ASP.NET Core retorne um objeto de erros do ModelState
-      if (errorData.errors && typeof errorData.errors === 'object') {
-        const firstError = Object.values(errorData.errors)[0]
-        if (Array.isArray(firstError)) message = firstError[0]
+        isRefreshing = true
+        
+        try {
+          // Tenta renovar o token via cookie
+          const refreshResponse = await fetch(`${API_URL}/api/Auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include"
+          })
+          
+          if (!refreshResponse.ok) {
+            throw new Error("Refresh failed")
+          }
+          
+          isRefreshing = false
+          processQueue(null, true)
+          
+          // Tenta a requisição original novamente
+          return apiClient<T>(endpoint, options)
+        } catch (refreshError) {
+          isRefreshing = false
+          processQueue(new Error("Sessão expirada"), false)
+          throw new Error("Não autenticado")
+        }
       }
-    } catch {
-      // Se não for JSON, usamos o texto bruto se não estiver vazio
-      if (text && text.length < 200) message = text
+
+      const text = await response.text()
+      let message = "Ocorreu um erro na requisição"
+
+      try {
+        const errorData = JSON.parse(text)
+        message = errorData.message || errorData.title || errorData.error || message
+
+        if (errorData.errors && typeof errorData.errors === 'object') {
+          const firstError = Object.values(errorData.errors)[0]
+          if (Array.isArray(firstError)) message = firstError[0]
+        }
+      } catch {
+        if (text && text.length < 200) message = text
+      }
+
+      throw new Error(message)
     }
 
-    throw new Error(message)
-  }
+    // Logout e outros endpoints podem retornar no-content
+    if (response.status === 204) {
+      return {} as T
+    }
 
-  // Logout e outros endpoints podem retornar no-content
-  if (response.status === 204) {
-    return {} as T
+    return response.json()
+  } catch (error) {
+    // Tratamento de erros de rede ou outros
+    if (error instanceof Error && error.message === "Não autenticado") {
+      throw error
+    }
+    throw error
   }
-
-  return response.json()
 }

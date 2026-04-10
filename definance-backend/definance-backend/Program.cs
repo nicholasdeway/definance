@@ -20,6 +20,7 @@ using definance_backend.Services.Email;
 using definance_backend.Features.Profiles.Services;
 using definance_backend.Features.Profiles.Repositories;
 using definance_backend.Common.Middleware;
+using definance_backend.Features.Onboarding.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddHttpClient<IEmailService, MailerSendService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 
 // PROFILE
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
@@ -155,11 +157,6 @@ builder.Services
             OnAuthenticationFailed = context =>
             {
                 Console.WriteLine($"Authentication failed: {context.Exception.Message}");
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine($"Token validated for user: {context.Principal?.Identity?.Name}");
                 return Task.CompletedTask;
             }
         };

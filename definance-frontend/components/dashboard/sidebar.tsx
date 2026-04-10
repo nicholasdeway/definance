@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Logo } from "@/components/logo"
 import { usePathname } from "next/navigation"
 import {
   Sidebar,
@@ -63,9 +64,7 @@ export function DashboardSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="flex h-14 justify-center pt-0 pb-0">
         <Link href="/dashboard" className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-            <Wallet className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Logo size={32} />
           <span className="truncate text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             Definance
           </span>
@@ -141,7 +140,7 @@ export function DashboardSidebar() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  onClick={logout}
+                  onClick={() => logout()}
                   className="flex cursor-pointer items-center gap-2 text-destructive"
                 >
                   <LogOut className="h-4 w-4" />

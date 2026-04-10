@@ -10,6 +10,7 @@ namespace definance_backend.Features.Auth.DTOs
         public string LastName { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? PictureUrl { get; set; }
-        public string AuthProvider { get; set; } = string.Empty;
+        public string AuthProvider { get; set; } = "Local";
+        public bool HasCompletedOnboarding { get; set; }
     }
 }
