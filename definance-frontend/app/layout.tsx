@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-provider'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +20,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Definance - Gestão Financeira Pessoal',
   description: 'Controle total da sua vida financeira. Organize seus gastos, entenda seu dinheiro e tome decisões melhores.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export const viewport: Viewport = {
@@ -42,6 +49,8 @@ export default function RootLayout({
         >
           <AuthProvider>
             {children}
+            <Toaster />
+            <SonnerToaster position="top-right" />
           </AuthProvider>
         </ThemeProvider>
         <Analytics />

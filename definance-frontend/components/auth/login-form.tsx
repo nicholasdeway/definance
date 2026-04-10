@@ -27,8 +27,12 @@ function LoginFormContent() {
     setError("")
     
     const result = await login(identifier, password)
-    if (result.success) {
-      router.push("/dashboard")
+    if (result.success && result.user) {
+      if (result.user.hasCompletedOnboarding) {
+        router.push("/dashboard")
+      } else {
+        router.push("/onboarding")
+      }
     } else {
       setError(result.message || "Credenciais inválidas")
     }

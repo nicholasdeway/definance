@@ -34,7 +34,8 @@ namespace definance_backend.Features.Profiles.Services
                 LastName = user.LastName,
                 Email = user.Email,
                 Phone = user.Phone,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                HasCompletedOnboarding = user.HasCompletedOnboarding
             };
         }
 
@@ -79,7 +80,8 @@ namespace definance_backend.Features.Profiles.Services
                 LastName = user.LastName,
                 Email = user.Email,
                 Phone = user.Phone,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                HasCompletedOnboarding = user.HasCompletedOnboarding
             });
         }
 

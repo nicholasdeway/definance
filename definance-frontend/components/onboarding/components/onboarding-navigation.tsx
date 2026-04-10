@@ -1,0 +1,128 @@
+"use client"
+
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { useOnboarding } from "../hooks/use-onboarding"
+import { useOnboardingValidation } from "../hooks/use-onboarding-validation"
+import { useAutoSave } from "../hooks/use-auto-save"
+import { steps } from "../constants"
+import { apiClient } from "@/lib/api-client"
+
+export const OnboardingNavigation = () => {
+  const router = useRouter()
+  const { 
+    currentStep, 
+    setCurrentStep, 
+    setWasAttempted, 
+    setStepErrors, 
+    getStepData,
+    selectedIncomeTypes,
+    monthlyIncome,
+    selectedExpenses,
+    customExpenses,
+    billLoans,
+    vehicles,
+    debts
+  } = useOnboarding()
+  const { validateStep } = useOnboardingValidation()
+  const { persistStep } = useAutoSave()
+  const [isFinishing, setIsFinishing] = useState(false)
+
+  const handleNext = async () => {
+    if (validateStep(currentStep)) {
+      const currentData = getStepData(currentStep)
+      const success = await persistStep(currentStep, currentData)
+      
+      if (success && currentStep < steps.length) {
+        setCurrentStep(s => s + 1)
+        setWasAttempted(false)
+        setStepErrors([])
+      }
+    }
+  }
+
+  const handleBack = async () => {
+    if (currentStep > 1) {
+      const currentData = getStepData(currentStep)
+      await persistStep(currentStep, currentData)
+      setCurrentStep(s => s - 1)
+      setWasAttempted(false)
+      setStepErrors([])
+    }
+  }
+
+  const handleFinish = async () => {
+    if (!validateStep(currentStep)) return
+
+    setIsFinishing(true)
+    try {
+      // Salva a última etapa primeiro
+      const currentData = getStepData(currentStep)
+      await persistStep(currentStep, currentData)
+
+      // Monta o payload completo para o backend
+      const submissionData = {
+        currentStep,
+        selectedIncomeTypes,
+        monthlyIncome,
+        selectedExpenses,
+        customExpenses,
+        billLoans,
+        vehicles,
+        debts
+      }
+
+      // Finaliza processo enviando todos os dados
+      await apiClient("/api/onboarding/complete", { 
+        method: "POST",
+        body: JSON.stringify(submissionData)
+      })
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Erro ao finalizar:", error)
+    } finally {
+      setIsFinishing(false)
+    }
+  }
+
+  return (
+    <div className="flex gap-3 pt-4 border-t border-border/10">
+      {currentStep > 1 && (
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          disabled={isFinishing}
+          className="flex-1 text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Voltar
+        </Button>
+      )}
+
+      {currentStep < steps.length ? (
+        <Button onClick={handleNext} className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+          Próximo
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button 
+          onClick={handleFinish} 
+          disabled={isFinishing}
+          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+        >
+          {isFinishing ? (
+            <Spinner className="h-4 w-4" />
+          ) : (
+            <>
+              Finalizar
+              <CheckCircle2 className="h-4 w-4" />
+            </>
+          )}
+        </Button>
+      )}
+    </div>
+  )
+}

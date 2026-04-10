@@ -185,8 +185,6 @@ namespace definance_backend.Features.Auth.Services
             var frontendUrl = _configuration["Google:FrontendBaseUrl"] ?? "http://localhost:3000";
             var resetLink = $"{frontendUrl}/reset-password?email={user.Email}&token={token}";
 
-            Console.WriteLine($"\n[DEBUG] Token GERADO para {user.Email} -> {token}\n");
-
             await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink, user.FirstName, token);
 
             return genericMessage;
@@ -245,7 +243,8 @@ namespace definance_backend.Features.Auth.Services
                 LastName = user.LastName ?? "",
                 Phone = user.Phone,
                 PictureUrl = user.PictureUrl,
-                AuthProvider = user.AuthProvider ?? "Local"
+                AuthProvider = user.AuthProvider ?? "Local",
+                HasCompletedOnboarding = user.HasCompletedOnboarding
             };
         }
     }

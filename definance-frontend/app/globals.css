@@ -138,6 +138,14 @@
   animation: shimmer-text 5s linear infinite;
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes shimmer-text {
   0% {
     background-position: -200% center;

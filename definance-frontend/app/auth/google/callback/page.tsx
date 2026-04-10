@@ -10,7 +10,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react"
 function GoogleCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth()
   const [error, setError] = useState<string | null>(null)
   
   useEffect(() => {
@@ -27,21 +27,25 @@ function GoogleCallbackContent() {
       return
     }
 
-    // Se estivermos aqui, o cookie definance_token deve ter sido definido pelo proxy do backend
-    // O useAuth irá disparar o checkAuth automaticamente ao montar se estiver configurado globalmente
-    // ou podemos forçar um pequeno delay para aguardar o reconhecimento do cookie
-    
-    const tokenCheck = setTimeout(() => {
-      if (isAuthenticated) {
+    // Se estivermos autenticados e o usuário carregado, redirecionamos imediatamente
+    if (!isLoading && isAuthenticated && user) {
+      if (user.hasCompletedOnboarding) {
         router.push("/dashboard")
       } else {
-        // Se após 3 segundos não estiver autenticado, algo falhou no cookie
+        router.push("/onboarding")
+      }
+      return
+    }
+
+    // Fallback de timeout caso demore a sincronizar
+    const tokenCheck = setTimeout(() => {
+      if (!isLoading && !isAuthenticated) {
         setError("Falha ao sincronizar sessão. Verifique se os cookies estão habilitados.")
       }
-    }, 2000)
+    }, 5000)
 
     return () => clearTimeout(tokenCheck)
-  }, [searchParams, isAuthenticated, router])
+  }, [searchParams, isAuthenticated, user, isLoading, router])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">

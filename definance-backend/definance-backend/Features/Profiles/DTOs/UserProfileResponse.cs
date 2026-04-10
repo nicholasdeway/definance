@@ -8,5 +8,6 @@ namespace definance_backend.Features.Profiles.DTOs
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool HasCompletedOnboarding { get; set; }
     }
 }
