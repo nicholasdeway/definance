@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Wallet, Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -12,6 +14,8 @@ export function LandingHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
@@ -20,10 +24,17 @@ export function LandingHeader() {
   }, [])
 
   const scrollToSection = (e: React.MouseEvent, href: string) => {
+    const isHomePage = pathname === '/'
+    
+    if (!isHomePage) {
+      setMobileMenuOpen(false)
+      return
+    }
+
     e.preventDefault()
     const id = href.replace('#', '')
 
-    if (id === '') {
+    if (id === '' || id === '/') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
       const element = document.getElementById(id)
@@ -60,11 +71,8 @@ export function LandingHeader() {
         <Link 
           href="/" 
           className="flex items-center gap-2 z-10"
-          onClick={(e) => scrollToSection(e, '#')}
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Wallet className="h-5 w-5 text-primary-foreground" />
-          </div>
+          onClick={(e) => scrollToSection(e, '#')}>
+          <Logo size={25} />
           <span className="text-xl font-bold text-foreground">Definance</span>
         </Link>
 
@@ -118,7 +126,7 @@ export function LandingHeader() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={logout}
+                onClick={() => logout()}
                 className="cursor-pointer text-muted-foreground hover:text-destructive transition-colors hidden md:flex"
               >
                 <LogOut className="h-4 w-4" />
@@ -167,7 +175,7 @@ export function LandingHeader() {
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/5" onClick={logout}>
+                <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/5" onClick={() => logout()}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sair da Conta
                 </Button>

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Wallet } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,8 +8,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         <div className="relative hidden h-full flex-col bg-muted p-10 lg:flex">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-primary/5 to-background" />
           <Link href="/" className="relative z-20 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Wallet className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+              <Logo size={24} />
             </div>
             <span className="text-xl font-bold text-foreground">Definance</span>
           </Link>
@@ -29,7 +29,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <div className="flex justify-center mt-8 lg:hidden">
               <Link href="/" className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                  <Wallet className="h-5 w-5 text-primary-foreground" />
+                  <Logo size={24} />
                 </div>
                 <span className="text-xl font-bold text-foreground">Definance</span>
               </Link>

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Wallet } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function Footer() {
   return (
@@ -8,9 +8,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link href="/" className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Wallet className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <Logo size={30} />
               <span className="text-xl font-bold text-foreground">Definance</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">

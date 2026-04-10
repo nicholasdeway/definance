@@ -31,14 +31,19 @@ export function HeroSection() {
           
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/register">
-              <Button size="lg" className="cursor-pointer w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">
+              <Button 
+                className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all hover:scale-105"
+              >
                 Começar agora
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="#como-funciona">
-              <Button variant="outline" size="lg" className="cursor-pointer w-full sm:w-auto">
-                <Play className="mr-2 h-4 w-4" />
+              <Button 
+                variant="outline" 
+                className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/50 backdrop-blur-sm hover:bg-muted/50 transition-all"
+              >
+                <Play className="mr-2 h-4 w-4 fill-current" />
                 Ver como funciona
               </Button>
             </Link>
