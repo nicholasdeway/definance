@@ -12,11 +12,12 @@ import { useAutoSave } from "./hooks/use-auto-save"
 
 // Shared Components
 // Domestic Components
-import { OnboardingHeader } from "./components/onboarding-header"
+import { SiteHeader } from "@/components/layout/site-header"
 import { OnboardingProgress } from "./components/onboarding-progress"
 import { OnboardingNavigation } from "./components/onboarding-navigation"
 import { SyncStatusIndicator } from "./components/sync-status-indicator"
 import { ValidationErrorBox } from "./components/validation-error-box"
+import { Spinner } from "@/components/ui/spinner"
 
 // Steps
 import { Step1IncomeType } from "./steps/step-1-income-type"
@@ -29,15 +30,26 @@ import { Step5Debts } from "./steps/step-5-debts"
 import { steps } from "./constants"
 
 function OnboardingWizardContent() {
-  const { currentStep, syncStatus, stepErrors, setStepErrors, formTopRef } = useOnboarding()
+  const { currentStep, syncStatus, stepErrors, setStepErrors, formTopRef, isLoadingRecovery } = useOnboarding()
   
   // Initialize Hooks
   useOnboardingRecovery()
   useAutoSave()
+  
+  if (isLoadingRecovery) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Spinner className="h-8 w-8 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container flex min-h-screen flex-col items-center justify-center px-4 pt-26 pb-12">
-      <OnboardingHeader />
+      <SiteHeader variant="onboarding" />
       
       <Card className="w-full max-w-lg border-border/50 bg-card/50 backdrop-blur">
         <CardHeader className="">

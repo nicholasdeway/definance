@@ -1,14 +1,26 @@
+"use client"
+
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { useAuth } from "@/lib/auth-provider"
+
+import { useState, useEffect } from "react"
 
 export function Footer() {
+  const { isAuthenticated, user } = useAuth()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
     <footer className="border-t border-border bg-muted/30">
       <div className="container px-4 py-12 md:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link href="/" className="mb-4 flex items-center gap-2">
-              <Logo size={30} />
+              <Logo size={20} withCard variant="muted" />
               <span className="text-xl font-bold text-foreground">Definance</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
@@ -30,9 +42,16 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/register" className="text-muted-foreground transition-colors hover:text-foreground">
-                  Criar conta
-                </Link>
+                {!mounted ? (
+                  <div className="h-4 w-20 bg-muted/20 animate-pulse rounded" />
+                ) : (
+                  <Link 
+                    href={isAuthenticated ? (user?.hasCompletedOnboarding ? "/dashboard" : "/onboarding") : "/register"} 
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {isAuthenticated ? "Dashboard" : "Criar conta"}
+                  </Link>
+                )}
               </li>
             </ul>
           </div>

@@ -1,8 +1,36 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play } from "lucide-react"
+import { useAuth } from "@/lib/auth-provider"
+
+import { useState, useEffect } from "react"
 
 export function HeroSection() {
+  const { isAuthenticated, user, isLoading } = useAuth()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Determinar o link e texto corretos baseados no estado de autenticação
+  const getCtaConfig = () => {
+    if (isLoading) return { href: "/register", label: "Começar agora" }
+    
+    if (!isAuthenticated) {
+      return { href: "/register", label: "Começar agora" }
+    }
+    
+    return {
+      href: user?.hasCompletedOnboarding ? "/dashboard" : "/onboarding",
+      label: user?.hasCompletedOnboarding ? "Ir para o Dashboard" : "Continuar Onboarding"
+    }
+  }
+
+  const { href, label } = getCtaConfig()
+
   return (
     <section className="relative overflow-hidden py-20 md:py-32">
       <div className="absolute inset-0 -z-10">
@@ -30,14 +58,19 @@ export function HeroSection() {
           </p>
           
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/register">
-              <Button 
-                className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all hover:scale-105"
-              >
-                Começar agora
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
+            {!mounted ? (
+              <div className="h-12 w-[180px] bg-muted/20 animate-pulse rounded-md" />
+            ) : (
+              <Link href={href}>
+                <Button 
+                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all hover:scale-105"
+                  disabled={isLoading}
+                >
+                  {label}
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            )}
             <Link href="#como-funciona">
               <Button 
                 variant="outline" 

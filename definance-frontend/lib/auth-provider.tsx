@@ -4,12 +4,30 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, u
 import { useRouter, usePathname } from "next/navigation"
 import { apiClient } from "./api-client"
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5137"
+
+function normalizeUser(user: User | null): User | null {
+  if (!user) return null
+  
+  if (user.pictureUrl) {
+    if (user.pictureUrl.startsWith("http")) {
+      user.avatar = user.pictureUrl
+    } else {
+      user.avatar = `${BACKEND_URL}${user.pictureUrl}`
+    }
+  }
+  
+  return user
+}
+
 export interface User {
   id: string
   firstName: string
   lastName: string
   email: string
   avatar?: string
+  pictureUrl?: string
+  phone?: string | null
   role: string
   createdAt: string
   hasCompletedOnboarding: boolean
@@ -48,38 +66,47 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<boolean>
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>
   confirmPasswordReset: (data: ConfirmResetData) => Promise<{ success: boolean; message?: string }>
+  updateProfile: (data: { firstName: string; lastName: string; phone?: string | null }) => Promise<{ success: boolean; user?: User; message?: string }>
+  changePassword: (data: { currentPassword: string; newPassword: string }) => Promise<{ success: boolean; message?: string }>
+  updateAvatar: (file: Blob | File) => Promise<{ success: boolean; avatarUrl?: string; message?: string }>
+  removeAvatar: () => Promise<{ success: boolean; message?: string }>
   logout: (force?: boolean) => void
   isAuthenticated: boolean
   isLoading: boolean
+  refreshUser: (silent?: boolean) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback"]
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   
-  // Estados de Carregamento Segmentados
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [isLoginLoading, setIsLoginLoading] = useState(false)
   const [isRegisterLoading, setIsRegisterLoading] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
   
-  // Estado de Erro
   const [authError, setAuthError] = useState<string | null>(null)
   
   const router = useRouter()
   const pathname = usePathname()
   
-  // Flag para evitar loops de redirecionamento
-  const isRedirecting = useRef(false)
-
   const clearAuthError = useCallback(() => setAuthError(null), [])
 
-  const checkAuth = useCallback(async () => {
-    setIsAuthLoading(true)
+  const isPublicRoute = useMemo(() => {
+    if (!pathname) return true
+    return PUBLIC_ROUTES.some(route => 
+      route === "/" ? pathname === "/" : pathname.startsWith(route)
+    )
+  }, [pathname])
+
+  const checkAuth = useCallback(async (silent = false) => {
+    if (!silent) setIsAuthLoading(true)
     try {
       const profile = await apiClient<User>("/api/Auth/me")
-      setUser(profile)
+      setUser(normalizeUser(profile))
     } catch (error: unknown) {
       setUser(null)
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -87,46 +114,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Auth check failed:", error)
       }
     } finally {
-      setIsAuthLoading(false)
+      if (!silent) setIsAuthLoading(false)
     }
   }, [])
+  
+  const logout = useCallback(async (force = false) => {
+    setIsActionLoading(true)
+    try {
+      if (!force) {
+        await apiClient("/api/Auth/logout", { method: "POST" })
+      }
+    } catch (error) {
+      console.error("Logout API failed:", error)
+      // Se não for forçado, mostramos erro mas permitimos que o finally limpe o estado local
+      if (!force) {
+        setAuthError("Sessão encerrada localmente (API indisponível).")
+      }
+    } finally {
+      setUser(null)
+      setIsActionLoading(false)
+      // Só recarrega se não estivermos no login para evitar loop
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.href = "/login"
+      }
+    }
+  }, [])
+
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+  
+  // Listener para Logout Global (Disparado pelo api-client em caso de 401 fatal)
+  useEffect(() => {
+    const handleLogoutEvent = () => {
+      // Se já estamos em rota pública, apenas limpamos o estado sem forçar redirecionamento
+      if (isPublicRoute) {
+        setUser(null)
+        return
+      }
+      
+      console.warn("Sessão invalidada via evento global. Forçando logout...")
+      logout(true)
+    }
+    
+    window.addEventListener("auth:logout", handleLogoutEvent)
+    return () => window.removeEventListener("auth:logout", handleLogoutEvent)
+  }, [logout, isPublicRoute])
 
-  // Lógica de Redirecionamento e Guards
+  // 1. Efeito principal de redirecionamento e guards
   useEffect(() => {
     if (isAuthLoading) return
 
-    const publicRoutes = ["/login", "/register", "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback"]
-    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
-
-    // Se estivermos redirecionando, aguardamos a rota mudar
-    if (isRedirecting.current) return
-
-    // 1. Usuário LOGADO em rota PÚBLICA (login/register)
+    // 1. Usuário LOGADO tentando acessar login/register
     if (user && (pathname === "/login" || pathname === "/register")) {
-      isRedirecting.current = true
-      router.push(user.hasCompletedOnboarding ? "/dashboard" : "/onboarding")
-      // Reset da flag após pequeno delay para dar tempo do roteamento iniciar
-      setTimeout(() => { isRedirecting.current = false }, 1000)
+      const target = user.hasCompletedOnboarding ? "/dashboard" : "/onboarding"
+      if ((pathname as string) !== target) {
+        router.push(target)
+      }
       return
     }
 
-    // 2. Usuário LOGADO em rota PRIVADA
-    if (user && !isPublicRoute) {
-      if (!user.hasCompletedOnboarding && pathname !== "/onboarding") {
-        isRedirecting.current = true
-        router.push("/onboarding")
-        setTimeout(() => { isRedirecting.current = false }, 1000)
-      } else if (user.hasCompletedOnboarding && pathname === "/onboarding") {
-        isRedirecting.current = true
-        router.push("/dashboard")
-        setTimeout(() => { isRedirecting.current = false }, 1000)
+    // 2. Usuário NÃO LOGADO tentando acessar rota privada
+    if (!user && !isPublicRoute) {
+      if (pathname !== "/login") {
+        router.push("/login")
       }
+      return
     }
-  }, [user, isAuthLoading, pathname, router])
+
+    // 3. Usuário LOGADO sem onboarding tentando acessar rota privada
+    if (user && !isPublicRoute && !user.hasCompletedOnboarding) {
+      if (pathname !== "/onboarding") {
+        router.push("/onboarding")
+      }
+      return
+    }
+
+    // 4. Usuário LOGADO com onboarding completo tentando acessar /onboarding
+    if (user && pathname?.startsWith("/onboarding") && user.hasCompletedOnboarding) {
+      if (pathname !== "/dashboard") {
+        router.push("/dashboard")
+      }
+      return
+    }
+  }, [user, isAuthLoading, pathname, router, isPublicRoute])
 
   const login = useCallback(async (identifier: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> => {
     setIsLoginLoading(true)
@@ -138,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       
       const profile = await apiClient<User>("/api/Auth/me")
-      setUser(profile)
+      setUser(normalizeUser(profile))
       return { success: true, user: profile }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao realizar login"
@@ -153,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsRegisterLoading(true)
     setAuthError(null)
 
-    // Validação de Telefone (Correção 10)
+    // Validação de Telefone
     const rawPhone = data.phone ? data.phone.replace(/\D/g, "") : ""
     if (data.phone && (rawPhone.length < 10 || rawPhone.length > 11)) {
       const errorMsg = "Telefone inválido. Use (11) 99999-9999 ou similar."
@@ -177,9 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       })
       
-      const profile = await apiClient<User>("/api/Auth/me")
-      setUser(profile)
-      return { success: true, user: profile }
+      return { success: true }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao criar conta"
       setAuthError(message)
@@ -190,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const loginWithGoogle = useCallback(async (): Promise<boolean> => {
-    window.location.href = "http://localhost:5137/api/Auth/google/login"
+    window.location.href = `${BACKEND_URL}/api/Auth/google/login`
     return true
   }, [])
 
@@ -230,25 +300,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const logout = useCallback(async (force = false) => {
+
+
+  const updateProfile = useCallback(async (data: { firstName: string; lastName: string; phone?: string | null }): Promise<{ success: boolean; user?: User; message?: string }> => {
     setIsActionLoading(true)
+    setAuthError(null)
     try {
-      if (!force) {
-        await apiClient("/api/Auth/logout", { method: "POST" })
-      }
-    } catch (error) {
-      console.error("Logout API failed:", error)
-      if (!force) {
-        setAuthError("Erro ao sair. Tente novamente ou force a saída.")
-        setIsActionLoading(false)
-        return
-      }
+      await apiClient("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      })
+      await checkAuth(true)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao atualizar perfil"
+      setAuthError(message)
+      return { success: false, message }
     } finally {
-      setUser(null)
       setIsActionLoading(false)
-      router.push("/login")
     }
-  }, [router])
+  }, [checkAuth])
+
+  const changePassword = useCallback(async (data: { currentPassword: string; newPassword: string }): Promise<{ success: boolean; message?: string }> => {
+    setIsActionLoading(true)
+    setAuthError(null)
+    try {
+      await apiClient("/api/profile/password", {
+        method: "PUT",
+        body: JSON.stringify({
+          ...data,
+          confirmNewPassword: data.newPassword
+        }),
+      })
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao alterar senha"
+      setAuthError(message)
+      return { success: false, message }
+    } finally {
+      setIsActionLoading(false)
+    }
+  }, [])
+
+  const updateAvatar = useCallback(async (file: Blob | File): Promise<{ success: boolean; avatarUrl?: string; message?: string }> => {
+    setIsActionLoading(true)
+    setAuthError(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      
+      const response = await apiClient<{ pictureUrl: string }>("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      })
+      
+      await checkAuth(true)
+      return { success: true, avatarUrl: response.pictureUrl }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao atualizar avatar"
+      setAuthError(message)
+      return { success: false, message }
+    } finally {
+      setIsActionLoading(false)
+    }
+  }, [checkAuth])
+
+  const removeAvatar = useCallback(async (): Promise<{ success: boolean; message?: string }> => {
+    setIsActionLoading(true)
+    setAuthError(null)
+    try {
+      await apiClient("/api/profile/avatar", {
+        method: "DELETE",
+      })
+      await checkAuth(true)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao remover avatar"
+      setAuthError(message)
+      return { success: false, message }
+    } finally {
+      setIsActionLoading(false)
+    }
+  }, [checkAuth])
 
   const contextValue = useMemo(() => ({
     user,
@@ -263,9 +396,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithGoogle,
     requestPasswordReset,
     confirmPasswordReset,
+    updateProfile,
+    changePassword,
+    updateAvatar,
+    removeAvatar,
     logout,
     isAuthenticated: !!user,
-    isLoading: isAuthLoading
+    isLoading: isAuthLoading,
+    refreshUser: checkAuth
   }), [
     user, 
     isAuthLoading, 
@@ -278,7 +416,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register, 
     loginWithGoogle, 
     requestPasswordReset, 
-    confirmPasswordReset, 
+    confirmPasswordReset,
+    updateProfile,
+    changePassword,
+    updateAvatar,
+    removeAvatar,
     logout
   ])
 
@@ -302,9 +444,14 @@ const defaultAuthContext: AuthContextType = {
   loginWithGoogle: async () => false,
   requestPasswordReset: async () => ({ success: false }),
   confirmPasswordReset: async () => ({ success: false }),
+  updateProfile: async () => ({ success: false }),
+  changePassword: async () => ({ success: false }),
+  updateAvatar: async () => ({ success: false }),
+  removeAvatar: async () => ({ success: false }),
   logout: () => {},
   isAuthenticated: false,
-  isLoading: false
+  isLoading: false,
+  refreshUser: async () => {}
 } as any
 
 export function useAuth(): AuthContextType {

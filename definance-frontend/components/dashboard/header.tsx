@@ -1,7 +1,6 @@
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Bell, Plus } from "lucide-react"
 import {
@@ -20,7 +19,7 @@ export function DashboardHeader() {
       <div className="flex flex-1 items-center justify-end gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Nova Transação</span>
             </Button>

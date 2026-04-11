@@ -25,6 +25,8 @@ export interface OnboardingState {
   setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>
   debts: Debt[]
   setDebts: React.Dispatch<React.SetStateAction<Debt[]>>
+  isLoadingRecovery: boolean
+  setIsLoadingRecovery: React.Dispatch<React.SetStateAction<boolean>>
 
   // UI States
   stepErrors: string[]
@@ -55,6 +57,7 @@ export const useOnboardingState = (): OnboardingState => {
   })
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [debts, setDebts] = useState<Debt[]>([])
+  const [isLoadingRecovery, setIsLoadingRecovery] = useState(true)
 
   const [stepErrors, setStepErrors] = useState<string[]>([])
   const [wasAttempted, setWasAttempted] = useState(false)
@@ -114,6 +117,8 @@ export const useOnboardingState = (): OnboardingState => {
     setVehicles,
     debts,
     setDebts,
+    isLoadingRecovery,
+    setIsLoadingRecovery,
     stepErrors,
     setStepErrors,
     wasAttempted,

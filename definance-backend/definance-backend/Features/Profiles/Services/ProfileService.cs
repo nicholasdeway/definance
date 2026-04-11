@@ -5,16 +5,21 @@ using definance_backend.Common.Helpers;
 using definance_backend.Features.Auth.DTOs;
 using definance_backend.Features.Profiles.DTOs;
 using definance_backend.Features.Profiles.Repositories;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace definance_backend.Features.Profiles.Services
 {
     public class ProfileService : IProfileService
     {
         private readonly IProfileRepository _userRepository;
+        private readonly IWebHostEnvironment _environment;
 
-        public ProfileService(IProfileRepository userRepository)
+        public ProfileService(IProfileRepository userRepository, IWebHostEnvironment environment)
         {
             _userRepository = userRepository;
+            _environment = environment;
         }
 
         public async Task<UserProfileResponse?> GetProfileAsync(Guid userId)
@@ -34,6 +39,7 @@ namespace definance_backend.Features.Profiles.Services
                 LastName = user.LastName,
                 Email = user.Email,
                 Phone = user.Phone,
+                PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
                 HasCompletedOnboarding = user.HasCompletedOnboarding
             };
@@ -80,6 +86,7 @@ namespace definance_backend.Features.Profiles.Services
                 LastName = user.LastName,
                 Email = user.Email,
                 Phone = user.Phone,
+                PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
                 HasCompletedOnboarding = user.HasCompletedOnboarding
             });
@@ -152,6 +159,39 @@ namespace definance_backend.Features.Profiles.Services
 
             await _userRepository.UpdateAsync(user);
 
+            return ServiceResult<bool>.Ok(true);
+        }
+
+        public async Task<ServiceResult<string>> UpdateAvatarAsync(Guid userId, IFormFile file)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return ServiceResult<string>.Fail("Usuário não encontrado.");
+            if (file == null || file.Length == 0) return ServiceResult<string>.Fail("Arquivo inválido.");
+            if (file.Length > 2 * 1024 * 1024) return ServiceResult<string>.Fail("Imagem muito grande (máx 2MB).");
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext)) ext = ".jpg"; 
+
+            var fileName = $"{userId}_{DateTime.UtcNow.Ticks}{ext}";
+            var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "avatars");
+            if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+            
+            var filePath = Path.Combine(uploadsPath, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create)) { await file.CopyToAsync(stream); }
+
+            user.PictureUrl = $"/uploads/avatars/{fileName}";
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+            return ServiceResult<string>.Ok(user.PictureUrl);
+        }
+
+        public async Task<ServiceResult<bool>> RemoveAvatarAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return ServiceResult<bool>.Fail("Usuário não encontrado.");
+            user.PictureUrl = null;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
             return ServiceResult<bool>.Ok(true);
         }
     }

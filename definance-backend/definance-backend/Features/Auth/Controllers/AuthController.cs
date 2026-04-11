@@ -60,32 +60,20 @@ namespace definance_backend.Features.Auth.Controllers
             {
                 var token = await _AuthService.RegisterAsync(dto);
 
-                _logger.LogInformation(
-                    "Usuário registrado com sucesso. Email registrado: {Email}",
-                    dto.Email
-                );
+                _logger.LogInformation("Usuário registrado com sucesso.");
 
                 SetTokenCookie(token);
-                return Ok(new 
-                { 
-                    message = "Registration successful",
-                    token = token 
-                });
+                return Ok(new { message = "Registration successful" });
             }
             catch (ApplicationException ex)
             {
-                _logger.LogWarning(ex,
-                    "Erro de negócio ao registrar usuário. Email: {Email}. Mensagem: {Message}",
-                    dto.Email,
-                    ex.Message);
+                _logger.LogWarning(ex, "Erro de negócio ao registrar usuário. Mensagem: {Message}", ex.Message);
 
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Erro inesperado ao registrar usuário. Email: {Email}",
-                    dto.Email);
+                _logger.LogError(ex, "Erro inesperado ao registrar usuário.");
 
                 return StatusCode(500, new { message = GenericErrorMessage, traceId = HttpContext.TraceIdentifier });
             }
@@ -105,32 +93,20 @@ namespace definance_backend.Features.Auth.Controllers
             {
                 var token = await _AuthService.LoginAsync(dto);
 
-                _logger.LogInformation(
-                    "Login realizado com sucesso. Identifier utilizado: {Identifier}",
-                    dto.Identifier
-                );
+                _logger.LogInformation("Login realizado com sucesso.");
 
                 SetTokenCookie(token);
-                return Ok(new 
-                { 
-                    message = "Login successful",
-                    token = token 
-                });
+                return Ok(new { message = "Login successful" });
             }
             catch (ApplicationException ex)
             {
-                _logger.LogWarning(ex,
-                    "Erro de negócio no login. Identifier utilizado: {Identifier}. Mensagem: {Message}",
-                    dto.Identifier,
-                    ex.Message);
+                _logger.LogWarning(ex, "Erro de negócio no login. Mensagem: {Message}", ex.Message);
 
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Erro inesperado ao realizar login. Identifier utilizado: {Identifier}",
-                    dto.Identifier);
+                _logger.LogError(ex, "Erro inesperado ao realizar login.");
 
                 return StatusCode(500, new { message = GenericErrorMessage, traceId = HttpContext.TraceIdentifier });
             }
@@ -150,27 +126,19 @@ namespace definance_backend.Features.Auth.Controllers
             {
                 var message = await _AuthService.RequestPasswordResetAsync(dto);
 
-                _logger.LogInformation(
-                    "Pedido de reset de senha criado com sucesso. Email informado: {Email}",
-                    dto.Email
-                );
+                _logger.LogInformation("Pedido de reset de senha criado com sucesso.");
 
                 return Ok(new { message });
             }
             catch (ApplicationException ex)
             {
-                _logger.LogWarning(ex,
-                    "Erro de negócio ao solicitar reset de senha. Email: {Email}. Mensagem: {Message}",
-                    dto.Email,
-                    ex.Message);
+                _logger.LogWarning(ex, "Erro de negócio ao solicitar reset de senha. Mensagem: {Message}", ex.Message);
 
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Erro inesperado ao solicitar reset de senha. Email: {Email}",
-                    dto.Email);
+                _logger.LogError(ex, "Erro inesperado ao solicitar reset de senha.");
 
                 return StatusCode(500, new { message = GenericErrorMessage, traceId = HttpContext.TraceIdentifier });
             }
@@ -189,27 +157,19 @@ namespace definance_backend.Features.Auth.Controllers
             {
                 var message = await _AuthService.ConfirmPasswordResetAsync(dto);
 
-                _logger.LogInformation(
-                    "Reset de senha confirmado com sucesso. Email informado: {Email}",
-                    dto.Email
-                );
+                _logger.LogInformation("Reset de senha confirmado com sucesso.");
 
                 return Ok(new { message });
             }
             catch (ApplicationException ex)
             {
-                _logger.LogWarning(ex,
-                    "Erro de negócio ao confirmar reset de senha. Email: {Email}. Mensagem: {Message}",
-                    dto.Email,
-                    ex.Message);
+                _logger.LogWarning(ex, "Erro de negócio ao confirmar reset de senha. Mensagem: {Message}", ex.Message);
 
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Erro inesperado ao confirmar reset de senha. Email: {Email}",
-                    dto.Email);
+                _logger.LogError(ex, "Erro inesperado ao confirmar reset de senha.");
 
                 return StatusCode(500, new { message = GenericErrorMessage, traceId = HttpContext.TraceIdentifier });
             }

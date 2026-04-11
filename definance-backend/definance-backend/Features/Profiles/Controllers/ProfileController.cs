@@ -35,7 +35,6 @@ namespace definance_backend.Features.Profiles.Controllers
             return Ok(profile);
         }
 
-
         [HttpPut]
         public async Task<IActionResult> UpdateProfile(
             [FromBody] UpdateUserProfileRequest request)
@@ -52,7 +51,6 @@ namespace definance_backend.Features.Profiles.Controllers
 
             return Ok(result.Data);
         }
-
 
         [HttpPut("password")]
         public async Task<IActionResult> ChangePassword(
@@ -75,7 +73,6 @@ namespace definance_backend.Features.Profiles.Controllers
             return Ok(new { message = "Senha alterada com sucesso." });
         }
 
-
         [HttpDelete]
         public async Task<IActionResult> DeleteAccount(
             [FromBody] DeleteAccountRequest request)
@@ -94,6 +91,30 @@ namespace definance_backend.Features.Profiles.Controllers
 
             _logger.LogInformation("Conta {UserId} excluída com sucesso", userId);
             return Ok(new { message = "Conta excluída com sucesso." });
+        }
+
+        [HttpPost("avatar")]
+        public async Task<IActionResult> UpdateAvatar(IFormFile file)
+        {
+            var userId = User.GetUserId();
+            var result = await _profileService.UpdateAvatarAsync(userId, file);
+
+            if (!result.Success)
+                return BadRequest(result.Errors);
+
+            return Ok(new { pictureUrl = result.Data });
+        }
+
+        [HttpDelete("avatar")]
+        public async Task<IActionResult> RemoveAvatar()
+        {
+            var userId = User.GetUserId();
+            var result = await _profileService.RemoveAvatarAsync(userId);
+
+            if (!result.Success)
+                return BadRequest(result.Errors);
+
+            return Ok(new { message = "Foto removida com sucesso." });
         }
     }
 }
