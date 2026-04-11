@@ -10,6 +10,7 @@ import { useOnboardingValidation } from "../hooks/use-onboarding-validation"
 import { useAutoSave } from "../hooks/use-auto-save"
 import { steps } from "../constants"
 import { apiClient } from "@/lib/api-client"
+import { useAuth } from "@/lib/auth-provider"
 
 export const OnboardingNavigation = () => {
   const router = useRouter()
@@ -27,30 +28,49 @@ export const OnboardingNavigation = () => {
     vehicles,
     debts
   } = useOnboarding()
+  const { refreshUser } = useAuth()
   const { validateStep } = useOnboardingValidation()
   const { persistStep } = useAutoSave()
   const [isFinishing, setIsFinishing] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   const handleNext = async () => {
+    if (isNavigating || isFinishing) return
+    
     if (validateStep(currentStep)) {
-      const currentData = getStepData(currentStep)
-      const success = await persistStep(currentStep, currentData)
-      
-      if (success && currentStep < steps.length) {
-        setCurrentStep(s => s + 1)
-        setWasAttempted(false)
-        setStepErrors([])
+      setIsNavigating(true)
+      try {
+        const currentData = getStepData(currentStep)
+        const success = await persistStep(currentStep, currentData)
+        
+        if (success && currentStep < steps.length) {
+          setCurrentStep(s => s + 1)
+          setWasAttempted(false)
+          setStepErrors([])
+        }
+      } catch (error: any) {
+        console.error("Erro ao avançar de etapa:", error)
+      } finally {
+        setIsNavigating(false)
       }
     }
   }
 
   const handleBack = async () => {
+    if (isNavigating || isFinishing) return
     if (currentStep > 1) {
-      const currentData = getStepData(currentStep)
-      await persistStep(currentStep, currentData)
-      setCurrentStep(s => s - 1)
-      setWasAttempted(false)
-      setStepErrors([])
+      setIsNavigating(true)
+      try {
+        const currentData = getStepData(currentStep)
+        await persistStep(currentStep, currentData)
+        setCurrentStep(s => s - 1)
+        setWasAttempted(false)
+        setStepErrors([])
+      } catch (error: any) {
+        console.error("Erro ao voltar de etapa:", error)
+      } finally {
+        setIsNavigating(false)
+      }
     }
   }
 
@@ -61,7 +81,11 @@ export const OnboardingNavigation = () => {
     try {
       // Salva a última etapa primeiro
       const currentData = getStepData(currentStep)
-      await persistStep(currentStep, currentData)
+      const success = await persistStep(currentStep, currentData)
+
+      if (!success) {
+        return
+      }
 
       // Monta o payload completo para o backend
       const submissionData = {
@@ -80,8 +104,12 @@ export const OnboardingNavigation = () => {
         method: "POST",
         body: JSON.stringify(submissionData)
       })
+      
+      // Atualiza o estado global do usuário para que o AuthProvider perceba a mudança
+      await refreshUser(true)
+      
       router.push("/dashboard")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao finalizar:", error)
     } finally {
       setIsFinishing(false)
@@ -94,7 +122,7 @@ export const OnboardingNavigation = () => {
         <Button
           variant="outline"
           onClick={handleBack}
-          disabled={isFinishing}
+          disabled={isFinishing || isNavigating}
           className="flex-1 text-muted-foreground hover:text-foreground cursor-pointer"
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
@@ -103,9 +131,19 @@ export const OnboardingNavigation = () => {
       )}
 
       {currentStep < steps.length ? (
-        <Button onClick={handleNext} className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
-          Próximo
-          <ChevronRight className="h-4 w-4" />
+        <Button 
+          onClick={handleNext} 
+          disabled={isFinishing || isNavigating}
+          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+        >
+          {isNavigating ? (
+            <Spinner className="h-4 w-4" />
+          ) : (
+            <>
+              Próximo
+              <ChevronRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
       ) : (
         <Button 

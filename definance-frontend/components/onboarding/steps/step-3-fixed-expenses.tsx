@@ -324,7 +324,7 @@ export const Step3FixedExpenses = () => {
         className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer"
       >
         <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-        Adicionar outro gasto fixo
+        Adicionar outra despesa fixa
       </button>
     </div>
   )

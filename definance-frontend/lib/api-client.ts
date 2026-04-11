@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5137"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api-proxy"
 
 // Fila para gerenciar múltiplas requisições durante o refresh
 let isRefreshing = false
@@ -9,12 +9,12 @@ let failedQueue: Array<{
   options: RequestInit
 }> = []
 
-const processQueue = (error: Error | null, token: boolean = false) => {
+const processQueue = (error: Error | null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error)
     } else {
-      // Re-executa a requisição original
+      // Re-executa a requisição original (cookies já foram atualizados)
       apiClient(prom.endpoint, prom.options)
         .then(prom.resolve)
         .catch(prom.reject)
@@ -29,17 +29,19 @@ export async function apiClient<T>(
 ): Promise<T> {
   const isServer = typeof window === "undefined"
 
+  const isFormData = typeof window !== "undefined" && options.body instanceof FormData
+  
   // No client, precisamos de credenciais se estivermos no navegador
   const defaultOptions: RequestInit = {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(!isFormData && { "Content-Type": "application/json" }),
       ...options.headers,
     },
   }
 
-  // Importante: incluir credenciais para cookies HttpOnly
-  if (!isServer) {
+  // Importante: incluir credenciais para cookies HttpOnly no navegador
+  if (typeof window !== "undefined") {
     defaultOptions.credentials = "include"
   }
 
@@ -71,13 +73,19 @@ export async function apiClient<T>(
           }
           
           isRefreshing = false
-          processQueue(null, true)
+          processQueue(null)
           
           // Tenta a requisição original novamente
           return apiClient<T>(endpoint, options)
         } catch (refreshError) {
           isRefreshing = false
-          processQueue(new Error("Sessão expirada"), false)
+          processQueue(new Error("Sessão expirada"))
+          
+          // Notifica o sistema globalmente que a sessão caiu (Logout Silencioso)
+          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+            window.dispatchEvent(new CustomEvent("auth:logout"))
+          }
+          
           throw new Error("Não autenticado")
         }
       }

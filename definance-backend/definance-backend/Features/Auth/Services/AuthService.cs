@@ -244,7 +244,8 @@ namespace definance_backend.Features.Auth.Services
                 Phone = user.Phone,
                 PictureUrl = user.PictureUrl,
                 AuthProvider = user.AuthProvider ?? "Local",
-                HasCompletedOnboarding = user.HasCompletedOnboarding
+                HasCompletedOnboarding = user.HasCompletedOnboarding,
+                CreatedAt = user.CreatedAt
             };
         }
     }

@@ -49,23 +49,8 @@ function GoogleCallbackContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-border bg-card p-8 shadow-2xl text-center">
-        {!error ? (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <div className="relative">
-                <Spinner className="h-12 w-12 text-primary" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                </div>
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Finalizando Login</h1>
-            <p className="text-muted-foreground animate-pulse">
-              Autenticando com o Google, por favor aguarde...
-            </p>
-          </div>
-        ) : (
+      {error && (
+        <div className="w-full max-w-md space-y-8 rounded-2xl border border-border bg-card p-8 shadow-2xl text-center">
           <div className="space-y-6 animate-in fade-in zoom-in duration-300">
             <div className="flex justify-center">
               <div className="rounded-full bg-destructive/10 p-3">
@@ -83,19 +68,15 @@ function GoogleCallbackContent() {
               Voltar para o Login
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default function GoogleCallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Spinner className="h-12 w-12 text-primary" />
-      </div>
-    }>
+    <Suspense fallback={null}>
       <GoogleCallbackContent />
     </Suspense>
   )

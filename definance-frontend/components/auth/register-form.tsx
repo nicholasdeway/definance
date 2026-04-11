@@ -11,10 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { AuthProvider, useAuth } from "@/lib/auth-provider"
+import { toast } from "sonner"
 
 export function RegisterForm() {
   const router = useRouter()
-  const { register, loginWithGoogle } = useAuth()
+  const { register, loginWithGoogle, logout } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -50,7 +51,13 @@ export function RegisterForm() {
     const result = await register(formData)
     
     if (result.success) {
-      router.push("/onboarding")
+      // Limpa a sessão automática e os cookies criados pelo backend
+      await logout()
+      
+      toast.success("Conta criada com sucesso!", {
+        description: "Agora faça login com suas credenciais para continuar.",
+      })
+      router.push("/login")
     } else {
       setError(result.message || "Erro ao criar conta")
       setIsLoading(false)

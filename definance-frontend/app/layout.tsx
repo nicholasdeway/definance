@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import "./globals.css";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,7 +49,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <Suspense fallback={null}>
+              {children}
+            </Suspense>
             <Toaster />
             <SonnerToaster position="top-right" />
           </AuthProvider>
