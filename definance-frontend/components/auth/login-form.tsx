@@ -28,6 +28,7 @@ function LoginFormContent() {
     
     const result = await login(identifier, password)
     if (result.success && result.user) {
+      console.log("Login successful, user onboarding status:", result.user.hasCompletedOnboarding)
       if (result.user.hasCompletedOnboarding) {
         router.push("/dashboard")
       } else {

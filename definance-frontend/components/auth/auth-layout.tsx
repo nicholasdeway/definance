@@ -8,9 +8,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         <div className="relative hidden h-full flex-col bg-muted p-10 lg:flex">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-primary/5 to-background" />
           <Link href="/" className="relative z-20 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-              <Logo size={24} />
-            </div>
+            <Logo size={24} withCard variant="muted" />
             <span className="text-xl font-bold text-foreground">Definance</span>
           </Link>
           <div className="relative z-20 mt-auto">
@@ -28,9 +26,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
             <div className="flex justify-center mt-8 lg:hidden">
               <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                  <Logo size={24} />
-                </div>
+                <Logo size={24} withCard variant="primary" />
                 <span className="text-xl font-bold text-foreground">Definance</span>
               </Link>
             </div>

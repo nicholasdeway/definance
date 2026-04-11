@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 
 const pieData = [
-  { name: "Moradia", value: 1800, color: "hsl(var(--chart-1))" },
-  { name: "Alimentação", value: 1200, color: "hsl(var(--chart-2))" },
-  { name: "Transporte", value: 600, color: "hsl(var(--chart-3))" },
-  { name: "Lazer", value: 450, color: "hsl(var(--chart-4))" },
-  { name: "Outros", value: 300, color: "hsl(var(--chart-5))" },
+  { name: "Moradia", value: 1800, color: "var(--chart-1)" },
+  { name: "Alimentação", value: 1200, color: "var(--chart-2)" },
+  { name: "Transporte", value: 600, color: "var(--chart-3)" },
+  { name: "Lazer", value: 450, color: "var(--chart-4)" },
+  { name: "Outros", value: 300, color: "var(--chart-5)" },
 ]
 
 const lineData = [
@@ -77,37 +77,37 @@ export function DashboardCharts() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  axisLine={{ stroke: "var(--border)" }}
                 />
                 <YAxis 
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  axisLine={{ stroke: "var(--border)" }}
                   tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                   }}
-                  labelStyle={{ color: "hsl(var(--card-foreground))" }}
+                  labelStyle={{ color: "var(--card-foreground)" }}
                   formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
                 />
                 <Line
                   type="monotone"
                   dataKey="receitas"
-                  stroke="hsl(var(--chart-1))"
+                  stroke="var(--chart-1)"
                   strokeWidth={2}
-                  dot={{ fill: "hsl(var(--chart-1))" }}
+                  dot={{ fill: "var(--chart-1)" }}
                   name="Receitas"
                 />
                 <Line
                   type="monotone"
                   dataKey="despesas"
-                  stroke="hsl(var(--chart-5))"
+                  stroke="var(--chart-5)"
                   strokeWidth={2}
-                  dot={{ fill: "hsl(var(--chart-5))" }}
+                  dot={{ fill: "var(--chart-5)" }}
                   name="Despesas"
                 />
               </LineChart>

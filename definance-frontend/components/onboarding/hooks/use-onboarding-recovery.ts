@@ -13,6 +13,7 @@ export const useOnboardingRecovery = () => {
     setVehicles,
     setDebts,
     setCurrentStep,
+    setIsLoadingRecovery,
     lastSavedHashesRef
   } = useOnboarding()
 
@@ -92,6 +93,8 @@ export const useOnboardingRecovery = () => {
         }
       } catch (error) {
         console.error("[Recovery Error] Não foi possível recuperar o progresso anterior:", error)
+      } finally {
+        setIsLoadingRecovery(false)
       }
     }
 
@@ -105,6 +108,7 @@ export const useOnboardingRecovery = () => {
     setVehicles,
     setDebts,
     setCurrentStep,
+    setIsLoadingRecovery,
     lastSavedHashesRef
   ])
 }
