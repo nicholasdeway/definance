@@ -2,15 +2,15 @@
 
 import React, { Fragment } from "react"
 import { Check, Plus, Trash2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { fixedExpenseCategories } from "../constants"
 import { FieldLabel } from "../components/field-label"
 
-export const Step3FixedExpenses = () => {
+export const Step4FixedExpenses = () => {
   const { 
     selectedExpenses, 
     setSelectedExpenses, 
@@ -21,31 +21,30 @@ export const Step3FixedExpenses = () => {
     wasAttempted 
   } = useOnboarding()
 
-  // Formata dígitos brutos (centavos) para exibição em BRL
-  function displayBRL(digits: string): string {
-    if (!digits) return ""
-    const number = parseInt(digits, 10) / 100
-    return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+  // Formata valor decimal (Reais) para exibição em BRL
+  function displayBRL(value: number): string {
+    if (!value) return ""
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
   }
 
   const toggleExpense = (key: string) => {
     setSelectedExpenses(prev => {
       const next = { ...prev }
       if (key in next) delete next[key]
-      else next[key] = ""
+      else next[key] = 0
       return next
     })
   }
 
   const setExpenseValue = (key: string, raw: string) => {
     const digits = raw.replace(/\D/g, "")
-    setSelectedExpenses(prev => ({ ...prev, [key]: digits }))
+    setSelectedExpenses(prev => ({ ...prev, [key]: Number(digits) / 100 }))
   }
 
   const toggleBillLoan = (key: string) => {
     setBillLoans(prev => ({
       ...prev,
-      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || "" }
+      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || 0 }
     }))
   }
 
@@ -53,14 +52,14 @@ export const Step3FixedExpenses = () => {
     const digits = raw.replace(/\D/g, "")
     setBillLoans(prev => ({
       ...prev,
-      [key]: { ...prev[key], valor: digits }
+      [key]: { ...prev[key], valor: Number(digits) / 100 }
     }))
   }
 
   const addCustomExpense = () => {
     setCustomExpenses(prev => [
       ...prev,
-      { id: Math.random().toString(36).slice(2), titulo: "", valor: "" }
+      { id: Math.random().toString(36).slice(2), titulo: "", valor: 0 }
     ])
   }
 
@@ -68,10 +67,9 @@ export const Step3FixedExpenses = () => {
     setCustomExpenses(prev => prev.filter(e => e.id !== id))
   }
 
-  const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string) => {
-    const finalValue = field === "valor" ? value.replace(/\D/g, "") : value
+  const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string | number) => {
     setCustomExpenses(prev =>
-      prev.map(e => (e.id === id ? { ...e, [field]: finalValue } : e))
+      prev.map(e => (e.id === id ? { ...e, [field]: value } : e))
     )
   }
 
@@ -101,7 +99,7 @@ export const Step3FixedExpenses = () => {
               )}
               <span className="text-2xl">{cat.emoji}</span>
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
-              {isSelected && selectedExpenses[cat.key] && (
+              {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
                   {displayBRL(selectedExpenses[cat.key])}
                 </span>
@@ -136,13 +134,11 @@ export const Step3FixedExpenses = () => {
                             isEmpty={!selectedExpenses[cat.key]} 
                             wasAttempted={wasAttempted} 
                           />
-                          <Input
+                          <CurrencyInput
                             id={`exp-${cat.key}`}
-                            type="text"
-                            inputMode="numeric"
                             placeholder={cat.placeholder}
-                            value={selectedExpenses[cat.key] ? displayBRL(selectedExpenses[cat.key]) : ""}
-                            onChange={(e) => setExpenseValue(cat.key, e.target.value)}
+                            value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                            onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
                               "h-9 bg-background text-sm",
                               wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
@@ -176,25 +172,23 @@ export const Step3FixedExpenses = () => {
                                   isEmpty={!billLoans[cat.key]?.valor} 
                                   wasAttempted={wasAttempted} 
                                 />
-                                <Input
+                                <CurrencyInput
                                   id={`loan-value-${cat.key}`}
-                                  type="text"
-                                  inputMode="numeric"
                                   placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? displayBRL(billLoans[cat.key].valor) : ""}
-                                  onChange={(e) => setBillLoanValue(cat.key, e.target.value)}
+                                  value={billLoans[cat.key]?.valor ? (billLoans[cat.key].valor * 100).toString() : ""}
+                                  onChange={(value) => setBillLoanValue(cat.key, value)}
                                   className={cn(
                                     "h-8 bg-background/50 text-xs font-medium",
                                     wasAttempted && !billLoans[cat.key]?.valor && "border-destructive/50"
                                   )}
                                 />
                               </div>
-                              {selectedExpenses[cat.key] && billLoans[cat.key]?.valor && (
-                                <div className="rounded-lg bg-background/40 p-2 border border-primary/5">
-                                  <p className="text-[10px] text-muted-foreground flex justify-between">
-                                    <span>Consumo real estimado:</span>
-                                    <span className="font-bold text-primary">
-                                      {displayBRL((Math.max(0, parseInt(selectedExpenses[cat.key]) - parseInt(billLoans[cat.key].valor))).toString())}
+                              {!!selectedExpenses[cat.key] && !!billLoans[cat.key]?.valor && (
+                                <div className="rounded-lg bg-background/40 p-2 border border-primary/5 animate-in zoom-in-95 duration-200">
+                                  <p className="text-[10px] text-muted-foreground flex justify-between items-center">
+                                    <span className="opacity-80">Consumo real estimado:</span>
+                                    <span className="font-bold text-primary text-xs">
+                                      {displayBRL(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
                                     </span>
                                   </p>
                                 </div>
@@ -230,13 +224,11 @@ export const Step3FixedExpenses = () => {
                           isEmpty={!selectedExpenses[cat.key]} 
                           wasAttempted={wasAttempted} 
                         />
-                        <Input
+                        <CurrencyInput
                           id={`exp-${cat.key}`}
-                          type="text"
-                          inputMode="numeric"
                           placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] ? displayBRL(selectedExpenses[cat.key]) : ""}
-                          onChange={(e) => setExpenseValue(cat.key, e.target.value)}
+                          value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                          onChange={(value) => setExpenseValue(cat.key, value)}
                           className={cn(
                             "h-8 bg-background text-sm",
                             wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
@@ -297,17 +289,18 @@ export const Step3FixedExpenses = () => {
                     <FieldLabel 
                       label="Valor mensal" 
                       required 
-                      isEmpty={!exp.valor || parseInt(exp.valor) === 0} 
+                      isEmpty={!exp.valor || exp.valor === 0} 
                       wasAttempted={wasAttempted} 
                     />
-                    <Input
+                    <CurrencyInput
                       id={`custom-valor-${exp.id}`}
-                      type="text"
-                      inputMode="numeric"
                       placeholder="R$ 0,00"
-                      value={exp.valor ? displayBRL(exp.valor) : ""}
-                      onChange={(e) => updateCustomExpense(exp.id, "valor", e.target.value)}
-                      className="h-8 bg-background text-sm font-medium"
+                      value={exp.valor ? (exp.valor * 100).toString() : ""}
+                      onChange={(value) => updateCustomExpense(exp.id, "valor", Number(value.replace(/\D/g, "")) / 100)}
+                      className={cn(
+                        "h-8 bg-background text-sm font-medium",
+                        wasAttempted && (!exp.valor || exp.valor === 0) && "border-destructive/50"
+                      )}
                     />
                   </div>
                 </div>

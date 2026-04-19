@@ -5,22 +5,25 @@ import {
   CreditCard,
   Landmark,
   Plus,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
-    AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { Debt } from "@/components/onboarding/types"
 import { Button } from "@/components/ui/button"
+import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 
 export const DebtsSection = () => {
     const { 
@@ -28,21 +31,21 @@ export const DebtsSection = () => {
         setDebts, 
         wasAttempted 
     } = useOnboarding()
+    const { persistStep } = useAutoSave()
     
     const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
-    const [newExtras, setNewExtras] = useState<Record<string, { descricao: string; valor: string }>>({})
+    const [newExtras, setNewExtras] = useState<Record<string, { descricao: string; valor: number }>>({})
     
-    function displayBRL(digits: string): string {
-        if (!digits) return ""
-        const number = parseInt(digits, 10) / 100
-        return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    function displayBRL(value: number): string {
+        if (value === undefined || value === null) return ""
+        return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
     }
     
     const addDebt = () => {
         const newId = Math.random().toString(36).slice(2)
         setDebts(prev => [
             ...prev,
-            { id: newId, descricao: "", valor: "", parcelado: false, parcelasTotal: "", parcelasPagas: "", extras: [] },
+            { id: newId, descricao: "", valor: 0, parcelado: false, parcelasTotal: 0, parcelasPagas: 0, extras: [] },
         ])
         setExpandedValue(newId)
     }
@@ -57,7 +60,9 @@ export const DebtsSection = () => {
     
     const updateDebtValue = (id: string, raw: string) => {
         const digits = raw.replace(/\D/g, "")
-        setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: digits } : d)))
+        // CORREÇÃO: Dividir por 100 para converter centavos em decimal
+        const decimalValue = Number(digits) / 100
+        setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: decimalValue } : d)))
     }
 
     const handleAddNewExtra = (debtId: string) => {
@@ -100,55 +105,60 @@ export const DebtsSection = () => {
                             "w-full rounded-xl border border-border/60 bg-background/50 overflow-hidden transition-all duration-300",
                             isExpanded && "border-primary/30 shadow-lg bg-background"
                         )}>
-                            <div className="flex items-center w-full group/row pr-2 sm:pr-4">
-                                <AccordionTrigger 
-                                    className="flex-1 hover:no-underline py-4 cursor-default"
-                                >
-                                    <div className="flex items-center justify-between w-full px-2 sm:px-4">
-                                        {/* Lado Esquerdo: Info (Clicável) */}
-                                        <div className="flex items-center gap-3 text-left cursor-pointer group/title px-2 py-1 rounded-lg hover:bg-primary/5 transition-colors max-w-[60%] sm:max-w-none">
-                                            <div className={cn(
-                                                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
-                                                isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
-                                            )}>
-                                                <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
-                                            </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="text-sm font-semibold text-card-foreground truncate">
-                                                    {debt.descricao || `Dívida ${idx + 1}`}
-                                                </span>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-xs font-medium text-muted-foreground">
-                                                        {debt.valor ? displayBRL(debt.valor) : "R$ 0,00"}
-                                                    </span>
-                                                    {debt.parcelado && (
-                                                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 flex items-center gap-0.5 shrink-0">
-                                                            <Landmark className="h-2 w-2" /> 
-                                                            {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal} parc` : "Parcelado"}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Lado Direito: Grupo de Detalhes (Clicável) */}
-                                        <div className="flex items-center gap-2 cursor-pointer">
-                                            <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden md:inline-block hover:text-primary transition-colors">
-                                                {isExpanded ? "Fechar" : "Ver detalhes"}
+                            <div 
+                                className="flex items-center justify-between w-full px-5 py-4 cursor-pointer hover:bg-muted/5 transition-colors"
+                                onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
+                            >
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className={cn(
+                                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
+                                        isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
+                                    )}>
+                                        <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-semibold text-card-foreground truncate">
+                                            {debt.descricao || `Dívida ${idx + 1}`}
+                                        </span>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs font-medium text-muted-foreground">
+                                                {debt.valor ? displayBRL(debt.valor) : "R$ 0,00"}
                                             </span>
-                                            {/* A seta do Radix virá aqui */}
+                                            {debt.parcelado && (
+                                                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 flex items-center gap-0.5 shrink-0">
+                                                    <Landmark className="h-2 w-2" /> 
+                                                    {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal} parc` : "Parcelado"}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
-                                </AccordionTrigger>
-                                
-                                <button 
-                                    type="button" 
-                                    onClick={(e) => { e.stopPropagation(); removeDebt(debt.id); }} 
-                                    className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-full cursor-pointer shrink-0"
-                                    title="Remover dívida"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                </div>
+
+                                <div className="flex items-center gap-4 ml-auto">
+                                    <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden md:inline-block group-hover:text-primary transition-colors">
+                                        {isExpanded ? "Recolher" : "Ver detalhes"}
+                                    </span>
+                                    
+                                    {/* Ícone da seta (expansão) */}
+                                    {isExpanded ? (
+                                        <ChevronUp className="h-4 w-4 text-muted-foreground/60" />
+                                    ) : (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
+                                    )}
+                                    
+                                    {/* Separador vertical */}
+                                    <div className="h-6 w-px bg-border/40" />
+                                    
+                                    {/* Botão de remover (lixeira) */}
+                                    <button 
+                                        type="button" 
+                                        onClick={(e) => { e.stopPropagation(); removeDebt(debt.id); }} 
+                                        className="p-1.5 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0"
+                                        title="Remover dívida"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
 
                             <AccordionContent className="px-4 pb-4 border-t border-border/20 bg-muted/5">
@@ -162,14 +172,13 @@ export const DebtsSection = () => {
                                             className="h-9 bg-background"
                                         />
                                     </div>
-                                </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor {debt.parcelado ? "da Parcela" : "Total"}</Label>
-                                        <Input
+                                        <CurrencyInput
+                                            id={`debt-valor-${debt.id}`}
                                             placeholder="R$ 0,00"
-                                            value={debt.valor ? displayBRL(debt.valor) : ""}
-                                            onChange={(e) => updateDebtValue(debt.id, e.target.value)}
-                                            className="h-9 bg-background"
+                                            value={debt.valor ? (debt.valor * 100).toString() : ""}
+                                            onChange={(value) => updateDebtValue(debt.id, value)}
+                                            className="h-9 bg-background font-medium"
                                         />
                                     </div>
                                     <div className="flex items-center justify-between pt-2">
@@ -243,12 +252,13 @@ export const DebtsSection = () => {
                                                     </div>
                                                     <div className="space-y-1.5">
                                                         <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
-                                                        <Input 
-                                                            type="text" inputMode="numeric"
-                                                            value={newExtras[debt.id].valor ? displayBRL(newExtras[debt.id].valor) : ""} 
-                                                            onChange={e => {
-                                                                const digits = e.target.value.replace(/\D/g, "")
-                                                                setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], valor: digits}}))
+                                                        <CurrencyInput 
+                                                            id={`new-extra-valor-debt-${debt.id}`}
+                                                            value={newExtras[debt.id].valor ? (newExtras[debt.id].valor * 100).toString() : ""} 
+                                                            onChange={value => {
+                                                                const digits = value.replace(/\D/g, "")
+                                                                const decimalValue = Number(digits) / 100
+                                                                setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], valor: decimalValue }}))
                                                             }}
                                                             placeholder="R$ 0,00"
                                                             className="h-9 text-xs bg-background"
@@ -268,7 +278,7 @@ export const DebtsSection = () => {
                                                     <Button 
                                                         type="button"
                                                         size="sm" 
-                                                        className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90" 
+                                                        className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/70" 
                                                         onClick={() => handleAddNewExtra(debt.id)}
                                                     >
                                                         Salvar Gasto
@@ -278,7 +288,7 @@ export const DebtsSection = () => {
                                         ) : (
                                             <button
                                                 type="button"
-                                                onClick={() => setNewExtras(p => ({...p, [debt.id]: {descricao: "", valor: "0"}}))}
+                                                onClick={() => setNewExtras(p => ({...p, [debt.id]: {descricao: "", valor: 0}}))}
                                                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary cursor-pointer transition-all"
                                             >
                                                 <Plus className="h-3.5 w-3.5" />
@@ -290,12 +300,34 @@ export const DebtsSection = () => {
                                     <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4 sm:col-span-2">
                                         <Button 
                                             type="button" 
-                                            onClick={() => setExpandedValue(undefined)}
-                                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                                            onClick={async () => {
+                                                const btn = document.activeElement as HTMLButtonElement
+                                                if (btn) {
+                                                    const originalText = btn.innerText
+                                                    btn.innerText = "Salvando..."
+                                                    btn.disabled = true
+                                                    
+                                                    const success = await persistStep(6, debts)
+                                                    
+                                                    btn.disabled = false
+                                                    if (success) {
+                                                        btn.innerText = "Salvo!"
+                                                        setTimeout(() => {
+                                                            if (btn) btn.innerText = originalText
+                                                            setExpandedValue(undefined)
+                                                        }, 1000)
+                                                    } else {
+                                                        btn.innerText = "Erro ao Salvar"
+                                                        setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold"
                                         >
                                             Salvar Dívida
                                         </Button>
                                     </div>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
                     )

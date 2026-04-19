@@ -4,23 +4,26 @@ import React, { useState, useRef, useCallback, useEffect } from "react"
 import {
   Debt,
   Vehicle,
-  CustomExpense
+  CustomExpense,
+  IncomeDetail
 } from "../types"
 
 export interface OnboardingState {
   // States
   currentStep: number
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>
+  motivations: string[]
+  setMotivations: React.Dispatch<React.SetStateAction<string[]>>
   selectedIncomeTypes: string[]
   setSelectedIncomeTypes: React.Dispatch<React.SetStateAction<string[]>>
-  monthlyIncome: string
-  setMonthlyIncome: React.Dispatch<React.SetStateAction<string>>
-  selectedExpenses: Record<string, string>
-  setSelectedExpenses: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  incomes: IncomeDetail[]
+  setIncomes: React.Dispatch<React.SetStateAction<IncomeDetail[]>>
+  selectedExpenses: Record<string, number>
+  setSelectedExpenses: React.Dispatch<React.SetStateAction<Record<string, number>>>
   customExpenses: CustomExpense[]
   setCustomExpenses: React.Dispatch<React.SetStateAction<CustomExpense[]>>
-  billLoans: Record<string, { hasLoan: boolean; valor: string }>
-  setBillLoans: React.Dispatch<React.SetStateAction<Record<string, { hasLoan: boolean; valor: string }>>>
+  billLoans: Record<string, { hasLoan: boolean; valor: number }>
+  setBillLoans: React.Dispatch<React.SetStateAction<Record<string, { hasLoan: boolean; valor: number }>>>
   vehicles: Vehicle[]
   setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>
   debts: Debt[]
@@ -46,14 +49,15 @@ export interface OnboardingState {
 
 export const useOnboardingState = (): OnboardingState => {
   const [currentStep, setCurrentStep] = useState(1)
+  const [motivations, setMotivations] = useState<string[]>([])
   const [selectedIncomeTypes, setSelectedIncomeTypes] = useState<string[]>([])
-  const [monthlyIncome, setMonthlyIncome] = useState("")
-  const [selectedExpenses, setSelectedExpenses] = useState<Record<string, string>>({})
+  const [incomes, setIncomes] = useState<IncomeDetail[]>([])
+  const [selectedExpenses, setSelectedExpenses] = useState<Record<string, number>>({})
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([])
-  const [billLoans, setBillLoans] = useState<Record<string, { hasLoan: boolean; valor: string }>>({
-    luz: { hasLoan: false, valor: "" },
-    agua: { hasLoan: false, valor: "" },
-    celular: { hasLoan: false, valor: "" }
+  const [billLoans, setBillLoans] = useState<Record<string, { hasLoan: boolean; valor: number }>>({
+    luz: { hasLoan: false, valor: 0 },
+    agua: { hasLoan: false, valor: 0 },
+    celular: { hasLoan: false, valor: 0 }
   })
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [debts, setDebts] = useState<Debt[]>([])
@@ -68,14 +72,15 @@ export const useOnboardingState = (): OnboardingState => {
 
   const getStepData = useCallback((step: number) => {
     switch (step) {
-      case 1: return selectedIncomeTypes
-      case 2: return monthlyIncome
-      case 3: return { selectedExpenses, customExpenses, billLoans }
-      case 4: return vehicles
-      case 5: return debts
+      case 1: return motivations
+      case 2: return selectedIncomeTypes
+      case 3: return incomes
+      case 4: return { selectedExpenses, customExpenses, billLoans }
+      case 5: return vehicles
+      case 6: return debts
       default: return null
     }
-  }, [selectedIncomeTypes, monthlyIncome, selectedExpenses, customExpenses, billLoans, vehicles, debts])
+  }, [motivations, selectedIncomeTypes, incomes, selectedExpenses, customExpenses, billLoans, vehicles, debts])
 
   // ── Orphan Data Cleanup
   useEffect(() => {
@@ -92,21 +97,32 @@ export const useOnboardingState = (): OnboardingState => {
         const next = { ...prev }
         orphanedKeys.forEach(key => {
           if (next[key]) {
-            next[key] = { hasLoan: false, valor: "" }
+            next[key] = { hasLoan: false, valor: 0 }
           }
         })
         return next
       })
     }
-  }, [selectedExpenses, billLoans])
+
+    // Limpa rendas orfãs (caso ele desmarque 'clt' por exemplo, o incomeDetails de 'clt' some)
+    setIncomes(prev => prev.filter(inc => selectedIncomeTypes.includes(inc.tipo)))
+    
+    // 🔥 Sanitização Crítica: Se por algum erro de migração de etapa as motivações caíram nos tipos de renda, filtramos aqui.
+    const validIncomeValues = ["clt", "pj", "autonomo", "freelancer", "mesada"]
+    if (selectedIncomeTypes.some(t => !validIncomeValues.includes(t))) {
+      setSelectedIncomeTypes(prev => prev.filter(t => validIncomeValues.includes(t)))
+    }
+  }, [selectedExpenses, billLoans, selectedIncomeTypes])
 
   return {
     currentStep,
     setCurrentStep,
+    motivations,
+    setMotivations,
     selectedIncomeTypes,
     setSelectedIncomeTypes,
-    monthlyIncome,
-    setMonthlyIncome,
+    incomes,
+    setIncomes,
     selectedExpenses,
     setSelectedExpenses,
     customExpenses,

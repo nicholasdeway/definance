@@ -3,18 +3,18 @@
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useOnboarding } from "../hooks/use-onboarding"
-import { incomeTypes } from "../constants"
+import { motivationTypes } from "../constants"
 import { FieldLabel } from "../components/field-label"
 
-export const Step1IncomeType = () => {
+export const Step1Motivations = () => {
   const { 
-    selectedIncomeTypes, 
-    setSelectedIncomeTypes, 
+    motivations, 
+    setMotivations, 
     wasAttempted 
   } = useOnboarding()
 
-  const toggleIncomeType = (value: string) => {
-    setSelectedIncomeTypes(prev =>
+  const toggleMotivation = (value: string) => {
+    setMotivations(prev =>
       prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
     )
   }
@@ -24,17 +24,17 @@ export const Step1IncomeType = () => {
       <FieldLabel 
         label="Selecione uma ou mais opções" 
         required 
-        isEmpty={selectedIncomeTypes.length === 0} 
+        isEmpty={motivations.length === 0} 
         wasAttempted={wasAttempted} 
       />
-      {incomeTypes.map((type) => {
-        const isSelected = selectedIncomeTypes.includes(type.value)
-        const isInvalid = wasAttempted && selectedIncomeTypes.length === 0
+      {motivationTypes.map((type) => {
+        const isSelected = motivations.includes(type.value)
+        const isInvalid = wasAttempted && motivations.length === 0
         return (
           <button
             key={type.value}
             type="button"
-            onClick={() => toggleIncomeType(type.value)}
+            onClick={() => toggleMotivation(type.value)}
             className={cn(
               "flex items-center gap-4 rounded-xl border p-4 transition-all duration-300 relative group cursor-pointer",
               isSelected 
@@ -55,7 +55,6 @@ export const Step1IncomeType = () => {
                 "font-bold transition-colors",
                 isSelected ? "text-primary" : "text-card-foreground"
               )}>{type.label}</p>
-              <p className="text-sm text-muted-foreground leading-tight">{type.description}</p>
             </div>
             {isSelected && (
               <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center animate-in zoom-in duration-300 shadow-sm">

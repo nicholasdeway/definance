@@ -1,4 +1,3 @@
-// Formata um número para moeda brasileira (R$)
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -6,7 +5,6 @@ export function formatCurrency(value: number): string {
   }).format(value)
 }
 
-// Formata um número para moeda sem símbolo (ex: 1.234,56)
 export function formatCurrencyValue(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     minimumFractionDigits: 2,
@@ -14,16 +12,25 @@ export function formatCurrencyValue(value: number): string {
   }).format(value)
 }
 
-// Converte uma string de input para centavos (number)
-// Ex: "1234" -> 12.34
 export function parseCurrencyInput(value: string): number {
+  if (!value) return 0
+
+
+  if (typeof value === 'number') return value / 100
+
   const cleanValue = value.replace(/\D/g, "")
   const numericValue = parseInt(cleanValue || "0", 10)
   return numericValue / 100
 }
 
-// Formata uma string de input para exibição com centavos
-// Ex: "1234" -> "12,34"
+export function toCents(value: number | string): number {
+  if (typeof value === 'string') {
+    const clean = value.replace(/\D/g, "")
+    return parseInt(clean || "0", 10)
+  }
+  return Math.round(value * 100)
+}
+
 export function formatCurrencyInput(value: string): string {
   const cleanValue = value.replace(/\D/g, "")
   const numericValue = parseInt(cleanValue || "0", 10)
@@ -31,11 +38,9 @@ export function formatCurrencyInput(value: string): string {
   return formatted.replace(".", ",")
 }
 
-// Converte um valor formatado (string) para number
-// Ex: "1.234,56" -> 1234.56
 export function currencyToNumber(value: string): number {
+  if (!value) return 0
   const cleanValue = value
-    .replace(/\./g, "") // Remove pontos de milhar
-    .replace(",", ".") // Troca vírgula por ponto
-  return parseFloat(cleanValue) || 0
+    .replace(/\D/g, "")
+  return parseInt(cleanValue, 10) / 100
 }
