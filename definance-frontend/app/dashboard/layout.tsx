@@ -2,6 +2,7 @@
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
+import { MobileDashboardNav } from "@/components/dashboard/mobile-nav"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AuthProvider, useAuth } from "@/lib/auth-provider"
 import { useRouter } from "next/navigation"
@@ -38,6 +39,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <DashboardSidebar />
       <SidebarInset>
         <DashboardHeader />
+        <MobileDashboardNav />
         <main className="flex-1 p-4 md:p-6 pb-2">
           {children}
         </main>

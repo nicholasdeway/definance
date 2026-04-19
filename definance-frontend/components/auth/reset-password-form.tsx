@@ -156,7 +156,7 @@ export function ResetPasswordForm() {
               
               <Button 
                 type="submit" 
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20" 
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/70 shadow-lg shadow-primary/20" 
                 disabled={isLoading || !isFormValid}
               >
                 {isLoading ? <Spinner className="h-4 w-4" /> : "Redefinir Senha"}

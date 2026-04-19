@@ -2,19 +2,16 @@
 
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
-import { incomeTypes } from "@/components/onboarding/constants"
-import { FieldLabel } from "@/components/onboarding/components/field-label"
-import { Button } from "@/components/ui/button"
-import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
+import { useOnboarding } from "../hooks/use-onboarding"
+import { incomeTypes } from "../constants"
+import { FieldLabel } from "../components/field-label"
 
-export const IncomeTypeSection = () => {
+export const Step2IncomeType = () => {
   const { 
     selectedIncomeTypes, 
     setSelectedIncomeTypes, 
     wasAttempted 
   } = useOnboarding()
-  const { persistStep } = useAutoSave()
 
   const toggleIncomeType = (value: string) => {
     setSelectedIncomeTypes(prev =>
@@ -68,34 +65,6 @@ export const IncomeTypeSection = () => {
           </button>
         )
       })}
-
-      <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4">
-        <Button 
-          type="button" 
-          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold cursor-pointer"
-          onClick={async () => {
-            const btn = document.activeElement as HTMLButtonElement
-            if (btn) {
-              const originalText = btn.innerText
-              btn.innerText = "Salvando..."
-              btn.disabled = true
-              
-              const success = await persistStep(2, selectedIncomeTypes)
-              
-              btn.disabled = false
-              if (success) {
-                btn.innerText = "Salvo!"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 2000)
-              } else {
-                btn.innerText = "Erro ao Salvar"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
-              }
-            }
-          }}
-        >
-          Salvar Seleção
-        </Button>
-      </div>
     </div>
   )
 }

@@ -21,6 +21,8 @@ using definance_backend.Features.Profiles.Services;
 using definance_backend.Features.Profiles.Repositories;
 using definance_backend.Common.Middleware;
 using definance_backend.Features.Onboarding.Services;
+using definance_backend.Features.Incomes.Repositories;
+using definance_backend.Features.Incomes.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -91,6 +93,10 @@ builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 // PROFILE
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+
+// INCOMES
+builder.Services.AddScoped<IIncomeRepository, IncomeRepository>();
+builder.Services.AddScoped<IIncomeService, IncomeService>();
 
 // GLOBAL EXCEPTION HANDLER
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

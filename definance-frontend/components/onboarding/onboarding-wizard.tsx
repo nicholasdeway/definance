@@ -20,11 +20,12 @@ import { ValidationErrorBox } from "./components/validation-error-box"
 import { Spinner } from "@/components/ui/spinner"
 
 // Steps
-import { Step1IncomeType } from "./steps/step-1-income-type"
-import { Step2MonthlyIncome } from "./steps/step-2-monthly-income"
-import { Step3FixedExpenses } from "./steps/step-3-fixed-expenses"
-import { Step4Vehicles } from "./steps/step-4-vehicles"
-import { Step5Debts } from "./steps/step-5-debts"
+import { Step1Motivations } from "./steps/step-1-motivations"
+import { Step2IncomeType } from "./steps/step-2-income-type"
+import { Step3MonthlyIncome } from "./steps/step-3-monthly-income"
+import { Step4FixedExpenses } from "./steps/step-4-fixed-expenses"
+import { Step5Vehicles } from "./steps/step-5-vehicles"
+import { Step6Debts } from "./steps/step-6-debts"
 
 // Constants
 import { steps } from "./constants"
@@ -62,11 +63,12 @@ function OnboardingWizardContent() {
                 {steps[currentStep - 1]?.title || "Carregando..."}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                {currentStep === 1 && "Como você recebe sua principal fonte de renda?"}
-                {currentStep === 2 && "Qual é sua renda mensal aproximada?"}
-                {currentStep === 3 && "Selecione suas despesas fixas mensais"}
-                {currentStep === 4 && "Adicione seus veículos e custos associados"}
-                {currentStep === 5 && "Registre suas dívidas em aberto"}
+                {currentStep === 1 && "Selecione suas prioridades financeiras e vamos te ajudar a alcançá-las."}
+                {currentStep === 2 && "Como você recebe sua principal fonte de renda?"}
+                {currentStep === 3 && "Qual é sua renda mensal aproximada?"}
+                {currentStep === 4 && "Selecione suas despesas fixas mensais"}
+                {currentStep === 5 && "Adicione seus veículos e custos associados"}
+                {currentStep === 6 && "Registre suas dívidas em aberto"}
               </CardDescription>
             </div>
             <SyncStatusIndicator status={syncStatus} />
@@ -86,11 +88,12 @@ function OnboardingWizardContent() {
           </AnimatePresence>
 
           <div className="min-h-[300px]">
-             {currentStep === 1 && <Step1IncomeType />}
-             {currentStep === 2 && <Step2MonthlyIncome />}
-             {currentStep === 3 && <Step3FixedExpenses />}
-             {currentStep === 4 && <Step4Vehicles />}
-             {currentStep === 5 && <Step5Debts />}
+             {currentStep === 1 && <Step1Motivations />}
+             {currentStep === 2 && <Step2IncomeType />}
+             {currentStep === 3 && <Step3MonthlyIncome />}
+             {currentStep === 4 && <Step4FixedExpenses />}
+             {currentStep === 5 && <Step5Vehicles />}
+             {currentStep === 6 && <Step6Debts />}
           </div>
 
           <OnboardingNavigation />

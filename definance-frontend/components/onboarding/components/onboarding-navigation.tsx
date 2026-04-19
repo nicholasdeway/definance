@@ -20,8 +20,9 @@ export const OnboardingNavigation = () => {
     setWasAttempted, 
     setStepErrors, 
     getStepData,
+    motivations,
     selectedIncomeTypes,
-    monthlyIncome,
+    incomes,
     selectedExpenses,
     customExpenses,
     billLoans,
@@ -87,16 +88,29 @@ export const OnboardingNavigation = () => {
         return
       }
 
-      // Monta o payload completo para o backend
+      const mappedIncomes = incomes.map(inc => ({ ...inc, valor: inc.valor }))
+      const mappedSelectedExpenses = Object.fromEntries(Object.entries(selectedExpenses).map(([k, v]) => [k, v]))
+      const mappedCustomExpenses = customExpenses.map(exp => ({ ...exp, valor: exp.valor }))
+      const mappedBillLoans = Object.fromEntries(Object.entries(billLoans).map(([k, v]) => [k, { ...v, valor: v.valor }]))
+      const mappedVehicles = vehicles.map(v => ({ 
+        ...v, 
+        ipva: v.ipva || 0, 
+        multas: v.multas || 0,
+        valorParcela: v.valorParcela || 0,
+        valorSeguro: v.valorSeguro || 0,
+      }))
+      const mappedDebts = debts.map(d => ({ ...d, valor: d.valor }))
+
       const submissionData = {
         currentStep,
+        motivations,
         selectedIncomeTypes,
-        monthlyIncome,
-        selectedExpenses,
-        customExpenses,
-        billLoans,
-        vehicles,
-        debts
+        incomes: mappedIncomes,
+        selectedExpenses: mappedSelectedExpenses,
+        customExpenses: mappedCustomExpenses,
+        billLoans: mappedBillLoans,
+        vehicles: mappedVehicles,
+        debts: mappedDebts
       }
 
       // Finaliza processo enviando todos os dados
@@ -134,7 +148,7 @@ export const OnboardingNavigation = () => {
         <Button 
           onClick={handleNext} 
           disabled={isFinishing || isNavigating}
-          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer"
         >
           {isNavigating ? (
             <Spinner className="h-4 w-4" />
@@ -149,7 +163,7 @@ export const OnboardingNavigation = () => {
         <Button 
           onClick={handleFinish} 
           disabled={isFinishing}
-          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+          className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer"
         >
           {isFinishing ? (
             <Spinner className="h-4 w-4" />

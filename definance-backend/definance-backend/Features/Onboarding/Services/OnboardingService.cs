@@ -63,24 +63,27 @@ namespace definance_backend.Features.Onboarding.Services
             switch (stepNumber)
             {
                 case 1:
-                    currentData.SelectedIncomeTypes = JsonSerializer.Deserialize<List<string>>(jsonData, options) ?? new();
+                    currentData.Motivations = JsonSerializer.Deserialize<List<string>>(jsonData, options) ?? new();
                     break;
                 case 2:
-                    currentData.MonthlyIncome = data.ValueKind == JsonValueKind.String ? data.GetString()! : data.GetRawText();
+                    currentData.SelectedIncomeTypes = JsonSerializer.Deserialize<List<string>>(jsonData, options) ?? new();
                     break;
                 case 3:
-                    var step3Data = JsonSerializer.Deserialize<OnboardingSubmissionDto>(jsonData, options);
-                    if (step3Data != null)
-                    {
-                        currentData.SelectedExpenses = step3Data.SelectedExpenses;
-                        currentData.CustomExpenses = step3Data.CustomExpenses;
-                        currentData.BillLoans = step3Data.BillLoans;
-                    }
+                    currentData.Incomes = JsonSerializer.Deserialize<List<IncomeDetailDto>>(jsonData, options) ?? new();
                     break;
                 case 4:
-                    currentData.Vehicles = JsonSerializer.Deserialize<List<VehicleDto>>(jsonData, options) ?? new();
+                    var step4Data = JsonSerializer.Deserialize<OnboardingSubmissionDto>(jsonData, options);
+                    if (step4Data != null)
+                    {
+                        currentData.SelectedExpenses = step4Data.SelectedExpenses;
+                        currentData.CustomExpenses = step4Data.CustomExpenses;
+                        currentData.BillLoans = step4Data.BillLoans;
+                    }
                     break;
                 case 5:
+                    currentData.Vehicles = JsonSerializer.Deserialize<List<VehicleDto>>(jsonData, options) ?? new();
+                    break;
+                case 6:
                     currentData.Debts = JsonSerializer.Deserialize<List<DebtDto>>(jsonData, options) ?? new();
                     break;
             }

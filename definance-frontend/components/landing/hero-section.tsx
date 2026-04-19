@@ -63,7 +63,7 @@ export function HeroSection() {
             ) : (
               <Link href={href}>
                 <Button 
-                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all hover:scale-105"
+                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/70 shadow-md shadow-primary/20 transition-all hover:scale-105"
                   disabled={isLoading}
                 >
                   {label}

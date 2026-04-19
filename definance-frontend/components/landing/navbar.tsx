@@ -29,7 +29,7 @@ export function LandingNavbar() {
             </Button>
           </Link>
           <Link href="/register">
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/70">
               Criar Conta
             </Button>
           </Link>

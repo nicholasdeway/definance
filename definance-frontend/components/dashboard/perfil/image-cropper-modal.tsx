@@ -90,7 +90,7 @@ export function ImageCropperModal({ image, isOpen, onClose, onCropComplete }: Im
           <Button variant="ghost" onClick={onClose} className="cursor-pointer">
             Cancelar
           </Button>
-          <Button onClick={handleCrop} className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+          <Button onClick={handleCrop} className="bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer">
             Salvar Foto
           </Button>
         </DialogFooter>
