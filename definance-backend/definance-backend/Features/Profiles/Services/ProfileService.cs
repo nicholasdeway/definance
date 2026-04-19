@@ -99,7 +99,7 @@ namespace definance_backend.Features.Profiles.Services
             var user = await _userRepository.GetByIdAsync(userId);
 
             if (user == null)
-                return ServiceResult<bool>.Fail("Credenciais inválidas ou usuário não encontrado.");
+                return ServiceResult<bool>.Fail("Credenciais inválidas.");
 
             var isGoogleAccount =
                 !string.IsNullOrWhiteSpace(user.AuthProvider) &&
@@ -111,7 +111,7 @@ namespace definance_backend.Features.Profiles.Services
                     return ServiceResult<bool>.Fail("A senha atual é obrigatória para excluir a conta.");
 
                 if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
-                    return ServiceResult<bool>.Fail("Credenciais inválidas ou usuário não encontrado.");
+                    return ServiceResult<bool>.Fail("Credenciais inválidas.");
             }
 
             await _userRepository.SoftDeleteAsync(userId);
@@ -150,7 +150,7 @@ namespace definance_backend.Features.Profiles.Services
 
             var isValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password);
             if (!isValid)
-                return ServiceResult<bool>.Fail("Credenciais inválidas ou usuário não encontrado.");
+                return ServiceResult<bool>.Fail("Credenciais inválidas.");
 
             var hashed = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.Password = hashed;

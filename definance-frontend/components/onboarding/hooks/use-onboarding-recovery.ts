@@ -24,6 +24,19 @@ export const useOnboardingRecovery = () => {
       return obj[key] ?? obj[key.charAt(0).toUpperCase() + key.slice(1)]
     }
 
+    const sanitizeExtras = (extrasRaw: any) => {
+      if (!extrasRaw) return []
+      if (Array.isArray(extrasRaw)) return extrasRaw
+      if (typeof extrasRaw === 'object') {
+        return Object.entries(extrasRaw).map(([k, val]) => ({
+          id: Math.random().toString(36).substring(2),
+          descricao: k,
+          valor: val
+        }))
+      }
+      return []
+    }
+
     const fetchProgress = async () => {
       try {
         const data = await apiClient<OnboardingProgress>("/api/onboarding/progress")
@@ -55,7 +68,8 @@ export const useOnboardingRecovery = () => {
               valorParcela: v.valorParcela || "",
               valorSeguro: v.valorSeguro || "",
               parcelasTotal: v.parcelasTotal || "",
-              parcelasPagas: v.parcelasPagas || ""
+              parcelasPagas: v.parcelasPagas || "",
+              extras: sanitizeExtras(v.extras)
             }))
             setVehicles(sanitizedVehicles)
           }
@@ -68,7 +82,8 @@ export const useOnboardingRecovery = () => {
               descricao: d.descricao || "",
               valor: d.valor || "",
               parcelasTotal: d.parcelasTotal || "",
-              parcelasPagas: d.parcelasPagas || ""
+              parcelasPagas: d.parcelasPagas || "",
+              extras: sanitizeExtras(d.extras)
             }))
             setDebts(sanitizedDebts)
           }

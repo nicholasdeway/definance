@@ -1,38 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, ArrowDownLeft, Search, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { Plus, ArrowDownLeft, Search, MoreHorizontal, Landmark } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
+import { SyncBadge } from "@/components/dashboard/sync-badge"
+import { apiClient } from "@/lib/api-client"
 
 interface Receita {
   id: number
@@ -41,21 +26,43 @@ interface Receita {
   tipo: string
   data: string
   recorrente: boolean
+  isSynced?: boolean
 }
-
-const receitasIniciais: Receita[] = [
-  { id: 1, nome: "Salário", valor: 5500, tipo: "CLT", data: "05/03/2026", recorrente: true },
-  { id: 2, nome: "Freelance Design", valor: 2000, tipo: "Freelance", data: "15/03/2026", recorrente: false },
-  { id: 3, nome: "Dividendos", valor: 350, tipo: "Investimentos", data: "10/03/2026", recorrente: true },
-  { id: 4, nome: "Aluguel Apartamento", valor: 1200, tipo: "Aluguel", data: "01/03/2026", recorrente: true },
-  { id: 5, nome: "Projeto Extra", valor: 800, tipo: "Freelance", data: "20/03/2026", recorrente: false },
-  { id: 6, nome: "Cashback", valor: 45.50, tipo: "Outros", data: "25/03/2026", recorrente: false },
-]
 
 const tiposReceita = ["CLT", "PJ", "Freelance", "Investimentos", "Aluguel", "Outros"]
 
 export default function ReceitasPage() {
-  const [receitas, setReceitas] = useState<Receita[]>(receitasIniciais)
+  const [receitas, setReceitas] = useState<Receita[]>([
+    { id: 1, nome: "Salário Base", valor: 0, tipo: "---", data: "Calculando...", recorrente: true, isSynced: true },
+    { id: 2, nome: "Freelance Design", valor: 2000, tipo: "Freelance", data: "15/03/2026", recorrente: false },
+    { id: 3, nome: "Dividendos", valor: 350, tipo: "Investimentos", data: "10/03/2026", recorrente: true },
+  ])
+
+  useEffect(() => {
+    const syncProfileData = async () => {
+      try {
+        const data = await apiClient<any>("/api/onboarding/progress")
+        if (data) {
+          const profileIncome = data.monthlyIncome || data.MonthlyIncome
+          const incomeTypes = data.selectedIncomeTypes || data.SelectedIncomeTypes || []
+          
+          if (profileIncome) {
+            setReceitas(prev => prev.map(r => 
+              r.isSynced ? {
+                ...r,
+                valor: parseInt(profileIncome),
+                tipo: incomeTypes[0] || "CLT",
+                data: new Date().toLocaleDateString("pt-BR")
+              } : r
+            ))
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao sincronizar perfil:", error)
+      }
+    }
+    syncProfileData()
+  }, [])
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Receita | null }>({
@@ -253,18 +260,29 @@ export default function ReceitasPage() {
         <CardContent>
           <div className="space-y-3">
             {filteredReceitas.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-lg border border-border/50 p-4 transition-colors hover:bg-muted/50">
+              <div key={r.id} className={cn(
+                "flex items-center justify-between rounded-lg border p-4 transition-all",
+                r.isSynced 
+                  ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_20px_rgba(34,197,94,0.02)] border-dashed border-2" 
+                  : "border-border/50 hover:bg-muted/50"
+              )}>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <ArrowDownLeft className="h-5 w-5 text-primary" />
+                  <div className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-110",
+                    r.isSynced ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                  )}>
+                    {r.isSynced ? <Landmark className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
                   </div>
-                  <div>
-                    <p className="font-medium text-card-foreground">{r.nome}</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <p className="font-medium text-card-foreground">{r.nome}</p>
+                        {r.isSynced && <SyncBadge />}
+                    </div>
                     <p className="text-sm text-muted-foreground">{r.tipo} • {r.data}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Badge variant={r.recorrente ? "default" : "secondary"} className={r.recorrente ? "bg-primary/10 text-primary" : ""}>
+                  <Badge variant={r.recorrente ? "default" : "secondary"} className={r.recorrente && !r.isSynced ? "bg-primary/10 text-primary border-primary/20" : ""}>
                     {r.recorrente ? "Recorrente" : "Única"}
                   </Badge>
                   <span className="font-semibold text-primary">
@@ -272,19 +290,30 @@ export default function ReceitasPage() {
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-full">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive"
-                        onClick={() => openDeleteDialog(r)}
-                      >
-                        Excluir
-                      </DropdownMenuItem>
+                      {r.isSynced ? (
+                        <DropdownMenuItem asChild>
+                            <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer">
+                                <Landmark className="h-4 w-4" />
+                                Ajustar no Perfil
+                            </Link>
+                        </DropdownMenuItem>
+                      ) : (
+                        <>
+                            <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer">Duplicar</DropdownMenuItem>
+                            <DropdownMenuItem 
+                                className="text-destructive font-medium cursor-pointer"
+                                onClick={() => openDeleteDialog(r)}
+                            >
+                                Excluir
+                            </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

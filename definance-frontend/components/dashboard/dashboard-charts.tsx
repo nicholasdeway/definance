@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 
@@ -18,6 +19,12 @@ const lineData = [
 ]
 
 export function DashboardCharts() {
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const total = pieData.reduce((sum, item) => sum + item.value, 0)
 
   return (
@@ -28,23 +35,25 @@ export function DashboardCharts() {
       <CardContent>
         <div className="flex flex-col items-center gap-4 md:flex-row">
           <div className="relative h-48 w-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xs text-muted-foreground">Total</span>
               <span className="text-lg font-bold text-card-foreground">
@@ -72,46 +81,48 @@ export function DashboardCharts() {
         <div className="mt-6">
           <h4 className="mb-4 text-sm font-medium text-card-foreground">Evolução Mensal</h4>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
-                />
-                <YAxis 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
-                  tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: "var(--card-foreground)" }}
-                  formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="receitas"
-                  stroke="var(--chart-1)"
-                  strokeWidth={2}
-                  dot={{ fill: "var(--chart-1)" }}
-                  name="Receitas"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="despesas"
-                  stroke="var(--chart-5)"
-                  strokeWidth={2}
-                  dot={{ fill: "var(--chart-5)" }}
-                  name="Despesas"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <LineChart data={lineData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                    axisLine={{ stroke: "var(--border)" }}
+                  />
+                  <YAxis 
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: "var(--card-foreground)" }}
+                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="receitas"
+                    stroke="var(--chart-1)"
+                    strokeWidth={2}
+                    dot={{ fill: "var(--chart-1)" }}
+                    name="Receitas"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="despesas"
+                    stroke="var(--chart-5)"
+                    strokeWidth={2}
+                    dot={{ fill: "var(--chart-5)" }}
+                    name="Despesas"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
           <div className="mt-2 flex justify-center gap-6 text-xs">
             <div className="flex items-center gap-1">

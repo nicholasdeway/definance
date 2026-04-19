@@ -41,6 +41,7 @@ namespace definance_backend.Features.Onboarding.DTOs
         public string? ValorParcela { get; set; }
         public bool Seguro { get; set; }
         public string? ValorSeguro { get; set; }
+        public List<ExtraExpenseDto> Extras { get; set; } = new();
     }
 
     public class DebtDto
@@ -51,5 +52,13 @@ namespace definance_backend.Features.Onboarding.DTOs
         public bool Parcelado { get; set; }
         public string? ParcelasTotal { get; set; }
         public string? ParcelasPagas { get; set; }
+        public List<ExtraExpenseDto> Extras { get; set; } = new();
+    }
+
+    public class ExtraExpenseDto
+    {
+        public string Id { get; set; } = null!;
+        public string Descricao { get; set; } = null!;
+        public string Valor { get; set; } = "0";
     }
 }

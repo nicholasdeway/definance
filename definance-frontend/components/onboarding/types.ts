@@ -7,6 +7,7 @@ export interface Debt {
   parcelado: boolean
   parcelasTotal: string
   parcelasPagas: string
+  extras?: ExtraExpense[]
 }
 
 export interface CustomExpense {
@@ -28,6 +29,13 @@ export interface Vehicle {
   valorParcela: string
   seguro: boolean
   valorSeguro: string
+  extras?: ExtraExpense[]
+}
+
+export interface ExtraExpense {
+  id: string
+  descricao: string
+  valor: string
 }
 
 export interface OnboardingProgress {
