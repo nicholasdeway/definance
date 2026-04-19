@@ -1,0 +1,40 @@
+version: '3.8'
+
+# Definimos nossos dois serviços (Backend e Frontend)
+services:
+
+  backend:
+    # Onde o Docker deve olhar para construir?
+    build:
+      context: ./definance-backend/definance-backend
+      dockerfile: Dockerfile
+    
+    # Redireciona a porta 5000 do seu PC para a 8080 de dentro do container (.NET 8)
+    ports:
+      - "5000:8080"
+      
+    # Passamos variáveis de ambiente aqui, se o backend precisar de conexão de banco por exemplo
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    
+    # Dá um nome amigável pro container quando você for listar
+    container_name: definance_api
+
+  frontend:
+    build:
+      context: ./definance-frontend
+      dockerfile: Dockerfile
+      
+    # Mapeia a 3000 do PC para a 3000 do container (Next)
+    ports:
+      - "3000:3000"
+      
+    # Aqui a mágica: Falamos pro Next procurar as requisições no backend de cima
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080
+      
+    # Faz com que o front só suba DEPOIS que o back já estiver ligado
+    depends_on:
+      - backend
+      
+    container_name: definance_web
