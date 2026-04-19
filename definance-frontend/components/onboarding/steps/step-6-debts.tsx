@@ -235,7 +235,7 @@ export const Step6Debts = () => {
                                 wasAttempted={wasAttempted} 
                                 />
                                 <Input
-                                id={`debt-ptotal-${debt.id}`}
+                                id={`debt-parcelas-total-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="12"
@@ -250,7 +250,7 @@ export const Step6Debts = () => {
                             <div className="space-y-1.5">
                                 <FieldLabel label="Parcelas pagas" />
                                 <Input
-                                id={`debt-ppagas-${debt.id}`}
+                                id={`debt-parcelas-pagas-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="3"
