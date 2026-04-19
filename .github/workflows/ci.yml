@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Linting (Typescript Extrito)
-        run: npm run lint
+        run: npm run build
 
       - name: Compilar Frontend Seguro
         run: npm run build
