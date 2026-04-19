@@ -37,6 +37,7 @@ import {
   ChevronUp,
   CalendarDays,
   Shield,
+  Landmark,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 
@@ -48,6 +49,7 @@ const menuItems = [
   { title: "Minhas Contas", url: "/dashboard/contas", icon: CreditCard },
   { title: "Metas", url: "/dashboard/metas", icon: Target },
   { title: "Análises", url: "/dashboard/relatorios", icon: BarChart3 },
+  { title: "Perfil Financeiro", url: "/dashboard/perfil-financeiro", icon: Landmark },
 ]
 
 export function DashboardSidebar() {

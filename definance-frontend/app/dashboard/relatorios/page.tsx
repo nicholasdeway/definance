@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,6 +51,14 @@ const balanceData = [
 ]
 
 export default function RelatoriosPage() {
+  const [mounted, setMounted] = (typeof window !== "undefined") ? React.useState(false) : [false, () => {}]
+  
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setMounted(true)
+    }
+  }, [])
+
   const totalReceitas = monthlyData.reduce((sum, d) => sum + d.receitas, 0)
   const totalDespesas = monthlyData.reduce((sum, d) => sum + d.despesas, 0)
   const saldoFinal = totalReceitas - totalDespesas
@@ -124,8 +133,9 @@ export default function RelatoriosPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis 
                     dataKey="month" 
@@ -150,7 +160,8 @@ export default function RelatoriosPage() {
                   <Bar dataKey="despesas" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name="Despesas" />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            )}
+          </div>
             <div className="mt-4 flex justify-center gap-6 text-xs">
               <div className="flex items-center gap-1">
                 <div className="h-2 w-2 rounded-full bg-chart-1" />
@@ -170,8 +181,9 @@ export default function RelatoriosPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryData} layout="vertical">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <BarChart data={categoryData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
                   <XAxis 
                     type="number"
@@ -197,7 +209,8 @@ export default function RelatoriosPage() {
                   <Bar dataKey="valor" fill="var(--primary)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            )}
+          </div>
           </CardContent>
         </Card>
       </div>
@@ -208,8 +221,9 @@ export default function RelatoriosPage() {
         </CardHeader>
         <CardContent>
           <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={balanceData}>
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <AreaChart data={balanceData}>
                 <defs>
                   <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
@@ -245,7 +259,8 @@ export default function RelatoriosPage() {
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          )}
+        </div>
         </CardContent>
       </Card>
     </div>
