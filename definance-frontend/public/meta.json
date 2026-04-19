@@ -1,0 +1,14 @@
+{
+  "name": "Definance",
+  "short_name": "Definance",
+  "description": "Gestão Financeira Pessoal",
+  "version": "1.0.0",
+  "author": "Definance Team",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
