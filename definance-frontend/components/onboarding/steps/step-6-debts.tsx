@@ -1,5 +1,6 @@
 import { Info, Plus, Trash2, CreditCard, Landmark, AlertCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +16,7 @@ import { FieldLabel } from "../components/field-label"
 import { Debt } from "../types"
 import { useState } from "react"
 
-export const Step5Debts = () => {
+export const Step6Debts = () => {
   const { 
     debts, 
     setDebts, 
@@ -24,11 +25,10 @@ export const Step5Debts = () => {
 
   const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
 
-  // Formata dígitos brutos (centavos) para exibição em BRL
-  function displayBRL(digits: string): string {
-    if (!digits) return ""
-    const number = parseInt(digits, 10) / 100
-    return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+  // Formata valor decimal (Reais) para exibição em BRL
+  function displayBRL(value: number): string {
+    if (!value) return ""
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
   }
 
   const addDebt = () => {
@@ -38,10 +38,10 @@ export const Step5Debts = () => {
       {
         id: newId,
         descricao: "",
-        valor: "",
+        valor: 0,
         parcelado: false,
-        parcelasTotal: "",
-        parcelasPagas: "",
+        parcelasTotal: 0,
+        parcelasPagas: 0,
       },
     ])
     setExpandedValue(newId)
@@ -51,12 +51,11 @@ export const Step5Debts = () => {
     setDebts(prev => prev.filter(d => d.id !== id))
   }
 
-  const updateDebt = (id: string, field: keyof Omit<Debt, "id">, value: string | boolean) => {
+  const updateDebt = (id: string, field: keyof Omit<Debt, "id">, value: any) => {
     setDebts(prev => prev.map(d => {
       if (d.id === id) {
-        // Se trocar para parcelado, reseta o valor (opcionalmente) para evitar multiplicação errada
         if (field === "parcelado" && value === true) {
-          return { ...d, [field]: value, valor: "" }
+          return { ...d, [field]: value, valor: 0 }
         }
         return { ...d, [field]: value }
       }
@@ -66,7 +65,7 @@ export const Step5Debts = () => {
 
   const updateDebtValue = (id: string, raw: string) => {
     const digits = raw.replace(/\D/g, "")
-    setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: digits } : d)))
+    setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: Number(digits) / 100 } : d)))
   }
 
   return (
@@ -92,8 +91,8 @@ export const Step5Debts = () => {
           // Validação simples para indicador de erro no Trigger
           const hasError = wasAttempted && (
             (!debt.descricao || debt.descricao.trim().length === 0) ||
-            (!debt.valor || parseInt(debt.valor) === 0) ||
-            (debt.parcelado && (!debt.parcelasTotal || parseInt(debt.parcelasTotal) === 0))
+            (!debt.valor || debt.valor === 0) ||
+            (debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0))
           )
 
           const isExpanded = expandedValue === debt.id
@@ -108,60 +107,71 @@ export const Step5Debts = () => {
                 hasError && "border-destructive/30"
               )}
             >
-              <div className="flex items-center px-2 sm:px-4 w-full gap-2">
-                <AccordionTrigger className="flex-1 hover:no-underline py-4">
-                  <div className="flex items-center justify-between w-full pr-2">
-                    {/* Lado Esquerdo: Info Básica */}
-                    <div className="flex items-center gap-3 text-left">
+              {/* Header personalizado sem o AccordionTrigger */}
+              <div className="w-full">
+                <div className="flex items-center justify-between w-full px-5 py-5">
+                  {/* Lado Esquerdo: Info Básica + Badges - Torna clicável para expandir */}
+                  <button
+                    onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
+                    className="flex items-center flex-1 text-left hover:no-underline focus:outline-none group"
+                  >
+                    <div className="flex items-center gap-4">
                       <div className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
-                          isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all shadow-sm ring-1 ring-border/50",
+                          isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
                       )}>
-                        <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
+                        <CreditCard className={cn("h-6 w-6", isExpanded ? "text-primary" : "text-muted-foreground")} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-card-foreground">
-                          {debt.descricao || `Dívida ${idx + 1}`}
-                        </span>
-                        <span className="text-xs font-medium text-muted-foreground mt-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-card-foreground tracking-tight">
+                            {debt.descricao || `Dívida ${idx + 1}`}
+                          </span>
+                          {debt.parcelado && (
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
+                                  {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal}` : "Parcelado"}
+                              </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs font-semibold text-muted-foreground/60 mt-1">
                           {debt.valor ? displayBRL(debt.valor) : "R$ 0,00"}
                         </span>
                         {hasError && (
-                          <div className="flex items-center gap-1 text-[10px] text-destructive mt-0.5 font-medium animate-pulse">
-                            <AlertCircle className="h-3 w-3" /> Pendente
+                          <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
+                            <AlertCircle className="h-3 w-3" /> Preenchimento pendente
                           </div>
                         )}
                       </div>
                     </div>
+                  </button>
 
-                    {/* Lado Direito: Status e Ações */}
-                    <div className="flex items-center gap-4">
-                      <div className="hidden md:flex items-center gap-1.5">
-                        {debt.parcelado && (
-                            <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 text-[9px] h-4 px-1.5 flex items-center gap-0.5">
-                                <Landmark className="h-2 w-2" /> 
-                                {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal} parc` : "Parcelado"}
-                            </Badge>
-                        )}
-                      </div>
-                      
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden sm:inline-block">
-                        {isExpanded ? "Fechar" : "Ver detalhes"}
-                      </span>
-                    </div>
+                  {/* Lado Direito: Ícones agrupados com gap/margin à direita */}
+                  <div className="flex items-center gap-3 shrink-0 ml-6">
+                    {/* Texto "Ver detalhes" clicável */}
+                    <button
+                      onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
+                      className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] hidden sm:inline-block transition-colors hover:text-primary whitespace-nowrap"
+                    >
+                      {isExpanded ? "Recolher" : "Ver detalhes"}
+                    </button>
+
+                    {/* Separador vertical */}
+                    <div className="h-6 w-px bg-border/40 hidden sm:block" />
+
+                    {/* Botão de remover (lixeira) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeDebt(debt.id)
+                      }}
+                      className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer shrink-0"
+                      title="Remover dívida"
+                    >
+                      <Trash2 className="h-4.5 w-4.5" />
+                    </button>
                   </div>
-                </AccordionTrigger>
-                
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeDebt(debt.id)
-                  }}
-                  className="p-2 text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 rounded-full cursor-pointer shrink-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                </div>
               </div>
 
               <AccordionContent className="px-4 pb-4">
@@ -189,19 +199,17 @@ export const Step5Debts = () => {
                     <FieldLabel 
                       label={debt.parcelado ? "Valor da parcela" : "Valor total"} 
                       required 
-                      isEmpty={!debt.valor || parseInt(debt.valor) === 0} 
+                      isEmpty={!debt.valor || debt.valor === 0} 
                       wasAttempted={wasAttempted} 
                     />
-                    <Input
+                    <CurrencyInput
                       id={`debt-valor-${debt.id}`}
-                      type="text"
-                      inputMode="numeric"
                       placeholder="R$ 0,00"
-                      value={debt.valor ? displayBRL(debt.valor) : ""}
-                      onChange={(e) => updateDebtValue(debt.id, e.target.value)}
+                      value={debt.valor ? (debt.valor * 100).toString() : ""}
+                      onChange={(value) => updateDebtValue(debt.id, value)}
                       className={cn(
                         "h-9 bg-background font-medium",
-                        wasAttempted && (!debt.valor || parseInt(debt.valor) === 0) && "border-destructive/50"
+                        wasAttempted && (!debt.valor || debt.valor === 0) && "border-destructive/50"
                       )}
                     />
                   </div>
@@ -223,61 +231,61 @@ export const Step5Debts = () => {
                                 <FieldLabel 
                                 label="Total de parcelas" 
                                 required 
-                                isEmpty={!debt.parcelasTotal || parseInt(debt.parcelasTotal) === 0} 
+                                isEmpty={!debt.parcelasTotal || debt.parcelasTotal === 0} 
                                 wasAttempted={wasAttempted} 
                                 />
                                 <Input
-                                id={`debt-ptotal-${debt.id}`}
+                                id={`debt-parcelas-total-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="12"
                                 value={debt.parcelasTotal || ""}
-                                onChange={(e) => updateDebt(debt.id, "parcelasTotal", e.target.value.replace(/\D/g, ""))}
+                                onChange={(e) => updateDebt(debt.id, "parcelasTotal", Number(e.target.value.replace(/\D/g, "")))}
                                 className={cn(
                                     "h-9 bg-background text-sm",
-                                    wasAttempted && debt.parcelado && (!debt.parcelasTotal || parseInt(debt.parcelasTotal) === 0) && "border-destructive/50"
+                                    wasAttempted && debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0) && "border-destructive/50"
                                 )}
                                 />
                             </div>
                             <div className="space-y-1.5">
                                 <FieldLabel label="Parcelas pagas" />
                                 <Input
-                                id={`debt-ppagas-${debt.id}`}
+                                id={`debt-parcelas-pagas-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="3"
                                 value={debt.parcelasPagas || ""}
-                                onChange={(e) => updateDebt(debt.id, "parcelasPagas", e.target.value.replace(/\D/g, ""))}
+                                onChange={(e) => updateDebt(debt.id, "parcelasPagas", Number(e.target.value.replace(/\D/g, "")))}
                                 className="h-9 bg-background text-sm"
                                 />
                             </div>
                         </div>
 
                         {/* Resumo calculado da dívida */}
-                        {debt.parcelasTotal && debt.valor && (
-                            <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        {!!debt.parcelasTotal && !!debt.valor && (
+                          <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 animate-in zoom-in-95 duration-300">
                             {(() => {
-                                const pTotal = parseInt(debt.parcelasTotal || "0")
-                                const pPagas = parseInt(debt.parcelasPagas || "0")
-                                const vParcela = parseInt(debt.valor || "0") / 100
+                                const pTotal = debt.parcelasTotal || 0
+                                const pPagas = debt.parcelasPagas || 0
+                                const vParcela = debt.valor || 0
                                 const restantes = Math.max(0, pTotal - pPagas)
                                 const totalRestante = restantes * vParcela
                                 return (
                                 <>
-                                    <div>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Resíduo</p>
-                                    <p className="text-sm font-semibold text-card-foreground">{restantes}x restantes</p>
+                                    <div className="space-y-0.5">
+                                      <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Resíduo</p>
+                                      <p className="text-base font-bold text-card-foreground">{restantes}x restantes</p>
                                     </div>
-                                    <div>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Saldo Aberto</p>
-                                    <p className="text-sm font-semibold text-primary">
-                                        {totalRestante.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                                    </p>
+                                    <div className="space-y-0.5 border-l border-primary/10 pl-3">
+                                      <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Saldo Aberto</p>
+                                      <p className="text-base font-bold text-primary">
+                                          {totalRestante.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                      </p>
                                     </div>
                                 </>
                                 )
                             })()}
-                            </div>
+                          </div>
                         )}
                       </div>
                     </>

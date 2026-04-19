@@ -1,6 +1,5 @@
 "use client"
 
-import React, { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
@@ -22,20 +21,6 @@ import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { useOnboardingRecovery } from "@/components/onboarding/hooks/use-onboarding-recovery"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 
-// UI & Blocks
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-
-// Localized Sections (Independent from Onboarding)
 import { IncomeTypeSection } from "@/components/financial-profile/sections/income-type-section"
 import { MonthlyIncomeSection } from "@/components/financial-profile/sections/monthly-income-section"
 import { FixedExpensesSection } from "@/components/financial-profile/sections/fixed-expenses-section"
@@ -48,7 +33,6 @@ import { Spinner } from "@/components/ui/spinner"
 function FinancialProfileContent() {
   const { syncStatus, isLoadingRecovery, setCurrentStep } = useOnboarding()
   
-  // Hook de recuperação de dados e auto-save
   useOnboardingRecovery()
   useAutoSave()
 
@@ -77,47 +61,47 @@ function FinancialProfileContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Perfil Financeiro</h1>
-          <p className="text-muted-foreground">Configurações base que alimentam o restante do seu dashboard</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Perfil Financeiro</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Configurações base que alimentam o restante do seu dashboard</p>
         </div>
-        <div className="flex items-center gap-3">
-            <div className="hidden md:flex flex-col items-end">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status de Sincronização</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden xs:flex flex-col items-end">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sincronização</span>
                 <SyncStatusIndicator status={syncStatus} />
             </div>
-            <div className="h-10 w-px bg-border/40 hidden md:block" />
-            <div className="bg-primary/10 border border-primary/20 rounded-full px-3 py-1 flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase tracking-tighter">Dados Protegidos</span>
+            <div className="h-10 w-px bg-border/40 hidden xs:block" />
+            <div className="bg-primary/10 border border-primary/20 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1.5 sm:gap-2">
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-tighter">Protegido</span>
             </div>
         </div>
       </div>
-
+ 
       <div className="grid gap-6">
         <Tabs defaultValue="renda" onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1 gap-1 bg-muted/50 border-border/30 border">
-                <TabsTrigger value="renda" className="py-2.5 flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="hidden sm:inline">Renda Mensal</span>
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-0 bg-transparent border-none gap-2 mb-6">
+                <TabsTrigger value="renda" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span>Renda</span>
                 </TabsTrigger>
-                <TabsTrigger value="gastos" className="py-2.5 flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <Receipt className="h-4 w-4" />
-                    <span className="hidden sm:inline">Gastos Fixos</span>
+                <TabsTrigger value="gastos" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2">
+                    <Receipt className="h-3.5 w-3.5" />
+                    <span>Gastos</span>
                 </TabsTrigger>
-                <TabsTrigger value="veiculos" className="py-2.5 flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <Car className="h-4 w-4" />
-                    <span className="hidden sm:inline">Veículos</span>
+                <TabsTrigger value="veiculos" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2">
+                    <Car className="h-3.5 w-3.5" />
+                    <span>Veículos</span>
                 </TabsTrigger>
-                <TabsTrigger value="dividas" className="py-2.5 flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <CreditCard className="h-4 w-4" />
-                    <span className="hidden sm:inline">Dívidas</span>
+                <TabsTrigger value="dividas" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>Dívidas</span>
                 </TabsTrigger>
-                <TabsTrigger value="tipo-renda" className="py-2.5 flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <Landmark className="h-4 w-4" />
-                    <span className="hidden sm:inline">Modelo Renda</span>
+                <TabsTrigger value="tipo-renda" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2 col-span-2 lg:col-span-1">
+                    <Landmark className="h-3.5 w-3.5" />
+                    <span>Modelo</span>
                 </TabsTrigger>
             </TabsList>
 

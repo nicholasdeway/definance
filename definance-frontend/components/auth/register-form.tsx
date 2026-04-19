@@ -230,7 +230,7 @@ export function RegisterForm() {
           
           <Button 
             type="submit" 
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90" 
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/70" 
             disabled={isLoading}
           >
             {isLoading ? <Spinner className="h-4 w-4" /> : "Criar conta"}

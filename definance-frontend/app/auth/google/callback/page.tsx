@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-provider"
-import { Spinner } from "@/components/ui/spinner"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 
 function GoogleCallbackContent() {
@@ -63,7 +62,7 @@ function GoogleCallbackContent() {
             </div>
             <button
               onClick={() => router.push("/login")}
-              className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/70 transition-colors"
             >
               Voltar para o Login
             </button>

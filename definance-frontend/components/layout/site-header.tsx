@@ -124,7 +124,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
               <Link href="/login">
                 <Button 
                   size="sm" 
-                  className={`cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 transition-all ${
+                  className={`cursor-pointer bg-primary text-primary-foreground hover:bg-primary/70 transition-all ${
                     isScrolled ? 'shadow-lg shadow-primary/20' : ''
                   }`}
                 >
@@ -230,7 +230,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                     </Button>
                   </Link>
                   <Link href="/register" className="w-full">
-                    <Button size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                    <Button size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer">
                       Criar Conta
                     </Button>
                   </Link>

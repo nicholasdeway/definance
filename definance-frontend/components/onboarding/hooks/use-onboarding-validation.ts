@@ -1,10 +1,12 @@
 import { useCallback } from "react"
 import { useOnboarding } from "./use-onboarding"
 import { ONBOARDING_ERRORS, fixedExpenseCategories } from "../constants"
+import { IncomeFrequency } from "../types"
 
 export const useOnboardingValidation = () => {
   const {
-    monthlyIncome,
+    motivations,
+    incomes,
     selectedIncomeTypes,
     selectedExpenses,
     customExpenses,
@@ -21,23 +23,45 @@ export const useOnboardingValidation = () => {
 
     switch (step) {
       case 1:
+        if (!motivations || motivations.length === 0) {
+          errors.push(ONBOARDING_ERRORS.motivations.selection)
+        }
+        break
+
+      case 2:
         if (selectedIncomeTypes.length === 0) {
           errors.push(ONBOARDING_ERRORS.income.selection)
         }
         break
 
-      case 2:
-        const incomeValue = parseInt(monthlyIncome || "0")
-        if (!monthlyIncome || monthlyIncome === "") {
-          errors.push(ONBOARDING_ERRORS.income.empty)
-        } else if (incomeValue === 0) {
-          errors.push(ONBOARDING_ERRORS.income.zero)
+      case 3:
+        if (incomes.length === 0 && selectedIncomeTypes.length > 0) {
+           // Array vazio, mas ele selecionou fontes
+           selectedIncomeTypes.forEach(t => errors.push(ONBOARDING_ERRORS.income.missingValue(t)))
+        } else {
+           for (const t of selectedIncomeTypes) {
+             const inc = incomes.find(i => i.tipo === t)
+             if (!inc) {
+                errors.push(ONBOARDING_ERRORS.income.missingValue(t))
+                continue
+             }
+             if (!inc.valor || inc.valor === 0) {
+                errors.push(ONBOARDING_ERRORS.income.zeroValue(t))
+             }
+             if (!inc.frequencia) {
+                errors.push(ONBOARDING_ERRORS.income.missingFreq(t))
+             } else if (inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) {
+                if (!inc.diasRecebimento || inc.diasRecebimento.trim().length === 0) {
+                    errors.push(ONBOARDING_ERRORS.income.missingDays(t))
+                }
+             }
+           }
         }
         break
 
-      case 3:
+      case 4:
         for (const catKey in selectedExpenses) {
-          const billValue = parseInt(selectedExpenses[catKey] || "0")
+          const billValue = selectedExpenses[catKey] || 0
           const cat = fixedExpenseCategories.find(c => c.key === catKey)
           const label = cat?.label || catKey
 
@@ -45,7 +69,7 @@ export const useOnboardingValidation = () => {
             errors.push(ONBOARDING_ERRORS.expenses.empty(label))
           }
           if (billLoans[catKey]?.hasLoan) {
-            const loanValue = parseInt(billLoans[catKey].valor || "0")
+            const loanValue = billLoans[catKey].valor || 0
             if (loanValue === 0) {
               errors.push(ONBOARDING_ERRORS.expenses.loanEmpty(label))
             } else if (loanValue > billValue) {
@@ -58,13 +82,13 @@ export const useOnboardingValidation = () => {
           if (!exp.titulo.trim()) {
             errors.push(ONBOARDING_ERRORS.expenses.customNoName(i + 1))
           }
-          if (parseInt(exp.valor || "0") === 0) {
+          if (!exp.valor || exp.valor === 0) {
             errors.push(ONBOARDING_ERRORS.expenses.customNoValue(exp.titulo))
           }
         }
         break
 
-      case 4:
+      case 5:
         for (let i = 0; i < vehicles.length; i++) {
           const v = vehicles[i]
           const index = i + 1
@@ -79,40 +103,35 @@ export const useOnboardingValidation = () => {
           if (v.ano && (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear + 1)) {
             errors.push(ONBOARDING_ERRORS.vehicles.invalidYear(index, currentYear))
           }
-          const ipvaVal = parseInt(v.ipva || "0")
-          const multasVal = parseInt(v.multas || "0")
-          if ((v.ipva && isNaN(ipvaVal)) || (v.multas && isNaN(multasVal))) {
-            errors.push(ONBOARDING_ERRORS.vehicles.invalidNumeric(index))
-          }
           if (v.financiado) {
-            if (!v.parcelasTotal || parseInt(v.parcelasTotal) === 0 || !v.valorParcela || parseInt(v.valorParcela) === 0) {
+            if (!v.parcelasTotal || v.parcelasTotal === 0 || !v.valorParcela || v.valorParcela === 0) {
               errors.push(ONBOARDING_ERRORS.vehicles.financingIncomplete(index))
-            } else if (parseInt(v.parcelasPagas || "0") > parseInt(v.parcelasTotal)) {
+            } else if ((v.parcelasPagas || 0) > (v.parcelasTotal || 0)) {
               errors.push(ONBOARDING_ERRORS.vehicles.financingConsistency(index))
             }
           }
           if (v.seguro) {
-            if (!v.valorSeguro || parseInt(v.valorSeguro) === 0) {
+            if (!v.valorSeguro || v.valorSeguro === 0) {
               errors.push(ONBOARDING_ERRORS.vehicles.insuranceIncomplete(index))
             }
           }
         }
         break
 
-      case 5:
+      case 6:
         for (let i = 0; i < debts.length; i++) {
           const d = debts[i]
           const index = i + 1
           if (!d.descricao || d.descricao.trim().length === 0) {
             errors.push(ONBOARDING_ERRORS.debts.noDescription(index))
           }
-          if (!d.valor || parseInt(d.valor) === 0) {
+          if (!d.valor || d.valor === 0) {
             errors.push(ONBOARDING_ERRORS.debts.noValue(index))
           }
           if (d.parcelado) {
-            if (!d.parcelasTotal || parseInt(d.parcelasTotal) === 0) {
+            if (!d.parcelasTotal || d.parcelasTotal === 0) {
               errors.push(ONBOARDING_ERRORS.debts.parcelsIncomplete(index))
-            } else if (parseInt(d.parcelasPagas || "0") > parseInt(d.parcelasTotal)) {
+            } else if ((d.parcelasPagas || 0) > (d.parcelasTotal || 0)) {
               errors.push(ONBOARDING_ERRORS.debts.parcelsConsistency(index))
             }
           }
@@ -121,8 +140,9 @@ export const useOnboardingValidation = () => {
     }
     return errors
   }, [
+    motivations,
     selectedIncomeTypes,
-    monthlyIncome,
+    incomes,
     selectedExpenses,
     customExpenses,
     billLoans,
@@ -131,15 +151,7 @@ export const useOnboardingValidation = () => {
   ])
 
   const validateStep = useCallback((step: number): boolean => {
-    // Especial para o Step 2 (confirmação de renda alta)
-    if (step === 2) {
-      const incomeValue = parseInt(monthlyIncome || "0")
-      if (incomeValue > 99900000000) {
-        if (!window.confirm("O valor da renda mensal informado parece muito alto (acima de R$ 999.000.000,00). Você confirma que este valor está correto?")) {
-          return false
-        }
-      }
-    }
+    // Retirado validação genérica de 999.000.000 pois agora temos renda particionada (poderia ser re-inserida futuramente no componente)
 
     const errors = getStepErrors(step)
     setStepErrors(errors)
@@ -151,7 +163,7 @@ export const useOnboardingValidation = () => {
     }
 
     return true
-  }, [monthlyIncome, getStepErrors, setStepErrors, setWasAttempted, formTopRef])
+  }, [getStepErrors, setStepErrors, setWasAttempted, formTopRef])
 
   return { getStepErrors, validateStep }
 }

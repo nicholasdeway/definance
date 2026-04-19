@@ -116,12 +116,14 @@ export function DashboardSidebar() {
                     <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="flex items-center gap-1.5 truncate font-semibold text-sidebar-foreground md:group-data-[state=expanded]:text-base transition-all">
-                      {user ? `${user.firstName} ${user.lastName}` : "Usuário"}
+                    <div className="flex items-center gap-1.5 font-semibold text-sidebar-foreground md:group-data-[state=expanded]:text-base transition-all overflow-hidden min-w-0">
+                      <span className="truncate">
+                        {user ? `${user.firstName} ${user.lastName}` : "Usuário"}
+                      </span>
                       {user?.role === "admin" && (
-                        <Shield className="h-3 w-3 md:group-data-[state=expanded]:h-4 md:group-data-[state=expanded]:w-4 text-primary" />
+                        <Shield className="h-3 w-3 md:group-data-[state=expanded]:h-4 md:group-data-[state=expanded]:w-4 text-primary shrink-0" />
                       )}
-                    </span>
+                    </div>
                     <span className="truncate text-xs text-sidebar-foreground/70 md:group-data-[state=expanded]:text-sm transition-all">{user?.email}</span>
                   </div>
                   <ChevronUp className="ml-auto h-4 w-4 md:group-data-[state=expanded]:h-5 md:group-data-[state=expanded]:w-5 group-data-[collapsible=icon]:hidden transition-all" />

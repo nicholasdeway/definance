@@ -3,12 +3,15 @@
 import React, { Fragment } from "react"
 import { Check, Plus, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { fixedExpenseCategories } from "@/components/onboarding/constants"
 import { FieldLabel } from "@/components/onboarding/components/field-label"
+import { Button } from "@/components/ui/button"
+import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 
 export const FixedExpensesSection = () => {
   const { 
@@ -20,11 +23,12 @@ export const FixedExpensesSection = () => {
     setBillLoans, 
     wasAttempted 
   } = useOnboarding()
+  const { persistStep } = useAutoSave()
 
   // Formata dígitos brutos (centavos) para exibição em BRL
   function displayBRL(digits: string): string {
     if (!digits) return ""
-    const number = parseInt(digits, 10) / 100
+    const number = Number(digits) / 100
     return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
   }
 
@@ -32,35 +36,37 @@ export const FixedExpensesSection = () => {
     setSelectedExpenses(prev => {
       const next = { ...prev }
       if (key in next) delete next[key]
-      else next[key] = ""
+      else next[key] = 0
       return next
     })
   }
 
   const setExpenseValue = (key: string, raw: string) => {
     const digits = raw.replace(/\D/g, "")
-    setSelectedExpenses(prev => ({ ...prev, [key]: digits }))
+    const decimalValue = Number(digits) / 100
+    setSelectedExpenses(prev => ({ ...prev, [key]: decimalValue }))
   }
 
   const toggleBillLoan = (key: string) => {
     setBillLoans(prev => ({
       ...prev,
-      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || "" }
+      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || 0 }
     }))
   }
 
   const setBillLoanValue = (key: string, raw: string) => {
     const digits = raw.replace(/\D/g, "")
+    const decimalValue = Number(digits) / 100
     setBillLoans(prev => ({
       ...prev,
-      [key]: { ...prev[key], valor: digits }
+      [key]: { ...prev[key], valor: decimalValue }
     }))
   }
 
   const addCustomExpense = () => {
     setCustomExpenses(prev => [
       ...prev,
-      { id: Math.random().toString(36).slice(2), titulo: "", valor: "" }
+      { id: Math.random().toString(36).slice(2), titulo: "", valor: 0 }
     ])
   }
 
@@ -68,10 +74,13 @@ export const FixedExpensesSection = () => {
     setCustomExpenses(prev => prev.filter(e => e.id !== id))
   }
 
-  const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string) => {
-    const finalValue = field === "valor" ? value.replace(/\D/g, "") : value
+  const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string | number) => {
+    if (field === "valor") {
+        const digits = String(value).replace(/\D/g, "")
+        value = Number(digits) / 100
+    }
     setCustomExpenses(prev =>
-      prev.map(e => (e.id === id ? { ...e, [field]: finalValue } : e))
+      prev.map(e => (e.id === id ? { ...e, [field]: value } : e))
     )
   }
 
@@ -101,9 +110,9 @@ export const FixedExpensesSection = () => {
               )}
               <span className="text-2xl">{cat.emoji}</span>
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
-              {isSelected && selectedExpenses[cat.key] && (
+              {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
-                  {displayBRL(selectedExpenses[cat.key])}
+                  {displayBRL((selectedExpenses[cat.key] * 100).toString())}
                 </span>
               )}
             </button>
@@ -136,13 +145,11 @@ export const FixedExpensesSection = () => {
                             isEmpty={!selectedExpenses[cat.key]} 
                             wasAttempted={wasAttempted} 
                           />
-                          <Input
+                          <CurrencyInput
                             id={`exp-${cat.key}`}
-                            type="text"
-                            inputMode="numeric"
                             placeholder={cat.placeholder}
-                            value={selectedExpenses[cat.key] ? displayBRL(selectedExpenses[cat.key]) : ""}
-                            onChange={(e) => setExpenseValue(cat.key, e.target.value)}
+                            value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                            onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
                               "h-9 bg-background text-sm",
                               wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
@@ -176,13 +183,11 @@ export const FixedExpensesSection = () => {
                                   isEmpty={!billLoans[cat.key]?.valor} 
                                   wasAttempted={wasAttempted} 
                                 />
-                                <Input
+                                <CurrencyInput
                                   id={`loan-value-${cat.key}`}
-                                  type="text"
-                                  inputMode="numeric"
                                   placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? displayBRL(billLoans[cat.key].valor) : ""}
-                                  onChange={(e) => setBillLoanValue(cat.key, e.target.value)}
+                                  value={billLoans[cat.key]?.valor ? (billLoans[cat.key].valor * 100).toString() : ""}
+                                  onChange={(value) => setBillLoanValue(cat.key, value)}
                                   className={cn(
                                     "h-8 bg-background/50 text-xs font-medium",
                                     wasAttempted && !billLoans[cat.key]?.valor && "border-destructive/50"
@@ -194,7 +199,7 @@ export const FixedExpensesSection = () => {
                                   <p className="text-[10px] text-muted-foreground flex justify-between">
                                     <span>Consumo real estimado:</span>
                                     <span className="font-bold text-primary">
-                                      {displayBRL((Math.max(0, parseInt(selectedExpenses[cat.key]) - parseInt(billLoans[cat.key].valor))).toString())}
+                                      {displayBRL((Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor) * 100).toString())}
                                     </span>
                                   </p>
                                 </div>
@@ -229,14 +234,13 @@ export const FixedExpensesSection = () => {
                           required 
                           isEmpty={!selectedExpenses[cat.key]} 
                           wasAttempted={wasAttempted} 
+                          className="text-xs"
                         />
-                        <Input
+                        <CurrencyInput
                           id={`exp-${cat.key}`}
-                          type="text"
-                          inputMode="numeric"
                           placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] ? displayBRL(selectedExpenses[cat.key]) : ""}
-                          onChange={(e) => setExpenseValue(cat.key, e.target.value)}
+                          value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                          onChange={(value) => setExpenseValue(cat.key, value)}
                           className={cn(
                             "h-8 bg-background text-sm",
                             wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
@@ -280,6 +284,7 @@ export const FixedExpensesSection = () => {
                       required 
                       isEmpty={!exp.titulo} 
                       wasAttempted={wasAttempted} 
+                      className="text-xs"
                     />
                     <Input
                       id={`custom-titulo-${exp.id}`}
@@ -297,16 +302,15 @@ export const FixedExpensesSection = () => {
                     <FieldLabel 
                       label="Valor mensal" 
                       required 
-                      isEmpty={!exp.valor || parseInt(exp.valor) === 0} 
+                      isEmpty={!exp.valor || exp.valor === 0} 
                       wasAttempted={wasAttempted} 
+                      className="text-xs"
                     />
-                    <Input
+                    <CurrencyInput
                       id={`custom-valor-${exp.id}`}
-                      type="text"
-                      inputMode="numeric"
                       placeholder="R$ 0,00"
-                      value={exp.valor ? displayBRL(exp.valor) : ""}
-                      onChange={(e) => updateCustomExpense(exp.id, "valor", e.target.value)}
+                      value={exp.valor ? (exp.valor * 100).toString() : ""}
+                      onChange={(value) => updateCustomExpense(exp.id, "valor", value)}
                       className="h-8 bg-background text-sm font-medium"
                     />
                   </div>
@@ -326,6 +330,34 @@ export const FixedExpensesSection = () => {
         <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
         Adicionar outra despesa fixa
       </button>
+
+      <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-6">
+        <Button 
+          type="button" 
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold"
+          onClick={async () => {
+            const btn = document.activeElement as HTMLButtonElement
+            if (btn) {
+              const originalText = btn.innerText
+              btn.innerText = "Salvando..."
+              btn.disabled = true
+              
+              const success = await persistStep(4, { selectedExpenses, customExpenses, billLoans })
+              
+              btn.disabled = false
+              if (success) {
+                btn.innerText = "Salvo!"
+                setTimeout(() => { if (btn) btn.innerText = originalText }, 2000)
+              } else {
+                btn.innerText = "Erro ao Salvar"
+                setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
+              }
+            }
+          }}
+        >
+          Salvar Despesas
+        </Button>
+      </div>
     </div>
   )
 }

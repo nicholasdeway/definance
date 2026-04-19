@@ -64,11 +64,11 @@ export default function ContasPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "vencer":
-        return <Clock className="h-4 w-4 text-yellow-500" />
+        return <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500" />
       case "paga":
-        return <CheckCircle2 className="h-4 w-4 text-primary" />
+        return <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
       case "atrasada":
-        return <AlertTriangle className="h-4 w-4 text-destructive" />
+        return <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
       default:
         return null
     }
@@ -77,59 +77,59 @@ export default function ContasPage() {
   const getStatusBadge = (status: string, dias: number) => {
     switch (status) {
       case "vencer":
-        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600">Vence em {dias} dias</Badge>
+        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 text-xs sm:text-xs whitespace-nowrap">Vence em {dias} dias</Badge>
       case "paga":
-        return <Badge className="bg-primary/10 text-primary">Paga</Badge>
+        return <Badge className="bg-primary/10 text-primary text-xs sm:text-xs whitespace-nowrap">Paga</Badge>
       case "atrasada":
-        return <Badge variant="destructive">{Math.abs(dias)} dias atrasada</Badge>
+        return <Badge variant="destructive" className="text-xs sm:text-xs whitespace-nowrap">{Math.abs(dias)} dias atrasada</Badge>
       default:
         return null
     }
   }
 
   const renderContas = (lista: Conta[]) => (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {lista.length === 0 ? (
-        <p className="py-8 text-center text-muted-foreground">Nenhuma conta encontrada</p>
+        <p className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">Nenhuma conta encontrada</p>
       ) : (
         lista.map((conta) => (
-          <div key={conta.id} className="flex items-center justify-between rounded-lg border border-border/50 p-4 transition-colors hover:bg-muted/50">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+          <div key={conta.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border/50 p-3 sm:p-4 transition-colors hover:bg-muted/50 gap-3 sm:gap-4">
+            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+              <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full flex-shrink-0 ${
                 conta.status === "paga" ? "bg-primary/10" :
                 conta.status === "atrasada" ? "bg-destructive/10" :
                 "bg-yellow-500/10"
               }`}>
-                <CreditCard className={`h-5 w-5 ${
+                <CreditCard className={`h-4 w-4 sm:h-5 sm:w-5 ${
                   conta.status === "paga" ? "text-primary" :
                   conta.status === "atrasada" ? "text-destructive" :
                   "text-yellow-500"
                 }`} />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-card-foreground">{conta.nome}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <p className="font-medium text-card-foreground text-sm sm:text-base break-words">{conta.nome}</p>
                   {getStatusIcon(conta.status)}
                 </div>
-                <p className="text-sm text-muted-foreground">Vencimento: {conta.vencimento}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Vencimento: {conta.vencimento}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0">
               {getStatusBadge(conta.status, conta.dias)}
-              <span className="font-semibold text-card-foreground">
+              <span className="font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap">
                 {formatCurrency(conta.valor)}
               </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
+                    <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Marcar como paga</DropdownMenuItem>
-                  <DropdownMenuItem>Editar</DropdownMenuItem>
+                <DropdownMenuContent align="end" className="min-w-[140px]">
+                  <DropdownMenuItem className="text-sm sm:text-base cursor-pointer">Marcar como paga</DropdownMenuItem>
+                  <DropdownMenuItem className="text-sm sm:text-base cursor-pointer">Editar</DropdownMenuItem>
                   <DropdownMenuItem 
-                    className="text-destructive"
+                    className="text-destructive text-sm sm:text-base cursor-pointer"
                     onClick={() => openDeleteDialog(conta)}
                   >
                     Excluir
@@ -144,19 +144,20 @@ export default function ContasPage() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Contas</h1>
-        <p className="text-muted-foreground">Gerencie suas contas a pagar</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Contas</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Gerencie suas contas a pagar</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Cards de Resumo - Grid responsivo */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">A Vencer</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">A Vencer</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-500">
               {formatCurrency(totalAVencer)}
             </div>
             <p className="text-xs text-muted-foreground">{contasAVencer.length} contas</p>
@@ -164,10 +165,10 @@ export default function ContasPage() {
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pagas este mês</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Pagas este mês</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-2xl sm:text-3xl font-bold text-primary">
               {contasPagas.length}
             </div>
             <p className="text-xs text-muted-foreground">contas quitadas</p>
@@ -175,10 +176,10 @@ export default function ContasPage() {
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Atrasadas</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Atrasadas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
+            <div className="text-xl sm:text-2xl font-bold text-destructive">
               {formatCurrency(totalAtrasadas)}
             </div>
             <p className="text-xs text-muted-foreground">{contasAtrasadas.length} contas</p>
@@ -186,21 +187,27 @@ export default function ContasPage() {
         </Card>
       </div>
 
-      <Card className="border-border/50">
-        <CardContent className="pt-6">
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="pt-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4 grid w-full grid-cols-3">
-              <TabsTrigger value="vencer" className="gap-2">
-                <Clock className="h-4 w-4" />
-                A Vencer ({contasAVencer.length})
+            <TabsList className="mb-4 grid w-full grid-cols-3 bg-muted/30 p-1 h-auto">
+              <TabsTrigger value="vencer" className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background">
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">A Vencer</span>
+                <span className="sm:hidden">Ven.</span>
+                ({contasAVencer.length})
               </TabsTrigger>
-              <TabsTrigger value="pagas" className="gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Pagas ({contasPagas.length})
+              <TabsTrigger value="pagas" className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background">
+                <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Pagas</span>
+                <span className="sm:hidden">Pag.</span>
+                ({contasPagas.length})
               </TabsTrigger>
-              <TabsTrigger value="atrasadas" className="gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Atrasadas ({contasAtrasadas.length})
+              <TabsTrigger value="atrasadas" className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background">
+                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Atrasadas</span>
+                <span className="sm:hidden">Atr.</span>
+                ({contasAtrasadas.length})
               </TabsTrigger>
             </TabsList>
             <TabsContent value="vencer">{renderContas(contasAVencer)}</TabsContent>

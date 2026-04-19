@@ -18,50 +18,102 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { SyncBadge } from "@/components/dashboard/sync-badge"
 import { apiClient } from "@/lib/api-client"
+import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
 
 interface Receita {
-  id: number
+  id: string
   nome: string
   valor: number
   tipo: string
   data: string
   recorrente: boolean
   isSynced?: boolean
+  frequencia?: string
+  diasRecebimento?: string
 }
 
-const tiposReceita = ["CLT", "PJ", "Freelance", "Investimentos", "Aluguel", "Outros"]
+const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
 
 export default function ReceitasPage() {
-  const [receitas, setReceitas] = useState<Receita[]>([
-    { id: 1, nome: "Salário Base", valor: 0, tipo: "---", data: "Calculando...", recorrente: true, isSynced: true },
-    { id: 2, nome: "Freelance Design", valor: 2000, tipo: "Freelance", data: "15/03/2026", recorrente: false },
-    { id: 3, nome: "Dividendos", valor: 350, tipo: "Investimentos", data: "10/03/2026", recorrente: true },
-  ])
+  const [receitas, setReceitas] = useState<Receita[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const syncProfileData = async () => {
+    const fetchIncomes = async () => {
       try {
-        const data = await apiClient<any>("/api/onboarding/progress")
-        if (data) {
-          const profileIncome = data.monthlyIncome || data.MonthlyIncome
-          const incomeTypes = data.selectedIncomeTypes || data.SelectedIncomeTypes || []
+        setIsLoading(true)
+        
+        // 1. Busca dados do backend (Incomes reais)
+        const incomesData = await apiClient<any[]>("/api/incomes") || []
+        
+        const mappedIncomes = incomesData.map((inc: any) => ({
+          id: inc.id,
+          nome: inc.name,
+          valor: inc.amount, 
+          tipo: inc.type,
+          data: new Date(inc.date).toLocaleDateString("pt-BR"),
+          recorrente: inc.isRecurring,
+          isSynced: false
+        }))
+
+        // 2. Tenta buscar rendas base do Onboarding
+        const progressData = await apiClient<any>("/api/onboarding/progress")
+        if (progressData) {
+          const profileIncomes: any[] = progressData.incomes || progressData.Incomes || []
           
-          if (profileIncome) {
-            setReceitas(prev => prev.map(r => 
-              r.isSynced ? {
-                ...r,
-                valor: parseInt(profileIncome),
-                tipo: incomeTypes[0] || "CLT",
-                data: new Date().toLocaleDateString("pt-BR")
-              } : r
-            ))
+          if (profileIncomes.length > 0) {
+            // Mapeia cada renda do perfil para um formato compatível com a lista de receitas
+            const syncedIncomes = profileIncomes.map((inc: any, index: number) => {
+               const incomeTipo = (inc.tipo || inc.Tipo || "").toLowerCase()
+               const incomeValor = inc.valor || inc.Valor || 0
+               
+               // Busca informações ricas das constantes
+               const typeInfo = incomeTypes.find(t => t.value === incomeTipo)
+               
+               const freqValue = (inc.frequencia || inc.Frequencia || "").toLowerCase()
+               const freqInfo = incomeFrequencies.find(f => f.value === freqValue)
+
+               return {
+                  id: `synced-${incomeTipo}-${index}`,
+                  nome: typeInfo ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})` : `Fonte: ${incomeTipo.toUpperCase()}`,
+                  valor: incomeValor, // Removido / 100: O banco já armazena o valor no formato padrão (ex: 3100 para 3.1k)
+                  tipo: typeInfo?.label || incomeTipo.toUpperCase(),
+                  frequencia: freqInfo?.label || "Própria",
+                  diasRecebimento: inc.diasRecebimento || inc.DiasRecebimento || "",
+                  data: new Date().toLocaleDateString("pt-BR"),
+                  recorrente: true,
+                  isSynced: true
+               }
+            })
+
+            // Adiciona as rendas sincronizadas no topo da lista
+            mappedIncomes.unshift(...syncedIncomes)
+          } else {
+            // Apenas mostra legado se não houver o novo array 'incomes'
+            const legacyIncome = progressData.monthlyIncome || progressData.MonthlyIncome
+            if (legacyIncome) {
+                mappedIncomes.unshift({
+                    id: "synced-salary-legacy",
+                    nome: "Renda Configurada",
+                    valor: parseInt(legacyIncome),
+                    tipo: "Geral",
+                    data: new Date().toLocaleDateString("pt-BR"),
+                    recorrente: true,
+                    isSynced: true
+                })
+            }
           }
         }
+        
+        setReceitas(mappedIncomes)
       } catch (error) {
-        console.error("Erro ao sincronizar perfil:", error)
+        console.error("Erro ao carregar dados:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
-    syncProfileData()
+    
+    fetchIncomes()
   }, [])
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -69,7 +121,14 @@ export default function ReceitasPage() {
     open: false,
     item: null,
   })
-  const [newReceita, setNewReceita] = useState({
+  const [newReceita, setNewReceita] = useState<{
+    id?: string;
+    nome: string;
+    valor: string;
+    tipo: string;
+    data: string;
+    recorrente: boolean;
+  }>({
     nome: "",
     valor: "",
     tipo: "",
@@ -86,34 +145,92 @@ export default function ReceitasPage() {
   const receitasRecorrentes = receitas.filter(r => r.recorrente).reduce((sum, r) => sum + r.valor, 0)
   const receitasExtras = receitas.filter(r => !r.recorrente).reduce((sum, r) => sum + r.valor, 0)
 
-  const handleAddReceita = () => {
+  const handleSaveReceita = async () => {
     if (!newReceita.nome || !newReceita.valor) return
     
-    const valor = parseCurrencyInput(newReceita.valor)
-    const novaReceita: Receita = {
-      id: Date.now(),
-      nome: newReceita.nome,
-      valor,
-      tipo: newReceita.tipo || "Outros",
-      data: newReceita.data || new Date().toLocaleDateString("pt-BR"),
-      recorrente: newReceita.recorrente,
-    }
+    // O parseCurrencyInput já me retorna o valor decimal em Reais puro (ex: 2500.00)
+    const valorReal = parseCurrencyInput(newReceita.valor)
     
-    setReceitas([novaReceita, ...receitas])
-    setNewReceita({
-      nome: "",
-      valor: "",
-      tipo: "",
-      data: "",
-      recorrente: false,
-    })
-    setIsOpen(false)
+    // Converte a data do formato input YYYY-MM-DD para ISO ou usa a data de hoje
+    const dateParsed = newReceita.data ? new Date(newReceita.data).toISOString() : new Date().toISOString()
+    
+    try {
+        const isEditing = !!newReceita.id;
+        const url = isEditing ? `/api/incomes/${newReceita.id}` : "/api/incomes";
+        const method = isEditing ? "PUT" : "POST";
+
+        const response = await apiClient<any>(url, {
+            method: method,
+            body: JSON.stringify({
+                name: newReceita.nome,
+                amount: valorReal,
+                type: newReceita.tipo || "Outros",
+                date: dateParsed,
+                isRecurring: newReceita.recorrente
+            })
+        })
+        
+        if (response && response.id) {
+            const savedItem: Receita = {
+              id: response.id,
+              nome: response.name,
+              valor: response.amount,
+              tipo: response.type,
+              data: new Date(response.date).toLocaleDateString("pt-BR"),
+              recorrente: response.isRecurring,
+              isSynced: false
+            }
+            
+            if (isEditing) {
+                setReceitas(receitas.map(r => r.id === savedItem.id ? savedItem : r));
+            } else {
+                setReceitas([savedItem, ...receitas]);
+            }
+
+            setNewReceita({
+              nome: "",
+              valor: "",
+              tipo: "",
+              data: "",
+              recorrente: false,
+            })
+            setIsOpen(false)
+        }
+    } catch (error) {
+        console.error("Erro ao salvar a renda:", error)
+    }
   }
 
-  const handleDeleteReceita = () => {
+  const openEditDialog = (receita: Receita) => {
+    const parts = receita.data.split("/");
+    const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
+    
+    setNewReceita({
+      id: receita.id,
+      nome: receita.nome,
+      valor: formatCurrency(receita.valor),
+      tipo: receita.tipo,
+      data: inputDate,
+      recorrente: receita.recorrente,
+    })
+    setIsOpen(true)
+  }
+
+  const openAddDialog = () => {
+    setNewReceita({ nome: "", valor: "", tipo: "", data: "", recorrente: false });
+    setIsOpen(true);
+  }
+
+  const handleDeleteReceita = async () => {
     if (deleteDialog.item) {
-      setReceitas(receitas.filter(r => r.id !== deleteDialog.item!.id))
-      setDeleteDialog({ open: false, item: null })
+      try {
+        await apiClient(`/api/incomes/${deleteDialog.item.id}`, { method: "DELETE" })
+        setReceitas(receitas.filter(r => r.id !== deleteDialog.item!.id))
+      } catch (e) {
+        console.error("Erro ao deletar entrada", e)
+      } finally {
+        setDeleteDialog({ open: false, item: null })
+      }
     }
   }
 
@@ -122,40 +239,44 @@ export default function ReceitasPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 md:space-y-6">
+      {/* Header Section - Responsivo */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Entradas</h1>
-          <p className="text-muted-foreground">Gerencie todas as suas fontes de renda</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Entradas</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Gerencie todas as suas fontes de renda</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Receita
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <Button 
+            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+            onClick={openAddDialog}
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Receita
+          </Button>
+          <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-foreground">Nova Receita</DialogTitle>
-              <DialogDescription>
-                Adicione uma nova fonte de renda
+              <DialogTitle className="text-foreground text-lg sm:text-xl">{newReceita.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                {newReceita.id ? "Edite as informações da sua fonte de renda" : "Adicione uma nova fonte de renda"}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="nome">Nome</Label>
+                <Label htmlFor="nome" className="text-sm sm:text-base">Nome</Label>
                 <Input
                   id="nome"
                   placeholder="Ex: Salário"
                   value={newReceita.nome}
                   onChange={(e) => setNewReceita({ ...newReceita, nome: e.target.value })}
+                  className="text-sm sm:text-base"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="valor">Valor</Label>
+                  <Label htmlFor="valor" className="text-sm sm:text-base">Valor</Label>
                   <CurrencyInput
                     id="valor"
                     value={newReceita.valor}
@@ -163,33 +284,34 @@ export default function ReceitasPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="data">Data</Label>
+                  <Label htmlFor="data" className="text-sm sm:text-base">Data</Label>
                   <Input
                     id="data"
                     type="date"
                     value={newReceita.data}
                     onChange={(e) => setNewReceita({ ...newReceita, data: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="tipo">Tipo</Label>
+                <Label htmlFor="tipo" className="text-sm sm:text-base">Tipo</Label>
                 <Select
                   value={newReceita.tipo}
                   onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm sm:text-base">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     {tiposReceita.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                      <SelectItem key={tipo} value={tipo} className="text-sm sm:text-base">{tipo}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="recorrente">Receita recorrente?</Label>
+                <Label htmlFor="recorrente" className="text-sm sm:text-base">Receita recorrente?</Label>
                 <Switch
                   id="recorrente"
                   checked={newReceita.recorrente}
@@ -199,115 +321,145 @@ export default function ReceitasPage() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-              <Button className="bg-primary text-primary-foreground" onClick={handleAddReceita}>
-                Salvar
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
+              <Button className="bg-primary text-primary-foreground w-full sm:w-auto" onClick={handleSaveReceita}>
+                {newReceita.id ? "Salvar Alterações" : "Salvar"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Cards de Resumo - Grid responsivo */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Receitas</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Total de Receitas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-xl sm:text-2xl font-bold text-primary">
               {formatCurrency(totalReceitas)}
             </div>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Recorrentes</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Recorrentes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">
+            <div className="text-xl sm:text-2xl font-bold text-card-foreground">
               {formatCurrency(receitasRecorrentes)}
             </div>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Extras</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Extras</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">
+            <div className="text-xl sm:text-2xl font-bold text-card-foreground">
               {formatCurrency(receitasExtras)}
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Lista de Receitas */}
       <Card className="border-border/50">
         <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base text-card-foreground">Lista de Receitas</CardTitle>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-sm sm:text-base text-card-foreground">Lista de Receitas</CardTitle>
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar receitas..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 sm:w-[250px]"
+                className="w-full pl-8 sm:pl-9 sm:w-[250px] text-sm sm:text-base"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {filteredReceitas.map((r) => (
-              <div key={r.id} className={cn(
-                "flex items-center justify-between rounded-lg border p-4 transition-all",
+          {isLoading ? (
+             <div className="flex h-32 items-center justify-center">
+                 <p className="text-muted-foreground animate-pulse text-xs sm:text-sm">Carregando entradas...</p>
+             </div>
+          ) : (
+             <div className="space-y-2 sm:space-y-3">
+               {filteredReceitas.map((r) => (
+                 <div key={r.id} className={cn(
+                "flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 sm:p-4 transition-all gap-3 sm:gap-4",
                 r.isSynced 
                   ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_20px_rgba(34,197,94,0.02)] border-dashed border-2" 
                   : "border-border/50 hover:bg-muted/50"
               )}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-start sm:items-center gap-3 flex-1">
                   <div className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full transition-transform hover:scale-110",
+                    "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform hover:scale-110 flex-shrink-0",
                     r.isSynced ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
                   )}>
-                    {r.isSynced ? <Landmark className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
+                    {r.isSynced ? <Landmark className="h-4 w-4 sm:h-5 sm:w-5" /> : <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <p className="font-medium text-card-foreground">{r.nome}</p>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <p className="font-medium text-card-foreground text-sm sm:text-base break-words">{r.nome}</p>
                         {r.isSynced && <SyncBadge />}
                     </div>
-                    <p className="text-sm text-muted-foreground">{r.tipo} • {r.data}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-1">
+                        <span>{r.tipo}</span>
+                        {r.isSynced && r.frequencia && (
+                            <>
+                                <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
+                                <span className="text-primary/80 font-medium text-xs">{r.frequencia}</span>
+                            </>
+                        )}
+                        {r.isSynced && r.diasRecebimento && (
+                            <>
+                                <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
+                                <span className="italic text-xs break-words">({r.diasRecebimento})</span>
+                            </>
+                        )}
+                        {!r.isSynced && (
+                            <>
+                                <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
+                                <span className="text-xs">{r.data}</span>
+                            </>
+                        )}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Badge variant={r.recorrente ? "default" : "secondary"} className={r.recorrente && !r.isSynced ? "bg-primary/10 text-primary border-primary/20" : ""}>
+                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0">
+                  <Badge variant={r.recorrente ? "default" : "secondary"} className={cn(
+                    "text-xs whitespace-nowrap",
+                    r.recorrente && !r.isSynced ? "bg-primary/10 text-primary border-primary/20" : ""
+                  )}>
                     {r.recorrente ? "Recorrente" : "Única"}
                   </Badge>
-                  <span className="font-semibold text-primary">
+                  <span className="font-semibold text-primary text-sm sm:text-base whitespace-nowrap">
                     + {formatCurrency(r.valor)}
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-full">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-primary/10 hover:text-primary rounded-full flex-shrink-0">
+                        <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="min-w-[140px]">
                       {r.isSynced ? (
                         <DropdownMenuItem asChild>
-                            <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer">
+                            <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer text-sm">
                                 <Landmark className="h-4 w-4" />
                                 Ajustar no Perfil
                             </Link>
                         </DropdownMenuItem>
                       ) : (
                         <>
-                            <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">Duplicar</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer text-sm" onClick={() => openEditDialog(r)}>Editar</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer text-sm">Duplicar</DropdownMenuItem>
                             <DropdownMenuItem 
-                                className="text-destructive font-medium cursor-pointer"
+                                className="text-destructive font-medium cursor-pointer text-sm"
                                 onClick={() => openDeleteDialog(r)}
                             >
                                 Excluir
@@ -319,7 +471,14 @@ export default function ReceitasPage() {
                 </div>
               </div>
             ))}
+            
+            {!isLoading && filteredReceitas.length === 0 && (
+                <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-xl">
+                    Nenhuma entrada encontrada.
+                </div>
+            )}
           </div>
+          )}
         </CardContent>
       </Card>
 

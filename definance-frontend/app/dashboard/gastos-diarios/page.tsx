@@ -105,7 +105,7 @@ export default function GastosDiariosPage() {
               onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
               className="flex-1"
             />
-            <Button onClick={handleAddGasto} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleAddGasto} className="bg-primary text-primary-foreground hover:bg-primary/70">
               <Send className="h-4 w-4" />
             </Button>
           </div>

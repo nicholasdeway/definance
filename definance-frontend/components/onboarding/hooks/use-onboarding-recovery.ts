@@ -5,8 +5,9 @@ import { OnboardingProgress } from "../types"
 
 export const useOnboardingRecovery = () => {
   const {
+    setMotivations,
     setSelectedIncomeTypes,
-    setMonthlyIncome,
+    setIncomes,
     setSelectedExpenses,
     setCustomExpenses,
     setBillLoans,
@@ -18,7 +19,6 @@ export const useOnboardingRecovery = () => {
   } = useOnboarding()
 
   useEffect(() => {
-    // Helper para mapear propriedades independente de case (camelCase vs PascalCase)
     const getVal = (obj: any, key: string) => {
       if (!obj) return undefined
       return obj[key] ?? obj[key.charAt(0).toUpperCase() + key.slice(1)]
@@ -42,8 +42,9 @@ export const useOnboardingRecovery = () => {
         const data = await apiClient<OnboardingProgress>("/api/onboarding/progress")
         if (data) {
           // Mapeia os dados usando helper defensivo
+          const motivations = getVal(data, "motivations")
           const incomeTypes = getVal(data, "selectedIncomeTypes")
-          const mIncome = getVal(data, "monthlyIncome")
+          const incomesList = getVal(data, "incomes")
           const expenses = getVal(data, "selectedExpenses")
           const cExpenses = getVal(data, "customExpenses")
           const loans = getVal(data, "billLoans")
@@ -51,8 +52,9 @@ export const useOnboardingRecovery = () => {
           const dList = getVal(data, "debts")
           const cStep = getVal(data, "currentStep")
 
+          if (motivations) setMotivations(motivations)
           if (incomeTypes) setSelectedIncomeTypes(incomeTypes)
-          if (mIncome) setMonthlyIncome(mIncome)
+          if (incomesList) setIncomes(incomesList)
           if (expenses) setSelectedExpenses(expenses)
           if (cExpenses) setCustomExpenses(cExpenses)
           if (loans) setBillLoans(loans)
@@ -63,12 +65,12 @@ export const useOnboardingRecovery = () => {
               id: v.id || `v-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
               nome: v.nome || "",
               ano: v.ano || "",
-              ipva: v.ipva || "",
-              multas: v.multas || "",
-              valorParcela: v.valorParcela || "",
-              valorSeguro: v.valorSeguro || "",
-              parcelasTotal: v.parcelasTotal || "",
-              parcelasPagas: v.parcelasPagas || "",
+              ipva: v.ipva || 0,
+              multas: v.multas || 0,
+              valorParcela: v.valorParcela || 0,
+              valorSeguro: v.valorSeguro || 0,
+              parcelasTotal: v.parcelasTotal || 0,
+              parcelasPagas: v.parcelasPagas || 0,
               extras: sanitizeExtras(v.extras)
             }))
             setVehicles(sanitizedVehicles)
@@ -80,29 +82,30 @@ export const useOnboardingRecovery = () => {
               ...d,
               id: d.id || `d-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
               descricao: d.descricao || "",
-              valor: d.valor || "",
-              parcelasTotal: d.parcelasTotal || "",
-              parcelasPagas: d.parcelasPagas || "",
+              valor: d.valor || 0,
+              parcelasTotal: d.parcelasTotal || 0,
+              parcelasPagas: d.parcelasPagas || 0,
               extras: sanitizeExtras(d.extras)
             }))
             setDebts(sanitizedDebts)
           }
 
           if (cStep) {
-            const clampedStep = Math.max(1, Math.min(Number(cStep), 5))
+            const clampedStep = Math.max(1, Math.min(Number(cStep), 6))
             setCurrentStep(clampedStep)
           }
 
           // Marca o estado inicial como "salvo" para todas as etapas recuperadas
-          lastSavedHashesRef.current[1] = JSON.stringify(incomeTypes || [])
-          lastSavedHashesRef.current[2] = JSON.stringify(mIncome || "")
-          lastSavedHashesRef.current[3] = JSON.stringify({
+          lastSavedHashesRef.current[1] = JSON.stringify(motivations || [])
+          lastSavedHashesRef.current[2] = JSON.stringify(incomeTypes || [])
+          lastSavedHashesRef.current[3] = JSON.stringify(incomesList || [])
+          lastSavedHashesRef.current[4] = JSON.stringify({
             selectedExpenses: expenses || {},
             customExpenses: cExpenses || [],
             billLoans: loans || {}
           })
-          lastSavedHashesRef.current[4] = JSON.stringify(vList || [])
-          lastSavedHashesRef.current[5] = JSON.stringify(dList || [])
+          lastSavedHashesRef.current[5] = JSON.stringify(vList || [])
+          lastSavedHashesRef.current[6] = JSON.stringify(dList || [])
 
           console.log("[Recovery] Progresso recuperado e hashes inicializados.")
         }
@@ -115,8 +118,9 @@ export const useOnboardingRecovery = () => {
 
     fetchProgress()
   }, [
+    setMotivations,
+    setIncomes,
     setSelectedIncomeTypes,
-    setMonthlyIncome,
     setSelectedExpenses,
     setCustomExpenses,
     setBillLoans,
