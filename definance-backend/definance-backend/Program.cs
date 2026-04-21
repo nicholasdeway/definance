@@ -23,6 +23,10 @@ using definance_backend.Common.Middleware;
 using definance_backend.Features.Onboarding.Services;
 using definance_backend.Features.Incomes.Repositories;
 using definance_backend.Features.Incomes.Services;
+using definance_backend.Features.Expenses.Repositories;
+using definance_backend.Features.Expenses.Services;
+using definance_backend.Features.Bills.Repositories;
+using definance_backend.Features.Bills.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,6 +101,14 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 // INCOMES
 builder.Services.AddScoped<IIncomeRepository, IncomeRepository>();
 builder.Services.AddScoped<IIncomeService, IncomeService>();
+
+// EXPENSES
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
+
+// BILLS (Minhas Contas)
+builder.Services.AddScoped<IBillRepository, BillRepository>();
+builder.Services.AddScoped<IBillService, BillService>();
 
 // GLOBAL EXCEPTION HANDLER
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

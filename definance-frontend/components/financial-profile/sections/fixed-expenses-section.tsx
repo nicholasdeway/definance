@@ -25,7 +25,7 @@ export const FixedExpensesSection = () => {
   } = useOnboarding()
   const { persistStep } = useAutoSave()
 
-  // Formata dígitos brutos (centavos) para exibição em BRL
+  // Formata dÃ­gitos brutos (centavos) para exibiÃ§Ã£o em BRL
   function displayBRL(digits: string): string {
     if (!digits) return ""
     const number = Number(digits) / 100
@@ -87,7 +87,7 @@ export const FixedExpensesSection = () => {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Toque nas categorias que se aplicam a você e informe o valor mensal.
+        Toque nas categorias que se aplicam a vocÃª e informe o valor mensal.
       </p>
 
       {/* Grade de categorias */}
@@ -112,7 +112,7 @@ export const FixedExpensesSection = () => {
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
               {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
-                  {displayBRL((selectedExpenses[cat.key] * 100).toString())}
+                  {displayBRL(Math.round(selectedExpenses[cat.key] * 100).toString())}
                 </span>
               )}
             </button>
@@ -120,15 +120,15 @@ export const FixedExpensesSection = () => {
         })}
       </div>
 
-      {/* Inputs de valor para categorias pré-definidas selecionadas */}
+      {/* Inputs de valor para categorias prÃ©-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
         <div className="space-y-6 border-t border-border/50 pt-4">
-          {/* Seção 1: Contas com Opção de Empréstimo */}
+          {/* SeÃ§Ã£o 1: Contas com OpÃ§Ã£o de EmprÃ©stimo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo (Com Empréstimo)</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo (Com EmprÃ©stimo)</span>
                 <span className="h-px flex-1 bg-border/40" />
               </div>
               <div className="grid gap-4">
@@ -148,7 +148,7 @@ export const FixedExpensesSection = () => {
                           <CurrencyInput
                             id={`exp-${cat.key}`}
                             placeholder={cat.placeholder}
-                            value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                            value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
                               "h-9 bg-background text-sm",
@@ -158,13 +158,13 @@ export const FixedExpensesSection = () => {
                         </div>
                       </div>
 
-                      {/* Sub-triagem para Empréstimo embutido em Contas de Consumo */}
+                      {/* Sub-triagem para EmprÃ©stimo embutido em Contas de Consumo */}
                       {["luz", "agua", "celular"].includes(cat.key) && (
                         <div className="rounded-xl border border-primary/10 bg-primary/5 p-3 animate-in fade-in slide-in-from-top-2 duration-300">
                           <div className="flex items-center justify-between mb-3">
                             <div className="space-y-0.5">
                               <Label htmlFor={`loan-toggle-${cat.key}`} className="text-[11px] font-semibold text-primary/80 uppercase tracking-tight">
-                                Empréstimo embutido?
+                                EmprÃ©stimo embutido?
                               </Label>
                               <p className="text-[9px] text-muted-foreground">Parcelas descontadas diretamente na conta</p>
                             </div>
@@ -178,7 +178,7 @@ export const FixedExpensesSection = () => {
                             <div className="space-y-2 pt-2 border-t border-primary/10 animate-in zoom-in-95 duration-200">
                               <div className="space-y-1">
                                 <FieldLabel 
-                                  label="Valor da parcela de empréstimo" 
+                                  label="Valor da parcela de emprÃ©stimo" 
                                   required 
                                   isEmpty={!billLoans[cat.key]?.valor} 
                                   wasAttempted={wasAttempted} 
@@ -186,7 +186,7 @@ export const FixedExpensesSection = () => {
                                 <CurrencyInput
                                   id={`loan-value-${cat.key}`}
                                   placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? (billLoans[cat.key].valor * 100).toString() : ""}
+                                  value={billLoans[cat.key]?.valor ? Math.round(billLoans[cat.key].valor * 100).toString() : ""}
                                   onChange={(value) => setBillLoanValue(cat.key, value)}
                                   className={cn(
                                     "h-8 bg-background/50 text-xs font-medium",
@@ -199,7 +199,7 @@ export const FixedExpensesSection = () => {
                                   <p className="text-[10px] text-muted-foreground flex justify-between">
                                     <span>Consumo real estimado:</span>
                                     <span className="font-bold text-primary">
-                                      {displayBRL((Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor) * 100).toString())}
+                                      {displayBRL(Math.round(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor) * 100).toString())}
                                     </span>
                                   </p>
                                 </div>
@@ -214,12 +214,12 @@ export const FixedExpensesSection = () => {
             </div>
           )}
 
-          {/* Seção 2: Moradia, Serviços e Outros (Grid compacto) */}
+          {/* SeÃ§Ã£o 2: Moradia, ServiÃ§os e Outros (Grid compacto) */}
           {fixedExpenseCategories.some(c => !["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moradia, Assinaturas e Serviços</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moradia, Assinaturas e ServiÃ§os</span>
                 <span className="h-px flex-1 bg-border/40" />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -239,7 +239,7 @@ export const FixedExpensesSection = () => {
                         <CurrencyInput
                           id={`exp-${cat.key}`}
                           placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                          value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
                           onChange={(value) => setExpenseValue(cat.key, value)}
                           className={cn(
                             "h-8 bg-background text-sm",
@@ -289,7 +289,7 @@ export const FixedExpensesSection = () => {
                     <Input
                       id={`custom-titulo-${exp.id}`}
                       type="text"
-                      placeholder="Ex: Condomínio, Seguro..."
+                      placeholder="Ex: CondomÃ­nio, Seguro..."
                       value={exp.titulo || ""}
                       onChange={(e) => updateCustomExpense(exp.id, "titulo", e.target.value)}
                       className={cn(
@@ -309,7 +309,7 @@ export const FixedExpensesSection = () => {
                     <CurrencyInput
                       id={`custom-valor-${exp.id}`}
                       placeholder="R$ 0,00"
-                      value={exp.valor ? (exp.valor * 100).toString() : ""}
+                      value={exp.valor ? Math.round(exp.valor * 100).toString() : ""}
                       onChange={(value) => updateCustomExpense(exp.id, "valor", value)}
                       className="h-8 bg-background text-sm font-medium"
                     />
@@ -321,7 +321,7 @@ export const FixedExpensesSection = () => {
         </div>
       )}
 
-      {/* Botão adicionar personalizado */}
+      {/* BotÃ£o adicionar personalizado */}
       <button
         type="button"
         onClick={addCustomExpense}
