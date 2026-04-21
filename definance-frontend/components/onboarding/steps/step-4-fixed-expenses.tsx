@@ -138,7 +138,7 @@ export const Step4FixedExpenses = () => {
                           <CurrencyInput
                             id={`exp-${cat.key}`}
                             placeholder={cat.placeholder}
-                            value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                            value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
                               "h-9 bg-background text-sm",
@@ -176,7 +176,7 @@ export const Step4FixedExpenses = () => {
                                 <CurrencyInput
                                   id={`loan-value-${cat.key}`}
                                   placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? (billLoans[cat.key].valor * 100).toString() : ""}
+                                  value={billLoans[cat.key]?.valor ? Math.round(billLoans[cat.key].valor * 100).toString() : ""}
                                   onChange={(value) => setBillLoanValue(cat.key, value)}
                                   className={cn(
                                     "h-8 bg-background/50 text-xs font-medium",
@@ -228,7 +228,7 @@ export const Step4FixedExpenses = () => {
                         <CurrencyInput
                           id={`exp-${cat.key}`}
                           placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] !== undefined ? (selectedExpenses[cat.key] * 100).toString() : ""}
+                          value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
                           onChange={(value) => setExpenseValue(cat.key, value)}
                           className={cn(
                             "h-8 bg-background text-sm",
@@ -296,7 +296,7 @@ export const Step4FixedExpenses = () => {
                     <CurrencyInput
                       id={`custom-valor-${exp.id}`}
                       placeholder="R$ 0,00"
-                      value={exp.valor ? (exp.valor * 100).toString() : ""}
+                      value={exp.valor ? Math.round(exp.valor * 100).toString() : ""}
                       onChange={(value) => updateCustomExpense(exp.id, "valor", Number(value.replace(/\D/g, "")) / 100)}
                       className={cn(
                         "h-8 bg-background text-sm font-medium",

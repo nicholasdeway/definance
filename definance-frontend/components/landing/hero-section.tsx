@@ -4,12 +4,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
+import { useSectionNavigation } from "@/lib/scroll-utils"
 
 import { useState, useEffect } from "react"
 
 export function HeroSection() {
   const { isAuthenticated, user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
+
+  const { navigateToSection } = useSectionNavigation()
 
   useEffect(() => {
     setMounted(true)
@@ -71,7 +74,7 @@ export function HeroSection() {
                 </Button>
               </Link>
             )}
-            <Link href="#como-funciona">
+            <Link href="/#como-funciona" onClick={(e) => navigateToSection('/#como-funciona', e)}>
               <Button 
                 variant="outline" 
                 className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/50 backdrop-blur-sm hover:bg-muted/50 transition-all"

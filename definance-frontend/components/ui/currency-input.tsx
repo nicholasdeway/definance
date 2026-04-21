@@ -4,6 +4,9 @@ import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
+// Limite de dígitos inteiros: permite até 999.999,99 (6 dígitos inteiros + 2 decimais)
+const MAX_INTEGER_DIGITS = 9 // ex: 999.999.999 → R$ 999.999.999,99
+
 interface CurrencyInputProps extends Omit<React.ComponentProps<typeof Input>, "value" | "onChange"> {
   value: string
   onChange: (value: string) => void
@@ -19,12 +22,14 @@ export function CurrencyInput({
 }: CurrencyInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
 
+  // Formata uma string de dígitos centavos para exibição pt-BR
   const formatDisplay = (val: string): string => {
     if (!val) return ""
-    const numericValue = parseInt(val.replace(/\D/g, ""), 10)
-    if (isNaN(numericValue)) return ""
-
-    return (numericValue / 100).toLocaleString("pt-BR", {
+    const digits = val.replace(/\D/g, "")
+    if (!digits) return ""
+    const cents = parseInt(digits, 10)
+    if (isNaN(cents)) return ""
+    return (cents / 100).toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -33,27 +38,28 @@ export function CurrencyInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cursorPosition = e.target.selectionStart
     const originalLength = e.target.value.length
-    
-    // Remove tudo que não é dígito
-    let digits = e.target.value.replace(/\D/g, "")
-    
-    // Se o usuário apagou tudo
-    if (!digits) {
-      onChange("")
-      return
-    }
 
-    // Lógica para evitar que "00" iniciais fiquem travados
-    digits = parseInt(digits, 10).toString()
+    // 1. Extrai apenas dígitos
+    let digits = e.target.value.replace(/\D/g, "")
+
+    // 2. Remove zeros à esquerda
+    digits = digits.replace(/^0+/, "") || ""
+
+    // 3. Limita ao número máximo de dígitos (inteiros + 2 decimais)
+    const maxDigits = MAX_INTEGER_DIGITS + 2
+    if (digits.length > maxDigits) {
+      digits = digits.slice(0, maxDigits)
+    }
 
     onChange(digits)
 
-    // Ajuste de cursor básico
+    // 4. Reposiciona cursor
     setTimeout(() => {
       if (inputRef.current) {
         const newLength = inputRef.current.value.length
-        const newSelectionStart = (cursorPosition || 0) + (newLength - originalLength)
-        inputRef.current.setSelectionRange(newSelectionStart, newSelectionStart)
+        const delta = newLength - originalLength
+        const newPos = Math.max(0, (cursorPosition ?? 0) + delta)
+        inputRef.current.setSelectionRange(newPos, newPos)
       }
     }, 0)
   }
@@ -72,7 +78,7 @@ export function CurrencyInput({
         value={displayValue}
         onChange={handleChange}
         className={cn(
-          "pl-10 font-mono font-medium focus:ring-1 focus:ring-primary/20", 
+          "pl-10 font-mono font-medium focus:ring-1 focus:ring-primary/20",
           className
         )}
         placeholder="0,00"

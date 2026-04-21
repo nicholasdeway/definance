@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { 
@@ -60,7 +60,7 @@ export const DebtsSection = () => {
     
     const updateDebtValue = (id: string, raw: string) => {
         const digits = raw.replace(/\D/g, "")
-        // CORREÇÃO: Dividir por 100 para converter centavos em decimal
+        // CORREÃ‡ÃƒO: Dividir por 100 para converter centavos em decimal
         const decimalValue = Number(digits) / 100
         setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: decimalValue } : d)))
     }
@@ -118,7 +118,7 @@ export const DebtsSection = () => {
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-sm font-semibold text-card-foreground truncate">
-                                            {debt.descricao || `Dívida ${idx + 1}`}
+                                            {debt.descricao || `DÃ­vida ${idx + 1}`}
                                         </span>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs font-medium text-muted-foreground">
@@ -139,7 +139,7 @@ export const DebtsSection = () => {
                                         {isExpanded ? "Recolher" : "Ver detalhes"}
                                     </span>
                                     
-                                    {/* Ícone da seta (expansão) */}
+                                    {/* Ãcone da seta (expansÃ£o) */}
                                     {isExpanded ? (
                                         <ChevronUp className="h-4 w-4 text-muted-foreground/60" />
                                     ) : (
@@ -149,12 +149,12 @@ export const DebtsSection = () => {
                                     {/* Separador vertical */}
                                     <div className="h-6 w-px bg-border/40" />
                                     
-                                    {/* Botão de remover (lixeira) */}
+                                    {/* BotÃ£o de remover (lixeira) */}
                                     <button 
                                         type="button" 
                                         onClick={(e) => { e.stopPropagation(); removeDebt(debt.id); }} 
                                         className="p-1.5 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0"
-                                        title="Remover dívida"
+                                        title="Remover dÃ­vida"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </button>
@@ -164,9 +164,9 @@ export const DebtsSection = () => {
                             <AccordionContent className="px-4 pb-4 border-t border-border/20 bg-muted/5">
                                 <div className="pt-4 grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5 sm:col-span-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição</Label>
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">DescriÃ§Ã£o</Label>
                                         <Input
-                                            placeholder="Ex: Cartão de crédito..."
+                                            placeholder="Ex: CartÃ£o de crÃ©dito..."
                                             value={debt.descricao || ""}
                                             onChange={(e) => updateDebt(debt.id, "descricao", e.target.value)}
                                             className="h-9 bg-background"
@@ -176,7 +176,7 @@ export const DebtsSection = () => {
                                         <CurrencyInput
                                             id={`debt-valor-${debt.id}`}
                                             placeholder="R$ 0,00"
-                                            value={debt.valor ? (debt.valor * 100).toString() : ""}
+                                            value={debt.valor ? Math.round(debt.valor * 100).toString() : ""}
                                             onChange={(value) => updateDebtValue(debt.id, value)}
                                             className="h-9 bg-background font-medium"
                                         />
@@ -208,10 +208,10 @@ export const DebtsSection = () => {
                                         </div>
                                     )}
 
-                                    {/* Gastos Adicionais da Dívida */}
+                                    {/* Gastos Adicionais da DÃ­vida */}
                                     <div className="space-y-3 border-t border-border/20 pt-4 sm:col-span-2">
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground transition-colors hover:text-primary">Gastos Extras desta Dívida</Label>
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground transition-colors hover:text-primary">Gastos Extras desta DÃ­vida</Label>
                                         </div>
 
                                         {debt.extras && debt.extras.length > 0 && (
@@ -242,7 +242,7 @@ export const DebtsSection = () => {
                                             <div className="flex flex-col gap-3 bg-primary/5 p-4 rounded-lg border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
                                                 <div className="grid sm:grid-cols-2 gap-3">
                                                     <div className="space-y-1.5">
-                                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição</Label>
+                                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">DescriÃ§Ã£o</Label>
                                                         <Input 
                                                             value={newExtras[debt.id].descricao} 
                                                             onChange={e => setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], descricao: e.target.value}}))}
@@ -254,7 +254,7 @@ export const DebtsSection = () => {
                                                         <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
                                                         <CurrencyInput 
                                                             id={`new-extra-valor-debt-${debt.id}`}
-                                                            value={newExtras[debt.id].valor ? (newExtras[debt.id].valor * 100).toString() : ""} 
+                                                            value={newExtras[debt.id].valor ? Math.round(newExtras[debt.id].valor * 100).toString() : ""} 
                                                             onChange={value => {
                                                                 const digits = value.replace(/\D/g, "")
                                                                 const decimalValue = Number(digits) / 100
@@ -324,7 +324,7 @@ export const DebtsSection = () => {
                                             }}
                                             className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold"
                                         >
-                                            Salvar Dívida
+                                            Salvar DÃ­vida
                                         </Button>
                                     </div>
                                 </div>
@@ -336,7 +336,7 @@ export const DebtsSection = () => {
 
             <button type="button" onClick={addDebt} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-all cursor-pointer">
                 <Plus className="h-4 w-4" />
-                Adicionar dívida
+                Adicionar dÃ­vida
             </button>
         </div>
     )

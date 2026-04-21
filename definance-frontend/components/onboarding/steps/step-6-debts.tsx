@@ -205,7 +205,7 @@ export const Step6Debts = () => {
                     <CurrencyInput
                       id={`debt-valor-${debt.id}`}
                       placeholder="R$ 0,00"
-                      value={debt.valor ? (debt.valor * 100).toString() : ""}
+                      value={debt.valor ? Math.round(debt.valor * 100).toString() : ""}
                       onChange={(value) => updateDebtValue(debt.id, value)}
                       className={cn(
                         "h-9 bg-background font-medium",

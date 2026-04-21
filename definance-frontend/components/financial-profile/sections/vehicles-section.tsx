@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Plus, Trash2, Landmark, Shield, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -280,7 +280,7 @@ export const VehiclesSection = () => {
                       <CurrencyInput
                         id={`ipva-${v.id}`}
                         placeholder="R$ 0,00"
-                        value={v.ipva ? (v.ipva * 100).toString() : ""}
+                        value={v.ipva ? Math.round(v.ipva * 100).toString() : ""}
                         onChange={(value) => updateVehicleCurrency(v.id, "ipva", value)}
                         className="h-8 bg-background text-xs font-medium"
                       />
@@ -290,7 +290,7 @@ export const VehiclesSection = () => {
                       <CurrencyInput
                         id={`multas-${v.id}`}
                         placeholder="R$ 0,00"
-                        value={v.multas ? (v.multas * 100).toString() : ""}
+                        value={v.multas ? Math.round(v.multas * 100).toString() : ""}
                         onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
                         className="h-8 bg-background text-xs font-medium"
                       />
@@ -426,7 +426,7 @@ export const VehiclesSection = () => {
                             <CurrencyInput
                               id={`v-parcela-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorParcela ? (v.valorParcela * 100).toString() : ""}
+                              value={v.valorParcela ? Math.round(v.valorParcela * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorParcela", value)}
                               className="h-8 bg-background text-sm font-medium"
                             />
@@ -466,7 +466,7 @@ export const VehiclesSection = () => {
                           <CurrencyInput
                             id={`v-vseguro-${v.id}`}
                             placeholder="R$ 0,00"
-                            value={v.valorSeguro ? (v.valorSeguro * 100).toString() : ""}
+                            value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
                             onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
                             className="h-8 bg-background text-sm font-medium"
                           />
