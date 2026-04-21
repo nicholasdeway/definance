@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useSectionNavigation } from "@/lib/scroll-utils"
 
 interface SiteHeaderProps {
   variant?: 'landing' | 'onboarding'
@@ -40,39 +41,16 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
     }
   }
 
-  const scrollToSection = (e: React.MouseEvent, href: string) => {
-    const isHomePage = pathname === '/'
-    
-    if (!isHomePage || isOnboarding) {
-      setMobileMenuOpen(false)
-      return
-    }
+  const { navigateToSection } = useSectionNavigation()
 
-    e.preventDefault()
-    const id = href.replace('#', '')
-
-    if (id === '' || id === '/') {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      const element = document.getElementById(id)
-      if (element) {
-        const offset = 80
-        const elementPosition = element.getBoundingClientRect().top
-        const offsetPosition = elementPosition + window.pageYOffset - offset
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        })
-      }
-    }
-
+  const handleScrollClick = (e: React.MouseEvent, href: string) => {
+    navigateToSection(href, e)
     setMobileMenuOpen(false)
   }
 
   const navLinks = isOnboarding ? [] : [
-    { name: "Benefícios", href: '#beneficios' },
-    { name: "Como funciona", href: '#como-funciona' },
+    { name: "Benefícios", href: '/#beneficios' },
+    { name: "Como funciona", href: '/#como-funciona' },
   ]
 
   return (
@@ -88,7 +66,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
         <Link 
           href="/" 
           className="flex items-center gap-2 z-10"
-          onClick={(e) => scrollToSection(e, '#')}>
+          onClick={(e) => handleScrollClick(e, '/')}>
           <Logo size={18} withCard variant="muted" />
           <span className="text-xl font-bold text-foreground">Definance</span>
         </Link>
@@ -100,7 +78,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
               <a 
                 key={link.name} 
                 href={link.href} 
-                onClick={(e) => scrollToSection(e, link.href)}
+                onClick={(e) => handleScrollClick(e, link.href)}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {link.name}
@@ -197,7 +175,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                 <a 
                   key={link.name} 
                   href={link.href} 
-                  onClick={(e) => scrollToSection(e, link.href)}
+                  onClick={(e) => handleScrollClick(e, link.href)}
                   className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {link.name}

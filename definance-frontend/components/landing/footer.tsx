@@ -3,12 +3,15 @@
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/lib/auth-provider"
+import { useSectionNavigation } from "@/lib/scroll-utils"
 
 import { useState, useEffect } from "react"
 
 export function Footer() {
   const { isAuthenticated, user } = useAuth()
   const [mounted, setMounted] = useState(false)
+
+  const { navigateToSection } = useSectionNavigation()
 
   useEffect(() => {
     setMounted(true)
@@ -32,12 +35,20 @@ export function Footer() {
             <h4 className="mb-4 text-sm font-semibold text-foreground">Produto</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="#beneficios" className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link 
+                  href="/#beneficios" 
+                  onClick={(e) => navigateToSection('/#beneficios', e)}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Benefícios
                 </Link>
               </li>
               <li>
-                <Link href="#como-funciona" className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link 
+                  href="/#como-funciona" 
+                  onClick={(e) => navigateToSection('/#como-funciona', e)}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Como funciona
                 </Link>
               </li>

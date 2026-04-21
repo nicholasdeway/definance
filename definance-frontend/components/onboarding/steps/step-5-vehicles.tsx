@@ -262,7 +262,7 @@ export const Step5Vehicles = () => {
                       <CurrencyInput
                         id={`v-ipva-${v.id}`}
                         placeholder="R$ 0,00"
-                        value={v.ipva ? (v.ipva * 100).toString() : ""}
+                        value={v.ipva ? Math.round(v.ipva * 100).toString() : ""}
                         onChange={(value) => updateVehicleCurrency(v.id, "ipva", value)}
                         className="h-8 bg-background text-xs"
                       />
@@ -272,7 +272,7 @@ export const Step5Vehicles = () => {
                       <CurrencyInput
                         id={`v-multas-${v.id}`}
                         placeholder="R$ 0,00"
-                        value={v.multas ? (v.multas * 100).toString() : ""}
+                        value={v.multas ? Math.round(v.multas * 100).toString() : ""}
                         onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
                         className="h-8 bg-background text-xs"
                       />
@@ -320,7 +320,7 @@ export const Step5Vehicles = () => {
                             <CurrencyInput
                               id={`v-vparcela-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorParcela ? (v.valorParcela * 100).toString() : ""}
+                              value={v.valorParcela ? Math.round(v.valorParcela * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorParcela", value)}
                               className="h-10 bg-background text-sm"
                             />
@@ -361,7 +361,7 @@ export const Step5Vehicles = () => {
                           <CurrencyInput
                             id={`v-vseguro-${v.id}`}
                             placeholder="R$ 0,00"
-                            value={v.valorSeguro ? (v.valorSeguro * 100).toString() : ""}
+                            value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
                             onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
                             className="h-8 bg-background text-sm"
                           />

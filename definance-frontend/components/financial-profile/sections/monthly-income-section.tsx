@@ -128,7 +128,7 @@ export const MonthlyIncomeSection = () => {
                    <CurrencyInput
                      id={`income-${typeInfo.value}`}
                      placeholder="R$ 0,00"
-                     value={inc.valor ? (inc.valor * 100).toString() : ""}  // Multiplicar por 100 para exibir
+                     value={inc.valor ? Math.round(inc.valor * 100).toString() : ""}
                      onChange={(value) => updateIncomeValue(typeInfo.value, value)}
                      className="h-11 text-base font-bold bg-muted/5 focus:bg-background transition-colors"
                    />
