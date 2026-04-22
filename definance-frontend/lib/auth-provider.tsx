@@ -78,7 +78,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback"]
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback"]
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

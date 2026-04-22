@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { useAuth } from "@/lib/auth-provider"
 import { AlertCircle, CheckCircle2, Lock, Eye, EyeOff, XCircle } from "lucide-react"
@@ -76,24 +75,15 @@ export function ResetPasswordForm() {
   )
 
   return (
-    <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur shadow-2xl overflow-hidden">
-      <div className="h-1.5 w-full bg-primary/20">
-        <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Number(hasMinLength) + Number(hasUpperCase) + Number(hasSpecialChar)) * 33.33}%` }} />
+    <div className="w-full space-y-6">
+      <div className="space-y-2 text-center lg:text-left">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">Nova Senha</h1>
+        <p className="text-sm text-muted-foreground">
+          {isSuccess ? "Senha redefinida com sucesso." : "Escolha uma senha forte para sua segurança."}
+        </p>
       </div>
       
-      <CardHeader className="space-y-1">
-        <div className="flex justify-center mb-4">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Lock className="h-6 w-6 text-primary" />
-          </div>
-        </div>
-        <CardTitle className="text-2xl font-bold text-center text-card-foreground">Nova Senha</CardTitle>
-        <CardDescription className="text-center text-muted-foreground">
-          {isSuccess ? "Senha redefinida com sucesso." : "Escolha uma senha forte para sua segurança."}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
+
         {!isSuccess ? (
           <div className="animate-in fade-in duration-500">
             {error && (
@@ -106,7 +96,7 @@ export function ResetPasswordForm() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">Nova Senha</Label>
+                  <Label htmlFor="newPassword" className="text-xs uppercase tracking-widest text-muted-foreground">Nova Senha</Label>
                   <div className="relative">
                     <Input
                       id="newPassword"
@@ -115,7 +105,7 @@ export function ResetPasswordForm() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="bg-background/50 pr-10"
+                      className="bg-secondary/50 border-border h-12 pr-10 text-foreground"
                     />
                     <button
                       type="button"
@@ -128,7 +118,7 @@ export function ResetPasswordForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmNewPassword">Confirmar Nova Senha</Label>
+                  <Label htmlFor="confirmNewPassword" className="text-xs uppercase tracking-widest text-muted-foreground">Confirmar Nova Senha</Label>
                   <div className="relative">
                     <Input
                       id="confirmNewPassword"
@@ -137,7 +127,7 @@ export function ResetPasswordForm() {
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       required
                       disabled={isLoading}
-                      className={`bg-background/50 transition-colors ${
+                      className={`bg-secondary/50 border-border h-12 text-foreground transition-colors ${
                         confirmNewPassword && newPassword !== confirmNewPassword ? "border-destructive/50" : ""
                       }`}
                     />
@@ -166,8 +156,8 @@ export function ResetPasswordForm() {
         ) : (
           <div className="space-y-6 py-6 animate-in zoom-in duration-300">
             <div className="flex justify-center">
-              <div className="rounded-full bg-green-500/10 p-4">
-                <CheckCircle2 className="h-12 w-12 text-primary" />
+              <div className="rounded-full bg-emerald-500/10 p-4">
+                <CheckCircle2 className="h-12 w-12 text-emerald-500" />
               </div>
             </div>
             <div className="text-center space-y-2">
@@ -177,13 +167,12 @@ export function ResetPasswordForm() {
               </p>
             </div>
             <Link href="/login" className="block">
-              <Button variant="outline" className="w-full border-primary/20 hover:bg-primary/5">
+              <Button variant="outline" className="w-full bg-secondary border-border hover:bg-secondary/80 cursor-pointer">
                 Fazer Login agora
               </Button>
             </Link>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
   )
 }

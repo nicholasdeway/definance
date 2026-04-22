@@ -5,12 +5,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { useAuth } from "@/lib/auth-provider"
 import { AlertCircle, ArrowLeft, CheckCircle2, Mail } from "lucide-react"
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => void }) {
   const { requestPasswordReset } = useAuth()
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -33,34 +32,30 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur shadow-2xl">
-      <CardHeader className="space-y-1">
-        <div className="flex justify-center mb-4">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Mail className="h-6 w-6 text-primary" />
-          </div>
-        </div>
-        <CardTitle className="text-2xl font-bold text-center text-card-foreground">Esqueceu sua senha?</CardTitle>
-        <CardDescription className="text-center text-muted-foreground">
+    <div className="flex flex-col space-y-6">
+      <div className="space-y-2 text-center lg:text-left">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Esqueceu a senha?</h1>
+        <p className="text-sm text-muted-foreground">
           {isSuccess 
             ? "Instruções enviadas com sucesso."
             : "Digite seu e-mail para receber um link de redefinição."}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        {!isSuccess ? (
-          <>
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-card-foreground">E-mail da conta</Label>
+        </p>
+      </div>
+
+      {!isSuccess ? (
+        <>
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs uppercase tracking-widest text-muted-foreground">E-mail da conta</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/30" />
                 <Input
                   id="email"
                   type="email"
@@ -69,51 +64,55 @@ export function ForgotPasswordForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
+                  className="bg-secondary/50 border-border h-12 pl-10 focus:ring-primary/20 text-foreground"
                 />
               </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/70 shadow-lg shadow-primary/20" 
-                disabled={isLoading}
-              >
-                {isLoading ? <Spinner className="h-4 w-4" /> : "Enviar link de redefinição"}
-              </Button>
-            </form>
-          </>
-        ) : (
-          <div className="space-y-6 py-4 animate-in zoom-in duration-300">
-            <div className="flex justify-center">
-              <div className="rounded-full bg-green-500/10 p-4">
-                <CheckCircle2 className="h-12 w-12 text-primary" />
-              </div>
             </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">Verifique seu e-mail</h3>
-              <p className="text-sm text-muted-foreground">
-                Enviamos as instruções de redefinição para <span className="font-medium text-foreground">{email}</span>.
-              </p>
-              <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/50 text-xs text-muted-foreground text-left flex gap-3">
-                <AlertCircle className="h-4 w-4 text-primary shrink-0" />
-                <p>Caso não encontre o e-mail em alguns minutos, verifique sua pasta de <strong>Spam</strong> ou <strong>Lixeira</strong>.</p>
-              </div>
+            
+            <Button 
+              type="submit" 
+              className="h-12 w-full bg-primary/10 border border-primary/20 text-white hover:bg-primary/20 transition-all font-bold uppercase tracking-widest text-xs cursor-pointer" 
+              disabled={isLoading}
+            >
+              {isLoading ? <Spinner className="h-4 w-4" /> : "Enviar link de redefinição →"}
+            </Button>
+          </form>
+        </>
+      ) : (
+        <div className="space-y-6 py-4 animate-in zoom-in duration-300">
+          <div className="flex justify-center">
+            <div className="rounded-full bg-primary/10 p-4">
+              <CheckCircle2 className="h-12 w-12 text-primary" />
             </div>
-            <Link href="/login" className="block">
-              <Button variant="outline" className="w-full border-primary/20 hover:bg-primary/5">
-                Voltar para o Login
-              </Button>
-            </Link>
           </div>
-        )}
+          <div className="text-center space-y-2">
+            <h3 className="text-lg font-semibold text-foreground">Verifique seu e-mail</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Enviamos as instruções de redefinição para <span className="font-medium text-foreground">{email}</span>.
+            </p>
+            <div className="mt-4 p-4 rounded-xl bg-secondary/20 border border-border text-[10px] text-muted-foreground text-left flex gap-3 leading-relaxed">
+              <AlertCircle className="h-4 w-4 text-primary shrink-0" />
+              <p>Caso não encontre o e-mail em alguns minutos, verifique sua pasta de <strong>Spam</strong> ou <strong>Lixeira</strong>.</p>
+            </div>
+          </div>
+          <Button 
+            onClick={onBackToLogin}
+            className="w-full bg-secondary/50 border border-border text-foreground hover:bg-secondary cursor-pointer"
+          >
+            Voltar para o Login
+          </Button>
+        </div>
+      )}
 
-        {!isSuccess && (
-          <Link href="/login" className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para o login
-          </Link>
-        )}
-      </CardContent>
-    </Card>
+      {!isSuccess && (
+        <button 
+          onClick={onBackToLogin}
+          className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para o login
+        </button>
+      )}
+    </div>
   )
 }
