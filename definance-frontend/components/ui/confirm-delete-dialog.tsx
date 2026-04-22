@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react"
 
 interface ConfirmDeleteDialogProps {
   open: boolean
@@ -19,6 +19,7 @@ interface ConfirmDeleteDialogProps {
   title?: string
   description?: string
   itemName?: string
+  loading?: boolean
 }
 
 export function ConfirmDeleteDialog({
@@ -28,6 +29,7 @@ export function ConfirmDeleteDialog({
   title = "Confirmar exclusão",
   description,
   itemName,
+  loading,
 }: ConfirmDeleteDialogProps) {
   const defaultDescription = itemName
     ? `Tem certeza que deseja excluir "${itemName}"? Esta ação não pode ser desfeita.`
@@ -48,10 +50,14 @@ export function ConfirmDeleteDialog({
         <AlertDialogFooter className="sm:justify-center">
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={loading}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-w-[100px]"
           >
-            Excluir
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
