@@ -3,6 +3,7 @@ using definance_backend.Features.Bills.DTOs;
 using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Expenses.DTOs;
 using definance_backend.Features.Expenses.Repositories;
+using definance_backend.Features.Goals.Repositories;
 
 namespace definance_backend.Features.Bills.Services
 {
@@ -10,11 +11,16 @@ namespace definance_backend.Features.Bills.Services
     {
         private readonly IBillRepository _billRepository;
         private readonly IExpenseRepository _expenseRepository;
+        private readonly IGoalRepository _goalRepository;
 
-        public BillService(IBillRepository billRepository, IExpenseRepository expenseRepository)
+        public BillService(
+            IBillRepository billRepository, 
+            IExpenseRepository expenseRepository,
+            IGoalRepository goalRepository)
         {
             _billRepository = billRepository;
             _expenseRepository = expenseRepository;
+            _goalRepository = goalRepository;
         }
 
         public async Task<BillDto> GetBillByIdAsync(Guid userId, Guid billId)
@@ -97,7 +103,24 @@ namespace definance_backend.Features.Bills.Services
             bill.Status = "Pago";
             await _billRepository.UpdateAsync(bill);
 
-            // 2. Cria despesa vinculada automaticamente
+            // 2. Se a conta estiver vinculada a uma meta, deposita o valor na meta
+            if (bill.GoalId.HasValue)
+            {
+                var goal = await _goalRepository.GetByIdAsync(bill.GoalId.Value);
+                if (goal != null)
+                {
+                    goal.CurrentAmount += bill.Amount;
+                    if (goal.CurrentAmount >= goal.TargetAmount)
+                    {
+                        goal.IsCompleted = true;
+                        bill.Status = "Extinta"; // Se a meta foi batida, a reserva acaba
+                        await _billRepository.UpdateAsync(bill);
+                    }
+                    await _goalRepository.UpdateAsync(goal);
+                }
+            }
+
+            // 3. Cria despesa vinculada automaticamente
             var expense = new Expense
             {
                 Id          = Guid.NewGuid(),

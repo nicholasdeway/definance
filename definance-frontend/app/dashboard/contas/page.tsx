@@ -16,6 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
+import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
 
 
 interface ContaItem {
@@ -23,7 +24,7 @@ interface ContaItem {
   nome: string
   valor: number
   categoria: string
-  vencimento: string      // formatado pt-BR
+  vencimento: string
   rawDueDate: string | null
   status: "vencer" | "paga" | "atrasada"
   dias: number
@@ -86,11 +87,16 @@ export default function ContasPage() {
   const [contas, setContas] = useState<ContaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isPaying, setIsPaying] = useState(false)
   const [activeTab, setActiveTab] = useState("vencer")
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("Todas")
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<BillFormState>(emptyForm)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: ContaItem | null }>({
+    open: false,
+    item: null,
+  })
+  const [payDialog, setPayDialog] = useState<{ open: boolean; item: ContaItem | null }>({
     open: false,
     item: null,
   })
@@ -201,17 +207,22 @@ export default function ContasPage() {
     }
   }
 
-  const handlePayBill = async (conta: ContaItem) => {
+  const handlePayBill = async () => {
+    if (!payDialog.item) return
     try {
-      const response = await apiClient<any>(`/api/bills/${conta.id}/pay`, { method: "PUT" })
+      setIsPaying(true)
+      const response = await apiClient<any>(`/api/bills/${payDialog.item.id}/pay`, { method: "PUT" })
       if (response?.bill) {
         setContas((prev) =>
-          prev.map((c) => (c.id === conta.id ? { ...c, status: "paga" } : c))
+          prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga" } : c))
         )
         setActiveTab("pagas")
       }
     } catch (err) {
       console.error("Erro ao pagar conta:", err)
+    } finally {
+      setIsPaying(false)
+      setPayDialog({ open: false, item: null })
     }
   }
 
@@ -349,7 +360,7 @@ export default function ContasPage() {
                   {conta.status !== "paga" && (
                     <DropdownMenuItem
                       className="cursor-pointer text-sm text-primary font-medium"
-                      onClick={() => handlePayBill(conta)}
+                      onClick={() => setPayDialog({ open: true, item: conta })}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       Marcar como paga
@@ -376,7 +387,7 @@ export default function ContasPage() {
     )
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // Render
   return (
     <div className="space-y-4 md:space-y-6">
 
@@ -527,6 +538,15 @@ export default function ContasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.nome}
+      />
+
+      {/* Confirm Pay */}
+      <ConfirmPayDialog
+        open={payDialog.open}
+        onOpenChange={(open) => setPayDialog({ ...payDialog, open })}
+        onConfirm={handlePayBill}
+        itemName={payDialog.item?.nome}
+        loading={isPaying}
       />
     </div>
   )

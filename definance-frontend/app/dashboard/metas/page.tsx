@@ -1,283 +1,208 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import { Plus, Target, Plane, Car, Home, GraduationCap, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { CurrencyInput } from "@/components/ui/currency-input"
+import { Plus, Star } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
-import { LucideIcon } from "lucide-react"
+import { goalsApi, Goal, CreateUpdateGoalDto } from "@/lib/goals"
+import { useToast } from "@/components/ui/use-toast"
+import { Spinner } from "@/components/ui/spinner"
 
-interface Meta {
-  id: number
-  nome: string
-  valorAlvo: number
-  valorAtual: number
-  prazo: string
-  icon: LucideIcon
-  cor: string
-}
-
-const metasIniciais: Meta[] = [
-  { 
-    id: 1, 
-    nome: "Viagem para Europa", 
-    valorAlvo: 15000, 
-    valorAtual: 8500, 
-    prazo: "Dez 2026",
-    icon: Plane,
-    cor: "bg-blue-500"
-  },
-  { 
-    id: 2, 
-    nome: "Carro Novo", 
-    valorAlvo: 50000, 
-    valorAtual: 12000, 
-    prazo: "Jun 2027",
-    icon: Car,
-    cor: "bg-purple-500"
-  },
-  { 
-    id: 3, 
-    nome: "Entrada do Apartamento", 
-    valorAlvo: 80000, 
-    valorAtual: 35000, 
-    prazo: "Dez 2027",
-    icon: Home,
-    cor: "bg-primary"
-  },
-  { 
-    id: 4, 
-    nome: "Reserva de Emergência", 
-    valorAlvo: 20000, 
-    valorAtual: 18500, 
-    prazo: "Abr 2026",
-    icon: Target,
-    cor: "bg-yellow-500"
-  },
-  { 
-    id: 5, 
-    nome: "Curso de MBA", 
-    valorAlvo: 25000, 
-    valorAtual: 5000, 
-    prazo: "Jan 2027",
-    icon: GraduationCap,
-    cor: "bg-red-500"
-  },
-]
+// Novos componentes
+import { GoalCard } from "@/components/dashboard/goals/goal-card"
+import { GoalFormDialog } from "@/components/dashboard/goals/goal-form-dialog"
+import { DepositDialog } from "@/components/dashboard/goals/deposit-dialog"
+import { GoalsSummary } from "@/components/dashboard/goals/goals-summary"
 
 export default function MetasPage() {
-  const [metas, setMetas] = useState<Meta[]>(metasIniciais)
-  const [isOpen, setIsOpen] = useState(false)
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Meta | null }>({
-    open: false,
-    item: null,
-  })
-  const [newMeta, setNewMeta] = useState({
-    nome: "",
-    valorAlvo: "",
-    prazo: "",
-  })
+  const [metas, setMetas] = useState<Goal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
 
-  const totalMetas = metas.reduce((sum, m) => sum + m.valorAlvo, 0)
-  const totalAcumulado = metas.reduce((sum, m) => sum + m.valorAtual, 0)
-  const progressoGeral = (totalAcumulado / totalMetas) * 100
+  // Modais
+  const [modalForm, setModalForm] = useState<{ open: boolean; meta: Goal | null }>({ open: false, meta: null })
+  const [modalDeposito, setModalDeposito] = useState<{ open: boolean; meta: Goal | null }>({ open: false, meta: null })
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Goal | null }>({ open: false, item: null })
 
-  const handleAddMeta = () => {
-    if (!newMeta.nome || !newMeta.valorAlvo) return
-    
-    const valor = parseCurrencyInput(newMeta.valorAlvo)
-    const novaMeta: Meta = {
-      id: Date.now(),
-      nome: newMeta.nome,
-      valorAlvo: valor,
-      valorAtual: 0,
-      prazo: newMeta.prazo || "Dez 2026",
-      icon: Target,
-      cor: "bg-primary",
+  // Fetch metas
+  const loadMetas = async () => {
+    try {
+      setLoading(true)
+      const data = await goalsApi.getGoals()
+      setMetas(data)
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || "Tente novamente mais tarde."
+      toast({
+        title: "Erro ao carregar metas",
+        description: message,
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
     }
-    
-    setMetas([...metas, novaMeta])
-    setNewMeta({ nome: "", valorAlvo: "", prazo: "" })
-    setIsOpen(false)
   }
 
-  const handleDeleteMeta = () => {
-    if (deleteDialog.item) {
-      setMetas(metas.filter(m => m.id !== deleteDialog.item!.id))
+  useEffect(() => {
+    loadMetas()
+  }, [])
+
+  // Totais
+  const totalAlvo      = metas.reduce((s, m) => s + m.targetAmount, 0)
+  const totalAcumulado = metas.reduce((s, m) => s + m.currentAmount, 0)
+  const progressoGeral = totalAlvo > 0 ? (totalAcumulado / totalAlvo) * 100 : 0
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+
+  async function handleSaveGoal(data: CreateUpdateGoalDto) {
+    try {
+      setSaving(true)
+      if (modalForm.meta) {
+        await goalsApi.updateGoal(modalForm.meta.id, data)
+        toast({ title: "Meta atualizada!" })
+      } else {
+        await goalsApi.createGoal(data)
+        toast({ title: "Meta criada com sucesso!" })
+      }
+      setModalForm({ open: false, meta: null })
+      loadMetas()
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || "Tente novamente."
+      toast({
+        title: "Erro ao salvar meta",
+        description: message,
+        variant: "destructive"
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleConfirmDeposit(amount: number) {
+    if (!modalDeposito.meta) return
+    try {
+      setSaving(true)
+      await goalsApi.deposit(modalDeposito.meta.id, { amount })
+      toast({ title: "Depósito realizado!" })
+      setModalDeposito({ open: false, meta: null })
+      loadMetas()
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || "Tente novamente."
+      toast({
+        title: "Erro ao depositar",
+        description: message,
+        variant: "destructive"
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteMeta() {
+    if (!deleteDialog.item) return
+    try {
+      setSaving(true)
+      await goalsApi.deleteGoal(deleteDialog.item.id)
+      toast({ title: "Meta excluída." })
       setDeleteDialog({ open: false, item: null })
+      loadMetas()
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || "Erro ao excluir meta"
+      toast({
+        title: "Erro",
+        description: message,
+        variant: "destructive"
+      })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const openDeleteDialog = (meta: Meta) => {
-    setDeleteDialog({ open: true, item: meta })
+  // Render
+  if (loading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Spinner className="h-8 w-8 text-primary" />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Metas</h1>
           <p className="text-muted-foreground">Acompanhe seus objetivos financeiros</p>
         </div>
-
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/70">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Meta
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Nova Meta</DialogTitle>
-              <DialogDescription>
-                Defina um objetivo financeiro para alcançar
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nome">Nome da meta</Label>
-                <Input
-                  id="nome"
-                  placeholder="Ex: Viagem para Europa"
-                  value={newMeta.nome}
-                  onChange={(e) => setNewMeta({ ...newMeta, nome: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="valorAlvo">Valor alvo</Label>
-                <CurrencyInput
-                  id="valorAlvo"
-                  value={newMeta.valorAlvo}
-                  onChange={(value) => setNewMeta({ ...newMeta, valorAlvo: value })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="prazo">Prazo</Label>
-                <Input
-                  id="prazo"
-                  type="month"
-                  value={newMeta.prazo}
-                  onChange={(e) => setNewMeta({ ...newMeta, prazo: e.target.value })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-              <Button className="bg-primary text-primary-foreground" onClick={handleAddMeta}>
-                Criar Meta
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          id="btn-nova-meta" 
+          className="bg-primary text-primary-foreground hover:bg-primary/70" 
+          onClick={() => setModalForm({ open: true, meta: null })}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Meta
+        </Button>
       </div>
 
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base text-card-foreground">Progresso Geral</CardTitle>
-          <CardDescription>Todas as suas metas combinadas</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {formatCurrency(totalAcumulado)} de {formatCurrency(totalMetas)}
-            </span>
-            <span className="font-medium text-primary">{progressoGeral.toFixed(0)}%</span>
-          </div>
-          <Progress value={progressoGeral} className="h-3" />
-        </CardContent>
-      </Card>
+      {/* Progresso Geral */}
+      <GoalsSummary 
+        totalAcumulado={totalAcumulado} 
+        totalAlvo={totalAlvo} 
+        progressoGeral={progressoGeral} 
+      />
 
+      {/* Grid de metas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {metas.map((meta) => {
-          const progresso = (meta.valorAtual / meta.valorAlvo) * 100
-          const falta = meta.valorAlvo - meta.valorAtual
+        {metas.map((meta) => (
+          <GoalCard 
+            key={meta.id} 
+            meta={meta} 
+            onEdit={(m) => setModalForm({ open: true, meta: m })}
+            onDelete={(m) => setDeleteDialog({ open: true, item: m })}
+            onDeposit={(m) => setModalDeposito({ open: true, meta: m })}
+          />
+        ))}
 
-          return (
-            <Card key={meta.id} className="border-border/50">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${meta.cor}/10`}>
-                    <meta.icon className={`h-5 w-5 ${meta.cor.replace("bg-", "text-")}`} />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Adicionar valor</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive"
-                        onClick={() => openDeleteDialog(meta)}
-                      >
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardTitle className="text-base text-card-foreground">{meta.nome}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span className="text-2xl font-bold text-card-foreground">
-                      {progresso.toFixed(0)}%
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      Prazo: {meta.prazo}
-                    </Badge>
-                  </div>
-                  <Progress value={progresso} className="h-2" />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Acumulado</p>
-                    <p className="font-semibold text-primary">
-                      {formatCurrency(meta.valorAtual)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-muted-foreground">Falta</p>
-                    <p className="font-semibold text-card-foreground">
-                      {formatCurrency(falta)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {metas.length === 0 && !loading && (
+          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+              <Star className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-lg font-medium">Nenhuma meta ainda</p>
+              <p className="text-muted-foreground max-w-xs">Comece a planejar seus sonhos criando sua primeira meta financeira.</p>
+            </div>
+            <Button variant="outline" onClick={() => setModalForm({ open: true, meta: null })}>
+              Criar minha primeira meta
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Modais Extraídos */}
+      <GoalFormDialog 
+        open={modalForm.open}
+        onOpenChange={(open) => setModalForm({ ...modalForm, open })}
+        onSave={handleSaveGoal}
+        meta={modalForm.meta}
+        saving={saving}
+      />
+
+      <DepositDialog 
+        open={modalDeposito.open}
+        onOpenChange={(open) => setModalDeposito({ ...modalDeposito, open })}
+        onConfirm={handleConfirmDeposit}
+        meta={modalDeposito.meta}
+        saving={saving}
+      />
 
       <ConfirmDeleteDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteMeta}
-        itemName={deleteDialog.item?.nome}
+        itemName={deleteDialog.item?.name}
+        loading={saving}
       />
     </div>
   )
