@@ -27,6 +27,8 @@ using definance_backend.Features.Expenses.Repositories;
 using definance_backend.Features.Expenses.Services;
 using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Bills.Services;
+using definance_backend.Features.Goals.Repositories;
+using definance_backend.Features.Goals.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,6 +111,10 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 // BILLS (Minhas Contas)
 builder.Services.AddScoped<IBillRepository, BillRepository>();
 builder.Services.AddScoped<IBillService, BillService>();
+
+// GOALS (Metas)
+builder.Services.AddScoped<IGoalRepository, GoalRepository>();
+builder.Services.AddScoped<IGoalService, GoalService>();
 
 // GLOBAL EXCEPTION HANDLER
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

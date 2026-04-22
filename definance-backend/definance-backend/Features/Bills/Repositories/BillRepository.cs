@@ -29,6 +29,7 @@ namespace definance_backend.Features.Bills.Repositories
                     is_recurring  AS ""IsRecurring"",
                     description   AS ""Description"",
                     notes         AS ""Notes"",
+                    goal_id       AS ""GoalId"",
                     created_at    AS ""CreatedAt"",
                     updated_at    AS ""UpdatedAt""
                 FROM bills
@@ -55,6 +56,7 @@ namespace definance_backend.Features.Bills.Repositories
                     is_recurring  AS ""IsRecurring"",
                     description   AS ""Description"",
                     notes         AS ""Notes"",
+                    goal_id       AS ""GoalId"",
                     created_at    AS ""CreatedAt"",
                     updated_at    AS ""UpdatedAt""
                 FROM bills
@@ -77,10 +79,10 @@ namespace definance_backend.Features.Bills.Repositories
             const string sql = @"
                 INSERT INTO bills (
                     id, user_id, name, amount, category, bill_type, due_day, due_date,
-                    status, is_recurring, description, notes, created_at, updated_at
+                    status, is_recurring, description, notes, goal_id, created_at, updated_at
                 ) VALUES (
                     @Id, @UserId, @Name, @Amount, @Category, @BillType, @DueDay, @DueDate,
-                    @Status, @IsRecurring, @Description, @Notes, NOW(), NOW()
+                    @Status, @IsRecurring, @Description, @Notes, @GoalId, NOW(), NOW()
                 );
             ";
 
@@ -102,6 +104,7 @@ namespace definance_backend.Features.Bills.Repositories
                     is_recurring = @IsRecurring,
                     description  = @Description,
                     notes        = @Notes,
+                    goal_id      = @GoalId,
                     updated_at   = NOW()
                 WHERE id = @Id AND user_id = @UserId;
             ";

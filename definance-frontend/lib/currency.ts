@@ -12,17 +12,6 @@ export function formatCurrencyValue(value: number): string {
   }).format(value)
 }
 
-export function parseCurrencyInput(value: string): number {
-  if (!value) return 0
-
-
-  if (typeof value === 'number') return value / 100
-
-  const cleanValue = value.replace(/\D/g, "")
-  const numericValue = parseInt(cleanValue || "0", 10)
-  return numericValue / 100
-}
-
 export function toCents(value: number | string): number {
   if (typeof value === 'string') {
     const clean = value.replace(/\D/g, "")
@@ -38,9 +27,13 @@ export function formatCurrencyInput(value: string): string {
   return formatted.replace(".", ",")
 }
 
-export function currencyToNumber(value: string): number {
-  if (!value) return 0
-  const cleanValue = value
-    .replace(/\D/g, "")
-  return parseInt(cleanValue, 10) / 100
-}
+export const parseCurrencyInput = (value: string): number => {
+  if (!value) return 0;
+
+  if (typeof value === 'number') return Math.round(value * 100) / 100;
+
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return 0;
+
+  return parseInt(digits, 10) / 100;
+};
