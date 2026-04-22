@@ -34,8 +34,8 @@ export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => voi
   return (
     <div className="flex flex-col space-y-6">
       <div className="space-y-2 text-center lg:text-left">
-        <h1 className="text-3xl font-bold tracking-tight text-white">Esqueceu a senha?</h1>
-        <p className="text-sm text-white/50">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Esqueceu a senha?</h1>
+        <p className="text-sm text-muted-foreground">
           {isSuccess 
             ? "Instruções enviadas com sucesso."
             : "Digite seu e-mail para receber um link de redefinição."}
@@ -53,9 +53,9 @@ export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => voi
           
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs uppercase tracking-widest text-white/40">E-mail da conta</Label>
+              <Label htmlFor="email" className="text-xs uppercase tracking-widest text-muted-foreground">E-mail da conta</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/30" />
                 <Input
                   id="email"
                   type="email"
@@ -64,14 +64,14 @@ export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => voi
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-white/[0.03] border-white/10 h-12 pl-10 focus:ring-primary/20 text-white"
+                  className="bg-secondary/50 border-border h-12 pl-10 focus:ring-primary/20 text-foreground"
                 />
               </div>
             </div>
             
             <Button 
               type="submit" 
-              className="h-12 w-full bg-primary/10 border border-primary/20 text-white hover:bg-primary/20 transition-all font-bold uppercase tracking-widest text-xs" 
+              className="h-12 w-full bg-primary/10 border border-primary/20 text-white hover:bg-primary/20 transition-all font-bold uppercase tracking-widest text-xs cursor-pointer" 
               disabled={isLoading}
             >
               {isLoading ? <Spinner className="h-4 w-4" /> : "Enviar link de redefinição →"}
@@ -86,18 +86,18 @@ export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => voi
             </div>
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold text-white">Verifique seu e-mail</h3>
-            <p className="text-sm text-white/50 leading-relaxed">
-              Enviamos as instruções de redefinição para <span className="font-medium text-white">{email}</span>.
+            <h3 className="text-lg font-semibold text-foreground">Verifique seu e-mail</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Enviamos as instruções de redefinição para <span className="font-medium text-foreground">{email}</span>.
             </p>
-            <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/10 text-[10px] text-white/30 text-left flex gap-3 leading-relaxed">
+            <div className="mt-4 p-4 rounded-xl bg-secondary/20 border border-border text-[10px] text-muted-foreground text-left flex gap-3 leading-relaxed">
               <AlertCircle className="h-4 w-4 text-primary shrink-0" />
               <p>Caso não encontre o e-mail em alguns minutos, verifique sua pasta de <strong>Spam</strong> ou <strong>Lixeira</strong>.</p>
             </div>
           </div>
           <Button 
             onClick={onBackToLogin}
-            className="w-full bg-white/5 border border-white/10 text-white hover:bg-white/10"
+            className="w-full bg-secondary/50 border border-border text-foreground hover:bg-secondary cursor-pointer"
           >
             Voltar para o Login
           </Button>
@@ -107,7 +107,7 @@ export function ForgotPasswordForm({ onBackToLogin }: { onBackToLogin: () => voi
       {!isSuccess && (
         <button 
           onClick={onBackToLogin}
-          className="flex items-center justify-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
+          className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para o login
