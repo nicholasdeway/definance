@@ -38,9 +38,9 @@ namespace definance_backend.Features.Incomes.Services
             };
         }
 
-        public async Task<IEnumerable<IncomeDto>> GetUserIncomesAsync(Guid userId)
+        public async Task<IEnumerable<IncomeDto>> GetUserIncomesAsync(Guid userId, int? month = null, int? year = null)
         {
-            var incomes = await _incomeRepository.GetByUserIdAsync(userId);
+            var incomes = await _incomeRepository.GetByUserIdAsync(userId, month, year);
             
             return incomes.Select(i => new IncomeDto
             {
