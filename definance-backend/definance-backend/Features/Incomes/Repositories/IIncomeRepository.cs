@@ -5,7 +5,7 @@ namespace definance_backend.Features.Incomes.Repositories
     public interface IIncomeRepository
     {
         Task<Income?> GetByIdAsync(Guid id);
-        Task<IEnumerable<Income>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<Income>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null);
         Task CreateAsync(Income income);
         Task UpdateAsync(Income income);
         Task DeleteAsync(Guid id);

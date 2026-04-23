@@ -27,10 +27,10 @@ namespace definance_backend.Features.Expenses.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetExpenses()
+        public async Task<IActionResult> GetExpenses([FromQuery] int? month, [FromQuery] int? year)
         {
             var userId = GetUserId();
-            var expenses = await _expenseService.GetUserExpensesAsync(userId);
+            var expenses = await _expenseService.GetUserExpensesAsync(userId, month, year);
             return Ok(expenses);
         }
 

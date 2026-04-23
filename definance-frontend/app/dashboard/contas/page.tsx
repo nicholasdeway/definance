@@ -17,6 +17,8 @@ import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
+import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
+import { Download } from "lucide-react"
 
 
 interface ContaItem {
@@ -88,6 +90,8 @@ export default function ContasPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [activeTab, setActiveTab] = useState("vencer")
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("Todas")
   const [isOpen, setIsOpen] = useState(false)
@@ -105,7 +109,7 @@ export default function ContasPage() {
     const fetchBills = async () => {
       try {
         setIsLoading(true)
-        const data = await apiClient<any[]>("/api/bills") || []
+        const data = await apiClient<any[]>(`/api/bills?month=${selectedMonth}&year=${selectedYear}`) || []
         setContas(data.map(mapApiToConta))
       } catch (err) {
         console.error("Erro ao carregar contas:", err)
@@ -114,7 +118,7 @@ export default function ContasPage() {
       }
     }
     fetchBills()
-  }, [])
+  }, [selectedMonth, selectedYear])
 
   const setupCount = useMemo(() => 
     contas.filter(c => !c.rawDueDate).length, 
@@ -392,22 +396,37 @@ export default function ContasPage() {
     <div className="space-y-4 md:space-y-6">
 
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Contas</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Gerencie suas contas a pagar · ao pagar, a despesa vai para Saídas automaticamente
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Contas</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Gerencie suas contas a pagar · ao pagar, a despesa vai para Saídas automaticamente
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/5 w-full sm:w-auto shadow-sm"
+            onClick={openAddDialog}
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Conta
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          className="border-primary text-primary hover:bg-primary/5 w-full sm:w-auto shadow-sm"
-          onClick={openAddDialog}
-          size="sm"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Conta
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <MonthYearPicker 
+            month={selectedMonth} 
+            year={selectedYear} 
+            onMonthChange={setSelectedMonth} 
+            onYearChange={setSelectedYear} 
+          />
+          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       <BillsAlert onAction={() => setActiveTab("atrasadas")} />

@@ -39,9 +39,9 @@ namespace definance_backend.Features.Expenses.Repositories
             return await conn.QueryFirstOrDefaultAsync<Expense>(sql, new { Id = id });
         }
 
-        public async Task<IEnumerable<Expense>> GetByUserIdAsync(Guid userId)
+        public async Task<IEnumerable<Expense>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null)
         {
-            const string sql = @"
+            var sql = @"
                 SELECT
                     id,
                     user_id       AS ""UserId"",
@@ -59,11 +59,21 @@ namespace definance_backend.Features.Expenses.Repositories
                     updated_at    AS ""UpdatedAt""
                 FROM expenses
                 WHERE user_id = @UserId
-                ORDER BY date DESC;
             ";
 
+            if (month.HasValue)
+            {
+                sql += " AND EXTRACT(MONTH FROM date) = @Month";
+            }
+            if (year.HasValue)
+            {
+                sql += " AND EXTRACT(YEAR FROM date) = @Year";
+            }
+
+            sql += " ORDER BY date DESC;";
+
             await using var conn = new NpgsqlConnection(_connectionString);
-            return await conn.QueryAsync<Expense>(sql, new { UserId = userId });
+            return await conn.QueryAsync<Expense>(sql, new { UserId = userId, Month = month, Year = year });
         }
 
         public async Task CreateAsync(Expense expense)

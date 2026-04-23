@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, Download } from "lucide-react"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { ExpensesSummaryCards } from "@/components/dashboard/expenses/expenses-summary-cards"
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expense-list"
+import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
 
 const emptyForm: ExpenseFormState = {
   nome: "",
@@ -25,6 +26,8 @@ export default function DespesasPage() {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [form, setForm] = useState<ExpenseFormState>(emptyForm)
@@ -37,7 +40,7 @@ export default function DespesasPage() {
     const fetchExpenses = async () => {
       try {
         setIsLoading(true)
-        const data = await apiClient<any[]>("/api/expenses") || []
+        const data = await apiClient<any[]>(`/api/expenses?month=${selectedMonth}&year=${selectedYear}`) || []
 
         const mapped: Despesa[] = data.map((e: any) => ({
           id: e.id,
@@ -59,7 +62,7 @@ export default function DespesasPage() {
     }
 
     fetchExpenses()
-  }, [])
+  }, [selectedMonth, selectedYear])
 
   const totalDespesas    = despesas.reduce((sum, d) => sum + d.valor, 0)
   const despesasPagas    = despesas.filter(d => d.status === "Pago").reduce((sum, d) => sum + d.valor, 0)
@@ -173,22 +176,38 @@ export default function DespesasPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Despesas</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Gerencie todas as suas despesas
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Despesas</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Gerencie todas as suas despesas
+            </p>
+          </div>
+
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto"
+            onClick={openAddDialog}
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Despesa
+          </Button>
         </div>
 
-        <Button
-          className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto"
-          onClick={openAddDialog}
-          size="sm"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Despesa
-        </Button>
+        <div className="flex items-center gap-2">
+          <MonthYearPicker 
+            month={selectedMonth} 
+            year={selectedYear} 
+            onMonthChange={setSelectedMonth} 
+            onYearChange={setSelectedYear} 
+          />
+          
+          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {/* Cards de Resumo */}

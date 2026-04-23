@@ -27,10 +27,10 @@ namespace definance_backend.Features.Incomes.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetIncomes()
+        public async Task<IActionResult> GetIncomes([FromQuery] int? month, [FromQuery] int? year)
         {
             var userId = GetUserId();
-            var incomes = await _incomeService.GetUserIncomesAsync(userId);
+            var incomes = await _incomeService.GetUserIncomesAsync(userId, month, year);
             return Ok(incomes);
         }
 

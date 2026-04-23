@@ -34,9 +34,9 @@ namespace definance_backend.Features.Incomes.Repositories
             return await conn.QueryFirstOrDefaultAsync<Income>(sql, new { Id = id });
         }
 
-        public async Task<IEnumerable<Income>> GetByUserIdAsync(Guid userId)
+        public async Task<IEnumerable<Income>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null)
         {
-            const string sql = @"
+            var sql = @"
                 SELECT
                     id,
                     user_id       AS ""UserId"",
@@ -49,11 +49,21 @@ namespace definance_backend.Features.Incomes.Repositories
                     updated_at    AS ""UpdatedAt""
                 FROM incomes
                 WHERE user_id = @UserId
-                ORDER BY date DESC;
             ";
 
+            if (month.HasValue)
+            {
+                sql += " AND EXTRACT(MONTH FROM date) = @Month";
+            }
+            if (year.HasValue)
+            {
+                sql += " AND EXTRACT(YEAR FROM date) = @Year";
+            }
+
+            sql += " ORDER BY date DESC;";
+
             await using var conn = new NpgsqlConnection(_connectionString);
-            return await conn.QueryAsync<Income>(sql, new { UserId = userId });
+            return await conn.QueryAsync<Income>(sql, new { UserId = userId, Month = month, Year = year });
         }
 
         public async Task CreateAsync(Income income)
