@@ -130,19 +130,22 @@ export default function MetasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Metas</h1>
-          <p className="text-muted-foreground">Acompanhe seus objetivos financeiros</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Metas</h1>
+            <p className="text-muted-foreground">Acompanhe seus objetivos financeiros</p>
+          </div>
+          <Button 
+            id="btn-nova-meta" 
+            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+            onClick={() => setModalForm({ open: true, meta: null })}
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Meta
+          </Button>
         </div>
-        <Button 
-          id="btn-nova-meta" 
-          className="bg-primary text-primary-foreground hover:bg-primary/70" 
-          onClick={() => setModalForm({ open: true, meta: null })}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Meta
-        </Button>
       </div>
 
       {/* Progresso Geral */}

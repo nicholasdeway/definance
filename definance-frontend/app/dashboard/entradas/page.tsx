@@ -19,6 +19,8 @@ import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { SyncBadge } from "@/components/dashboard/sync-badge"
 import { apiClient } from "@/lib/api-client"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
+import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
+import { Download } from "lucide-react"
 
 interface Receita {
   id: string
@@ -37,14 +39,16 @@ const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Alu
 export default function ReceitasPage() {
   const [receitas, setReceitas] = useState<Receita[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
 
   useEffect(() => {
     const fetchIncomes = async () => {
       try {
         setIsLoading(true)
         
-        // 1. Busca dados do backend (Incomes reais)
-        const incomesData = await apiClient<any[]>("/api/incomes") || []
+        // 1. Busca dados do backend (Incomes reais) com filtro de mês/ano
+        const incomesData = await apiClient<any[]>(`/api/incomes?month=${selectedMonth}&year=${selectedYear}`) || []
         
         const mappedIncomes = incomesData.map((inc: any) => ({
           id: inc.id,
@@ -80,7 +84,7 @@ export default function ReceitasPage() {
                   tipo: typeInfo?.label || incomeTipo.toUpperCase(),
                   frequencia: freqInfo?.label || "Própria",
                   diasRecebimento: inc.diasRecebimento || inc.DiasRecebimento || "",
-                  data: new Date().toLocaleDateString("pt-BR"),
+                  data: new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("pt-BR"),
                   recorrente: true,
                   isSynced: true
                }
@@ -97,7 +101,7 @@ export default function ReceitasPage() {
                     nome: "Renda Configurada",
                     valor: parseInt(legacyIncome),
                     tipo: "Geral",
-                    data: new Date().toLocaleDateString("pt-BR"),
+                    data: new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("pt-BR"),
                     recorrente: true,
                     isSynced: true
                 })
@@ -114,7 +118,7 @@ export default function ReceitasPage() {
     }
     
     fetchIncomes()
-  }, [])
+  }, [selectedMonth, selectedYear])
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Receita | null }>({
@@ -241,28 +245,29 @@ export default function ReceitasPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header Section - Responsivo */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Entradas</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Gerencie todas as suas fontes de renda</p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Entradas</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Gerencie todas as suas fontes de renda</p>
+          </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <Button 
-            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
-            onClick={openAddDialog}
-            size="sm"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Receita
-          </Button>
-          <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-foreground text-lg sm:text-xl">{newReceita.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm">
-                {newReceita.id ? "Edite as informações da sua fonte de renda" : "Adicione uma nova fonte de renda"}
-              </DialogDescription>
-            </DialogHeader>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Button 
+              className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+              onClick={openAddDialog}
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Receita
+            </Button>
+            <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-foreground text-lg sm:text-xl">{newReceita.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm">
+                  {newReceita.id ? "Edite as informações da sua fonte de renda" : "Adicione uma nova fonte de renda"}
+                </DialogDescription>
+              </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="nome" className="text-sm sm:text-base">Nome</Label>
@@ -330,6 +335,20 @@ export default function ReceitasPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <div className="flex items-center gap-2">
+        <MonthYearPicker 
+          month={selectedMonth} 
+          year={selectedYear} 
+          onMonthChange={setSelectedMonth} 
+          onYearChange={setSelectedYear} 
+        />
+        <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
+          <Download className="h-4 w-4" />
+          Exportar
+        </Button>
+      </div>
+    </div>
 
       {/* Cards de Resumo - Grid responsivo */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

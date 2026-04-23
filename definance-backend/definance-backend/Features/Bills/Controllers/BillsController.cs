@@ -27,10 +27,10 @@ namespace definance_backend.Features.Bills.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetBills()
+        public async Task<IActionResult> GetBills([FromQuery] int? month, [FromQuery] int? year)
         {
             var userId = GetUserId();
-            var bills = await _billService.GetUserBillsAsync(userId);
+            var bills = await _billService.GetUserBillsAsync(userId, month, year);
             return Ok(bills);
         }
 

@@ -36,9 +36,9 @@ namespace definance_backend.Features.Bills.Services
             return MapToDto(bill);
         }
 
-        public async Task<IEnumerable<BillDto>> GetUserBillsAsync(Guid userId)
+        public async Task<IEnumerable<BillDto>> GetUserBillsAsync(Guid userId, int? month = null, int? year = null)
         {
-            var bills = await _billRepository.GetByUserIdAsync(userId);
+            var bills = await _billRepository.GetByUserIdAsync(userId, month, year);
             return bills.Select(MapToDto);
         }
 

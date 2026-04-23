@@ -40,9 +40,9 @@ namespace definance_backend.Features.Bills.Repositories
             return await conn.QueryFirstOrDefaultAsync<Bill>(sql, new { Id = id });
         }
 
-        public async Task<IEnumerable<Bill>> GetByUserIdAsync(Guid userId)
+        public async Task<IEnumerable<Bill>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null)
         {
-            const string sql = @"
+            var sql = @"
                 SELECT
                     id,
                     user_id       AS ""UserId"",
@@ -61,6 +61,14 @@ namespace definance_backend.Features.Bills.Repositories
                     updated_at    AS ""UpdatedAt""
                 FROM bills
                 WHERE user_id = @UserId
+            ";
+
+            if (month.HasValue && year.HasValue)
+            {
+                sql += " AND EXTRACT(MONTH FROM due_date) = @Month AND EXTRACT(YEAR FROM due_date) = @Year";
+            }
+
+            sql += @"
                 ORDER BY
                     CASE status
                         WHEN 'Atrasado' THEN 0
@@ -71,7 +79,7 @@ namespace definance_backend.Features.Bills.Repositories
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
-            return await conn.QueryAsync<Bill>(sql, new { UserId = userId });
+            return await conn.QueryAsync<Bill>(sql, new { UserId = userId, Month = month, Year = year });
         }
 
         public async Task CreateAsync(Bill bill)

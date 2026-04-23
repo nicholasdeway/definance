@@ -26,9 +26,9 @@ namespace definance_backend.Features.Expenses.Services
             return MapToDto(expense);
         }
 
-        public async Task<IEnumerable<ExpenseDto>> GetUserExpensesAsync(Guid userId)
+        public async Task<IEnumerable<ExpenseDto>> GetUserExpensesAsync(Guid userId, int? month = null, int? year = null)
         {
-            var expenses = await _expenseRepository.GetByUserIdAsync(userId);
+            var expenses = await _expenseRepository.GetByUserIdAsync(userId, month, year);
             return expenses.Select(MapToDto);
         }
 
