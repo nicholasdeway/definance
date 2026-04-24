@@ -48,6 +48,7 @@ export interface Vehicle {
   tipo: string
   nome: string
   ano: string
+  ipva?: number
   multas?: number
   financiado: boolean
   parcelasTotal?: number
