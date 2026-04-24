@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { FieldLabel } from "../components/field-label"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { Debt } from "../types"
 import { useState } from "react"
 
@@ -25,11 +26,7 @@ export const Step6Debts = () => {
 
   const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
 
-  // Formata valor decimal (Reais) para exibição em BRL
-  function displayBRL(value: number): string {
-    if (!value) return ""
-    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-  }
+
 
   const addDebt = () => {
     const newId = Math.random().toString(36).slice(2)
@@ -64,8 +61,7 @@ export const Step6Debts = () => {
   }
 
   const updateDebtValue = (id: string, raw: string) => {
-    const digits = raw.replace(/\D/g, "")
-    setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: Number(digits) / 100 } : d)))
+    setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: parseCurrencyInput(raw) } : d)))
   }
 
   return (
@@ -134,7 +130,7 @@ export const Step6Debts = () => {
                           )}
                         </div>
                         <span className="text-xs font-semibold text-muted-foreground/60 mt-1">
-                          {debt.valor ? displayBRL(debt.valor) : "R$ 0,00"}
+                          {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
                         </span>
                         {hasError && (
                           <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
@@ -279,7 +275,7 @@ export const Step6Debts = () => {
                                     <div className="space-y-0.5 border-l border-primary/10 pl-3">
                                       <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Saldo Aberto</p>
                                       <p className="text-base font-bold text-primary">
-                                          {totalRestante.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                          {formatCurrency(totalRestante)}
                                       </p>
                                     </div>
                                 </>

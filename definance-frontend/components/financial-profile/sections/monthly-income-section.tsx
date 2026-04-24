@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { AlertCircle, CalendarDays, Coins } from "lucide-react"
+import { AlertCircle, CalendarDays, Coins, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,9 @@ import { FieldLabel } from "@/components/onboarding/components/field-label"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
 import { IncomeDetail, IncomeFrequency } from "@/components/onboarding/types"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
+import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react"
 
 export const MonthlyIncomeSection = () => {
   const { 
@@ -43,9 +46,24 @@ export const MonthlyIncomeSection = () => {
     })
   }, [selectedIncomeTypes, setIncomes])
 
-  function displayBRL(value: number): string {
-    if (!value) return ""
-    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
+
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const success = await persistStep(3, incomes);
+      if (success) {
+        toast({ title: "Rendas salvas com sucesso!", variant: "default" });
+      } else {
+        toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Erro inesperado", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const updateIncome = (tipo: string, field: keyof Omit<IncomeDetail, "id" | "tipo">, value: any) => {
@@ -61,8 +79,7 @@ export const MonthlyIncomeSection = () => {
   }
 
   const updateIncomeValue = (tipo: string, rawValue: string) => {
-    const digits = rawValue.replace(/\D/g, "")
-    const decimalValue = Number(digits) / 100
+    const decimalValue = parseCurrencyInput(rawValue)
     updateIncome(tipo, "valor", decimalValue)
   }
 
@@ -74,7 +91,7 @@ export const MonthlyIncomeSection = () => {
         <p className="text-xs text-muted-foreground uppercase font-black tracking-widest opacity-70">Fontes de Renda</p>
         <div className="flex items-center gap-2 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
           <span className="text-[10px] font-bold text-primary uppercase">Total:</span>
-          <span className="text-[10px] font-black text-primary">{displayBRL(totalIncome)}</span>
+          <span className="text-[10px] font-black text-primary">{formatCurrency(totalIncome)}</span>
         </div>
       </div>
 
@@ -189,28 +206,11 @@ export const MonthlyIncomeSection = () => {
       <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4">
         <Button 
           type="button" 
+          disabled={isSaving}
+          onClick={handleSave}
           className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold"
-          onClick={async () => {
-            const btn = document.activeElement as HTMLButtonElement
-            if (btn) {
-              const originalText = btn.innerText
-              btn.innerText = "Salvando..."
-              btn.disabled = true
-              
-              const success = await persistStep(3, incomes)
-              
-              btn.disabled = false
-              if (success) {
-                btn.innerText = "Salvo!"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 2000)
-              } else {
-                btn.innerText = "Erro ao Salvar"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
-              }
-            }
-          }}
         >
-          Salvar Informações
+          {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Informações"}
         </Button>
       </div>
     </div>

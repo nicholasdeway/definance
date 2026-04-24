@@ -42,7 +42,6 @@ namespace definance_backend.Features.Onboarding.DTOs
         public string Tipo { get; set; } = null!;
         public string Nome { get; set; } = null!;
         public string Ano { get; set; } = null!;
-        public decimal Ipva { get; set; } = 0;
         public decimal Multas { get; set; } = 0;
         public bool Financiado { get; set; }
         public int? ParcelasTotal { get; set; }
@@ -50,7 +49,24 @@ namespace definance_backend.Features.Onboarding.DTOs
         public decimal? ValorParcela { get; set; }
         public bool Seguro { get; set; }
         public decimal? ValorSeguro { get; set; }
+        public string? VencimentoSeguro { get; set; }
+        public bool? SeguroRecorrente { get; set; }
         public List<ExtraExpenseDto> Extras { get; set; } = new();
+        public List<IpvaYearDto> IpvaAnos { get; set; } = new();
+    }
+
+    public class IpvaYearDto
+    {
+        public string Id { get; set; } = null!;
+        public string Ano { get; set; } = null!;
+        public List<IpvaInstallmentDto> Parcelas { get; set; } = new();
+    }
+
+    public class IpvaInstallmentDto
+    {
+        public string Id { get; set; } = null!;
+        public decimal Valor { get; set; } = 0;
+        public string Vencimento { get; set; } = null!;
     }
 
     public class DebtDto

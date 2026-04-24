@@ -44,14 +44,14 @@ export function ConfirmPayDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
-          <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading} className="cursor-pointer">Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               onConfirm();
             }}
             disabled={loading}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px]"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px] cursor-pointer"
           >
             {loading ? (
               <>

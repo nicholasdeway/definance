@@ -17,9 +17,9 @@ import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
-import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
+import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { Download } from "lucide-react"
-
+import { useSearchParams } from "next/navigation"
 
 interface ContaItem {
   id: string
@@ -47,8 +47,18 @@ const emptyForm: BillFormState = {
   observacoes: "",
 }
 
+export interface ApiBill {
+  id: string
+  name: string
+  amount: number
+  category?: string | null
+  dueDate?: string | null
+  status: string
+  billType?: string | null
+  isRecurring?: boolean | null
+}
 
-function mapApiToConta(b: any): ContaItem {
+function mapApiToConta(b: ApiBill): ContaItem {
   const rawDue = b.dueDate ?? null
   const dueDate = rawDue ? new Date(rawDue) : null
 
@@ -77,7 +87,7 @@ function mapApiToConta(b: any): ContaItem {
     rawDueDate: rawDue,
     status,
     dias,
-    tipo: b.billType ?? "Fixa",
+    tipo: b.billType === "Variável" ? "Variável" : "Fixa",
     isRecorrente: b.isRecurring ?? false,
   }
 }
@@ -90,8 +100,11 @@ export default function ContasPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [period, setPeriod] = useState<PeriodFilterState>({
+    type: "monthly",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear()
+  })
   const [activeTab, setActiveTab] = useState("vencer")
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("Todas")
   const [isOpen, setIsOpen] = useState(false)
@@ -104,12 +117,38 @@ export default function ContasPage() {
     open: false,
     item: null,
   })
+  const [showTutorial, setShowTutorial] = useState(false)
+  const searchParams = useSearchParams()
+
+
 
   useEffect(() => {
     const fetchBills = async () => {
       try {
         setIsLoading(true)
-        const data = await apiClient<any[]>(`/api/bills?month=${selectedMonth}&year=${selectedYear}`) || []
+        
+        let queryParams = ""
+        if (period.type === "monthly") {
+          queryParams = `month=${period.month}&year=${period.year}`
+        } else if (period.type === "60_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 60)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "90_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 90)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "custom") {
+          if (period.startDate && period.endDate) {
+            queryParams = `startDate=${new Date(period.startDate).toISOString()}&endDate=${new Date(period.endDate).toISOString()}`
+          } else {
+            queryParams = `month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}` // fallback
+          }
+        }
+
+        const data = await apiClient<ApiBill[]>(`/api/bills?${queryParams}`) || []
         setContas(data.map(mapApiToConta))
       } catch (err) {
         console.error("Erro ao carregar contas:", err)
@@ -118,15 +157,40 @@ export default function ContasPage() {
       }
     }
     fetchBills()
-  }, [selectedMonth, selectedYear])
+  }, [period])
 
   const setupCount = useMemo(() => 
     contas.filter(c => !c.rawDueDate).length, 
   [contas])
 
+  const firstPendingBillId = useMemo(() => 
+    contas.find(c => !c.rawDueDate)?.id, 
+  [contas])
+
+  useEffect(() => {
+    if (searchParams.get("tutorial") === "true" && setupCount > 0) {
+      setActiveTab("vencer")
+      setTypeFilter("Todas")
+      setShowTutorial(true)
+    }
+  }, [searchParams, setupCount])
+
   const overdueCount = useMemo(() => 
     contas.filter(c => c.status === "atrasada").length, 
   [contas])
+
+  // Scroll smooth para o tutorial
+  useEffect(() => {
+    if (showTutorial && firstPendingBillId) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`bill-${firstPendingBillId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [showTutorial, firstPendingBillId])
 
   const filtered = useMemo(() => {
     if (typeFilter === "Todas") return contas
@@ -165,6 +229,7 @@ export default function ContasPage() {
       observacoes: "",
     })
     setIsOpen(true)
+    setShowTutorial(false)
   }
 
   const handleSave = async () => {
@@ -192,7 +257,7 @@ export default function ContasPage() {
       const url = isEditing ? `/api/bills/${form.id}` : "/api/bills"
       const method = isEditing ? "PUT" : "POST"
 
-      const response = await apiClient<any>(url, { method, body: JSON.stringify(payload) })
+      const response = await apiClient<ApiBill>(url, { method, body: JSON.stringify(payload) })
 
       if (response && response.id) {
         const updated = mapApiToConta(response)
@@ -215,7 +280,7 @@ export default function ContasPage() {
     if (!payDialog.item) return
     try {
       setIsPaying(true)
-      const response = await apiClient<any>(`/api/bills/${payDialog.item.id}/pay`, { method: "PUT" })
+      const response = await apiClient<{ bill: ApiBill }>(`/api/bills/${payDialog.item.id}/pay`, { method: "PUT" })
       if (response?.bill) {
         setContas((prev) =>
           prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga" } : c))
@@ -242,7 +307,17 @@ export default function ContasPage() {
     }
   }
 
-  const getStatusIcon = (status: string) => {
+  const handleAlertAction = () => {
+    if (overdueCount > 0) {
+      setActiveTab("atrasadas")
+    } else if (setupCount > 0) {
+      setActiveTab("vencer")
+      setTypeFilter("Todas")
+      setShowTutorial(true)
+    }
+  }
+
+  const getStatusIcon = (status: ContaItem["status"]) => {
     switch (status) {
       case "vencer":   return <Clock       className="h-3.5 w-3.5 text-yellow-500" />
       case "paga":     return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
@@ -250,7 +325,7 @@ export default function ContasPage() {
     }
   }
 
-  const getStatusBadge = (status: string, dias: number, hasDate: boolean) => {
+  const getStatusBadge = (status: ContaItem["status"], dias: number, hasDate: boolean) => {
     switch (status) {
       case "vencer":
         if (!hasDate) {
@@ -272,7 +347,7 @@ export default function ContasPage() {
     }
   }
 
-  const getTipoBadge = (tipo: string) => (
+  const getTipoBadge = (tipo: ContaItem["tipo"]) => (
     <Badge
       variant="outline"
       className={`text-[10px] whitespace-nowrap px-1.5 py-0 ${
@@ -310,7 +385,12 @@ export default function ContasPage() {
         {lista.map((conta) => (
           <div
             key={conta.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border/50 p-3 sm:p-4 transition-colors hover:bg-muted/50 gap-3 sm:gap-4"
+            id={`bill-${conta.id}`}
+            className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border/50 p-3 sm:p-4 transition-colors hover:bg-muted/50 gap-3 sm:gap-4 ${
+              showTutorial && conta.id === firstPendingBillId 
+                ? "z-[110] relative bg-background ring-4 ring-primary ring-offset-4 ring-offset-background shadow-[0_0_0_9999px_rgba(0,0,0,0.8)]" 
+                : ""
+            }`}
           >
             {/* Ícone + Info */}
             <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
@@ -405,8 +485,7 @@ export default function ContasPage() {
             </p>
           </div>
           <Button
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/5 w-full sm:w-auto shadow-sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >
@@ -416,11 +495,9 @@ export default function ContasPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <MonthYearPicker 
-            month={selectedMonth} 
-            year={selectedYear} 
-            onMonthChange={setSelectedMonth} 
-            onYearChange={setSelectedYear} 
+          <PeriodFilter 
+            value={period}
+            onChange={setPeriod}
           />
           <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
             <Download className="h-4 w-4" />
@@ -429,7 +506,7 @@ export default function ContasPage() {
         </div>
       </div>
 
-      <BillsAlert onAction={() => setActiveTab("atrasadas")} />
+      <BillsAlert onAction={handleAlertAction} />
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -567,6 +644,39 @@ export default function ContasPage() {
         itemName={payDialog.item?.nome}
         loading={isPaying}
       />
+
+      {/* Tutorial Hint Overlay */}
+      {showTutorial && (
+        <>
+          <div 
+            className="fixed inset-0 z-[100] cursor-pointer" 
+            onClick={() => setShowTutorial(false)}
+          />
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[90%] max-w-md animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-zinc-900/95 backdrop-blur-md text-zinc-100 p-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 flex items-start gap-4 ring-1 ring-white/5">
+              <div className="bg-primary/20 p-2.5 rounded-2xl shrink-0">
+                <MoreHorizontal className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-base mb-1 text-white">Como configurar o vencimento?</h4>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                  Clique nos <strong className="text-primary">três pontinhos</strong> da conta destacada acima e escolha <strong>"Editar"</strong> para definir a data de vencimento.
+                </p>
+                <div className="flex justify-end">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowTutorial(false)}
+                    className="h-8 text-xs font-bold px-5 bg-white/5 hover:bg-white/10 text-white rounded-xl cursor-pointer"
+                  >
+                    Entendi!
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

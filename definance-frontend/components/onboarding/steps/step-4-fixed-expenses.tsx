@@ -10,6 +10,7 @@ import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { fixedExpenseCategories } from "../constants"
 import { FieldLabel } from "../components/field-label"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 
 export const Step4FixedExpenses = () => {
   const { 
@@ -22,11 +23,6 @@ export const Step4FixedExpenses = () => {
     wasAttempted 
   } = useOnboarding()
 
-  // Formata valor decimal (Reais) para exibição em BRL
-  function displayBRL(value: number): string {
-    if (!value) return ""
-    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-  }
 
   const toggleExpense = (key: string) => {
     setSelectedExpenses(prev => {
@@ -38,8 +34,7 @@ export const Step4FixedExpenses = () => {
   }
 
   const setExpenseValue = (key: string, raw: string) => {
-    const digits = raw.replace(/\D/g, "")
-    setSelectedExpenses(prev => ({ ...prev, [key]: Number(digits) / 100 }))
+    setSelectedExpenses(prev => ({ ...prev, [key]: parseCurrencyInput(raw) }))
   }
 
   const toggleBillLoan = (key: string) => {
@@ -50,10 +45,9 @@ export const Step4FixedExpenses = () => {
   }
 
   const setBillLoanValue = (key: string, raw: string) => {
-    const digits = raw.replace(/\D/g, "")
     setBillLoans(prev => ({
       ...prev,
-      [key]: { ...prev[key], valor: Number(digits) / 100 }
+      [key]: { ...prev[key], valor: parseCurrencyInput(raw) }
     }))
   }
 
@@ -102,7 +96,7 @@ export const Step4FixedExpenses = () => {
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
               {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
-                  {displayBRL(selectedExpenses[cat.key])}
+                  {formatCurrency(selectedExpenses[cat.key])}
                 </span>
               )}
             </button>
@@ -189,7 +183,7 @@ export const Step4FixedExpenses = () => {
                                   <p className="text-[10px] text-muted-foreground flex justify-between items-center">
                                     <span className="opacity-80">Consumo real estimado:</span>
                                     <span className="font-bold text-primary text-xs">
-                                      {displayBRL(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
+                                      {formatCurrency(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
                                     </span>
                                   </p>
                                 </div>
@@ -297,7 +291,7 @@ export const Step4FixedExpenses = () => {
                       id={`custom-valor-${exp.id}`}
                       placeholder="R$ 0,00"
                       value={exp.valor ? Math.round(exp.valor * 100).toString() : ""}
-                      onChange={(value) => updateCustomExpense(exp.id, "valor", Number(value.replace(/\D/g, "")) / 100)}
+                      onChange={(value) => updateCustomExpense(exp.id, "valor", parseCurrencyInput(value))}
                       className={cn(
                         "h-8 bg-background text-sm font-medium",
                         wasAttempted && (!exp.valor || exp.valor === 0) && "border-destructive/50"

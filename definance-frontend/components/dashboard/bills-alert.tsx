@@ -84,12 +84,19 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
               <Button 
                 variant="default"
                 size="sm"
-                asChild
+                onClick={onAction}
                 className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary text-primary-foreground hover:bg-primary/80"
+                asChild={!onAction}
               >
-                <Link href="/dashboard/contas" className="flex items-center gap-1 whitespace-nowrap">
+                {!onAction ? (
+                  <Link href="/dashboard/contas?tutorial=true" className="flex items-center gap-1 whitespace-nowrap">
                   Resolver <ArrowRight className="h-3 w-3" />
                 </Link>
+                ) : (
+                  <span className="flex items-center gap-1 whitespace-nowrap">
+                    Resolver <ArrowRight className="h-3 w-3" />
+                  </span>
+                )}
               </Button>
             </div>
           </CardContent>
