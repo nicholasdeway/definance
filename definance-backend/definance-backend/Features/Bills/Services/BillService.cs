@@ -4,6 +4,7 @@ using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Expenses.DTOs;
 using definance_backend.Features.Expenses.Repositories;
 using definance_backend.Features.Goals.Repositories;
+using System.Transactions;
 
 namespace definance_backend.Features.Bills.Services
 {
@@ -36,9 +37,9 @@ namespace definance_backend.Features.Bills.Services
             return MapToDto(bill);
         }
 
-        public async Task<IEnumerable<BillDto>> GetUserBillsAsync(Guid userId, int? month = null, int? year = null)
+        public async Task<IEnumerable<BillDto>> GetUserBillsAsync(Guid userId, int? month = null, int? year = null, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var bills = await _billRepository.GetByUserIdAsync(userId, month, year);
+            var bills = await _billRepository.GetByUserIdAsync(userId, month, year, startDate, endDate);
             return bills.Select(MapToDto);
         }
 
@@ -91,6 +92,8 @@ namespace definance_backend.Features.Bills.Services
 
         public async Task<(BillDto Bill, ExpenseDto Expense)> PayBillAsync(Guid userId, Guid billId)
         {
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
             var bill = await _billRepository.GetByIdAsync(billId);
 
             if (bill == null)
@@ -102,6 +105,42 @@ namespace definance_backend.Features.Bills.Services
             // 1. Atualiza status da conta
             bill.Status = "Pago";
             await _billRepository.UpdateAsync(bill);
+
+            // 1.1 Se for recorrente, gera a próxima parcela para o mês seguinte
+            if (bill.IsRecurring)
+            {
+                DateTime? nextDueDate = null;
+
+                if (bill.DueDate.HasValue)
+                {
+                    nextDueDate = bill.DueDate.Value.AddMonths(1);
+                }
+                else if (bill.DueDay.HasValue)
+                {
+                    // Se não tinha data, mas tinha dia fixo, calculamos para o próximo mês
+                    var nextMonth = DateTime.UtcNow.AddMonths(1);
+                    var day = Math.Min(bill.DueDay.Value, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
+                    nextDueDate = new DateTime(nextMonth.Year, nextMonth.Month, day);
+                }
+
+                var nextBill = new Bill
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Name = bill.Name,
+                    Amount = bill.Amount,
+                    Category = bill.Category,
+                    BillType = bill.BillType,
+                    DueDay = bill.DueDay,
+                    DueDate = nextDueDate,
+                    Status = "Pendente",
+                    IsRecurring = true,
+                    Description = bill.Description,
+                    Notes = bill.Notes
+                };
+
+                await _billRepository.CreateAsync(nextBill);
+            }
 
             // 2. Se a conta estiver vinculada a uma meta, deposita o valor na meta
             if (bill.GoalId.HasValue)
@@ -151,6 +190,8 @@ namespace definance_backend.Features.Bills.Services
                 BillId      = expense.BillId,
                 DueDate     = expense.DueDate
             };
+
+            transaction.Complete();
 
             return (MapToDto(bill), expenseDto);
         }

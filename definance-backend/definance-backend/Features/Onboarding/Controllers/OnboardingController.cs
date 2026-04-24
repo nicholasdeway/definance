@@ -59,6 +59,21 @@ namespace definance_backend.Features.Onboarding.Controllers
             }
         }
 
+        [HttpPost("sync-vehicles")]
+        public async Task<IActionResult> SyncVehicles()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                await _onboardingService.SyncVehiclesAsync(userId);
+                return Ok(new { message = "Veículos sincronizados com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
         [HttpGet("progress")]
         public async Task<IActionResult> GetProgress()
         {

@@ -9,6 +9,7 @@ import { FieldLabel } from "../components/field-label"
 import { incomeTypes, incomeFrequencies } from "../constants"
 import { IncomeDetail, IncomeFrequency } from "../types"
 import { CurrencyInput } from "@/components/ui/currency-input"
+import { parseCurrencyInput } from "@/lib/currency"
 
 export const Step3MonthlyIncome = () => {
   const { 
@@ -37,15 +38,8 @@ export const Step3MonthlyIncome = () => {
     })
   }, [selectedIncomeTypes, setIncomes])
 
-  // Formata valor decimal para exibição em BRL
-  function displayBRL(value: number): string {
-    if (!value) return ""
-    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-  }
-
   const updateIncomeValue = (tipo: string, rawValue: string) => {
-    const digits = rawValue.replace(/\D/g, "")
-    const decimalValue = Number(digits) / 100 // Converter centavos para decimal
+    const decimalValue = parseCurrencyInput(rawValue)
     updateIncome(tipo, "valor", decimalValue)
   }
 

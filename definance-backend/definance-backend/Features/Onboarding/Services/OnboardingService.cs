@@ -38,9 +38,9 @@ namespace definance_backend.Features.Onboarding.Services
                     UserId = userId,
                     Name = label,
                     Amount = expense.Value,
-                    Category = "Moradia", // Categoria padrão ou mapeada
+                    Category = "Moradia",
                     BillType = "Fixa",
-                    DueDay = null, // Vencimento pendente
+                    DueDay = null,
                     Status = "Pendente",
                     IsRecurring = true,
                     Description = $"Importado do Onboarding ({label})"
@@ -88,21 +88,40 @@ namespace definance_backend.Features.Onboarding.Services
             // 3. Processar Veículos
             foreach (var v in dto.Vehicles)
             {
-                if (v.Ipva > 0)
+                if (v.IpvaAnos != null && v.IpvaAnos.Count > 0)
                 {
-                    await _billRepository.CreateAsync(new Bill
+                    foreach (var ano in v.IpvaAnos)
                     {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = $"IPVA - {v.Nome}",
-                        Amount = v.Ipva,
-                        Category = "Veículos",
-                        BillType = "Variável",
-                        DueDay = null,
-                        Status = "Pendente",
-                        IsRecurring = false,
-                        Description = $"IPVA do veículo {v.Nome}"
-                    });
+                        int parcelaCount = 1;
+                        foreach (var parcela in ano.Parcelas)
+                        {
+                            if (parcela.Valor <= 0) continue;
+
+                            int? dueDay = null;
+                            DateTime? dueDate = null;
+                            if (DateTime.TryParse(parcela.Vencimento, out var dt))
+                            {
+                                dueDate = dt.ToUniversalTime();
+                                dueDay = dt.Day;
+                            }
+
+                            await _billRepository.CreateAsync(new Bill
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Name = $"IPVA {ano.Ano} - {v.Nome} ({parcelaCount}/{ano.Parcelas.Count})",
+                                Amount = parcela.Valor,
+                                Category = "Veículos",
+                                BillType = "Variável",
+                                DueDay = dueDay,
+                                DueDate = dueDate,
+                                Status = "Pendente",
+                                IsRecurring = false,
+                                Description = $"IPVA do veículo {v.Nome} (Ano {ano.Ano})"
+                            });
+                            parcelaCount++;
+                        }
+                    }
                 }
 
                 if (v.Financiado && v.ValorParcela > 0)
@@ -124,6 +143,14 @@ namespace definance_backend.Features.Onboarding.Services
 
                 if (v.Seguro && v.ValorSeguro > 0)
                 {
+                    int? dueDay = null;
+                    DateTime? dueDate = null;
+                    if (!string.IsNullOrEmpty(v.VencimentoSeguro) && DateTime.TryParse(v.VencimentoSeguro, out var dt))
+                    {
+                        dueDate = dt.ToUniversalTime();
+                        dueDay = dt.Day;
+                    }
+
                     await _billRepository.CreateAsync(new Bill
                     {
                         Id = Guid.NewGuid(),
@@ -132,9 +159,10 @@ namespace definance_backend.Features.Onboarding.Services
                         Amount = v.ValorSeguro.Value,
                         Category = "Veículos",
                         BillType = "Fixa",
-                        DueDay = null,
+                        DueDay = dueDay,
+                        DueDate = dueDate,
                         Status = "Pendente",
-                        IsRecurring = true,
+                        IsRecurring = v.SeguroRecorrente ?? true,
                         Description = $"Seguro do veículo {v.Nome}"
                     });
                 }
@@ -243,6 +271,110 @@ namespace definance_backend.Features.Onboarding.Services
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
+        }
+
+        public async Task SyncVehiclesAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+            var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+            if (dto == null || dto.Vehicles == null || dto.Vehicles.Count == 0) return;
+
+            var existingBills = await _billRepository.GetByUserIdAsync(userId);
+            var pendingVehicleBills = existingBills.Where(b => b.Category == "Veículos" && b.Status == "Pendente").ToList();
+
+            foreach (var bill in pendingVehicleBills)
+            {
+                await _billRepository.DeleteAsync(bill.Id);
+            }
+
+            foreach (var v in dto.Vehicles)
+            {
+                if (v.IpvaAnos != null && v.IpvaAnos.Count > 0)
+                {
+                    foreach (var ano in v.IpvaAnos)
+                    {
+                        int parcelaCount = 1;
+                        foreach (var parcela in ano.Parcelas)
+                        {
+                            if (parcela.Valor <= 0) continue;
+
+                            int? dueDay = null;
+                            DateTime? dueDate = null;
+                            if (DateTime.TryParse(parcela.Vencimento, out var dt))
+                            {
+                                dueDate = dt.ToUniversalTime();
+                                dueDay = dt.Day;
+                            }
+
+                            await _billRepository.CreateAsync(new Bill
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Name = $"IPVA {ano.Ano} - {v.Nome} ({parcelaCount}/{ano.Parcelas.Count})",
+                                Amount = parcela.Valor,
+                                Category = "Veículos",
+                                BillType = "Variável",
+                                DueDay = dueDay,
+                                DueDate = dueDate,
+                                Status = "Pendente",
+                                IsRecurring = false,
+                                Description = $"IPVA do veículo {v.Nome} (Ano {ano.Ano})"
+                            });
+                            parcelaCount++;
+                        }
+                    }
+                }
+
+                if (v.Financiado && v.ValorParcela > 0)
+                {
+                    await _billRepository.CreateAsync(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = $"Parcela - {v.Nome}",
+                        Amount = v.ValorParcela.Value,
+                        Category = "Veículos",
+                        BillType = "Fixa",
+                        DueDay = null,
+                        Status = "Pendente",
+                        IsRecurring = true,
+                        Description = $"Financiamento do veículo {v.Nome}"
+                    });
+                }
+
+                if (v.Seguro && v.ValorSeguro > 0)
+                {
+                    int? dueDay = null;
+                    DateTime? dueDate = null;
+                    if (!string.IsNullOrEmpty(v.VencimentoSeguro) && DateTime.TryParse(v.VencimentoSeguro, out var dt))
+                    {
+                        dueDate = dt.ToUniversalTime();
+                        dueDay = dt.Day;
+                    }
+
+                    await _billRepository.CreateAsync(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = $"Seguro - {v.Nome}",
+                        Amount = v.ValorSeguro.Value,
+                        Category = "Veículos",
+                        BillType = "Fixa",
+                        DueDay = dueDay,
+                        DueDate = dueDate,
+                        Status = "Pendente",
+                        IsRecurring = v.SeguroRecorrente ?? true,
+                        Description = $"Seguro do veículo {v.Nome}"
+                    });
+                }
+            }
         }
 
         public async Task<OnboardingSubmissionDto?> GetProgressAsync(Guid userId)

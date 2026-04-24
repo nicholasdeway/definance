@@ -27,10 +27,10 @@ namespace definance_backend.Features.Expenses.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetExpenses([FromQuery] int? month, [FromQuery] int? year)
+        public async Task<IActionResult> GetExpenses([FromQuery] int? month, [FromQuery] int? year, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
             var userId = GetUserId();
-            var expenses = await _expenseService.GetUserExpensesAsync(userId, month, year);
+            var expenses = await _expenseService.GetUserExpensesAsync(userId, month, year, startDate, endDate);
             return Ok(expenses);
         }
 
@@ -102,6 +102,10 @@ namespace definance_backend.Features.Expenses.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 

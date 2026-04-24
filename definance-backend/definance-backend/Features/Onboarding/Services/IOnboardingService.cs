@@ -8,6 +8,7 @@ namespace definance_backend.Features.Onboarding.Services
     {
         Task CompleteOnboardingAsync(Guid userId, OnboardingSubmissionDto dto);
         Task SaveStepProgressAsync(Guid userId, int stepNumber, System.Text.Json.JsonElement data);
+        Task SyncVehiclesAsync(Guid userId);
         Task<OnboardingSubmissionDto?> GetProgressAsync(Guid userId);
     }
 }

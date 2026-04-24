@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React, { useState } from "react"
 import { 
@@ -7,7 +7,8 @@ import {
   Plus,
   Trash2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from "lucide-react"
 import {
     Accordion,
@@ -24,6 +25,8 @@ import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { Debt } from "@/components/onboarding/types"
 import { Button } from "@/components/ui/button"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
+import { useToast } from "@/components/ui/use-toast"
 
 export const DebtsSection = () => {
     const { 
@@ -35,12 +38,26 @@ export const DebtsSection = () => {
     
     const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
     const [newExtras, setNewExtras] = useState<Record<string, { descricao: string; valor: number }>>({})
+    const [isSaving, setIsSaving] = useState(false)
+    const { toast } = useToast()
     
-    function displayBRL(value: number): string {
-        if (value === undefined || value === null) return ""
-        return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    const handleSave = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            const success = await persistStep(6, debts);
+            if (success) {
+                toast({ title: "Dívidas salvas com sucesso!", variant: "default" });
+                setExpandedValue(undefined);
+            } else {
+                toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
+            }
+        } catch (e) {
+            toast({ title: "Erro inesperado", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
     }
-    
     const addDebt = () => {
         const newId = Math.random().toString(36).slice(2)
         setDebts(prev => [
@@ -59,9 +76,7 @@ export const DebtsSection = () => {
     }
     
     const updateDebtValue = (id: string, raw: string) => {
-        const digits = raw.replace(/\D/g, "")
-        // CORREÃ‡ÃƒO: Dividir por 100 para converter centavos em decimal
-        const decimalValue = Number(digits) / 100
+        const decimalValue = parseCurrencyInput(raw)
         setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: decimalValue } : d)))
     }
 
@@ -118,12 +133,17 @@ export const DebtsSection = () => {
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-sm font-semibold text-card-foreground truncate">
-                                            {debt.descricao || `DÃ­vida ${idx + 1}`}
+                                            {debt.descricao || `Dívida ${idx + 1}`}
                                         </span>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs font-medium text-muted-foreground">
-                                                {debt.valor ? displayBRL(debt.valor) : "R$ 0,00"}
+                                                {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
                                             </span>
+                                            {debt.extras && debt.extras.length > 0 && (
+                                                <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
+                                                    + {formatCurrency(debt.extras.reduce((acc, curr) => acc + curr.valor, 0))} extras
+                                                </span>
+                                            )}
                                             {debt.parcelado && (
                                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 flex items-center gap-0.5 shrink-0">
                                                     <Landmark className="h-2 w-2" /> 
@@ -139,7 +159,7 @@ export const DebtsSection = () => {
                                         {isExpanded ? "Recolher" : "Ver detalhes"}
                                     </span>
                                     
-                                    {/* Ãcone da seta (expansÃ£o) */}
+                                    {/* Ã cone da seta (expansão) */}
                                     {isExpanded ? (
                                         <ChevronUp className="h-4 w-4 text-muted-foreground/60" />
                                     ) : (
@@ -149,12 +169,12 @@ export const DebtsSection = () => {
                                     {/* Separador vertical */}
                                     <div className="h-6 w-px bg-border/40" />
                                     
-                                    {/* BotÃ£o de remover (lixeira) */}
+                                    {/* Botão de remover (lixeira) */}
                                     <button 
                                         type="button" 
                                         onClick={(e) => { e.stopPropagation(); removeDebt(debt.id); }} 
                                         className="p-1.5 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0"
-                                        title="Remover dÃ­vida"
+                                        title="Remover dívida"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </button>
@@ -164,9 +184,9 @@ export const DebtsSection = () => {
                             <AccordionContent className="px-4 pb-4 border-t border-border/20 bg-muted/5">
                                 <div className="pt-4 grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5 sm:col-span-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">DescriÃ§Ã£o</Label>
+                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição</Label>
                                         <Input
-                                            placeholder="Ex: CartÃ£o de crÃ©dito..."
+                                            placeholder="Ex: Cartão de crédito..."
                                             value={debt.descricao || ""}
                                             onChange={(e) => updateDebt(debt.id, "descricao", e.target.value)}
                                             className="h-9 bg-background"
@@ -208,10 +228,10 @@ export const DebtsSection = () => {
                                         </div>
                                     )}
 
-                                    {/* Gastos Adicionais da DÃ­vida */}
+                                    {/* Gastos Adicionais da Dívida */}
                                     <div className="space-y-3 border-t border-border/20 pt-4 sm:col-span-2">
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground transition-colors hover:text-primary">Gastos Extras desta DÃ­vida</Label>
+                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground transition-colors hover:text-primary">Gastos Extras desta Dívida</Label>
                                         </div>
 
                                         {debt.extras && debt.extras.length > 0 && (
@@ -223,7 +243,7 @@ export const DebtsSection = () => {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-primary/50"></span>
                                                                 <span className="text-xs font-semibold text-muted-foreground uppercase">{extra.descricao}</span>
                                                             </div>
-                                                            <span className="text-sm text-foreground font-medium pl-3.5 sm:pl-0">{extra.valor ? displayBRL(extra.valor) : "R$ 0,00"}</span>
+                                                            <span className="text-sm text-foreground font-medium pl-3.5 sm:pl-0">{extra.valor ? formatCurrency(extra.valor) : "R$ 0,00"}</span>
                                                         </div>
                                                         <button
                                                             type="button"
@@ -242,7 +262,7 @@ export const DebtsSection = () => {
                                             <div className="flex flex-col gap-3 bg-primary/5 p-4 rounded-lg border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
                                                 <div className="grid sm:grid-cols-2 gap-3">
                                                     <div className="space-y-1.5">
-                                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">DescriÃ§Ã£o</Label>
+                                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição</Label>
                                                         <Input 
                                                             value={newExtras[debt.id].descricao} 
                                                             onChange={e => setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], descricao: e.target.value}}))}
@@ -255,11 +275,7 @@ export const DebtsSection = () => {
                                                         <CurrencyInput 
                                                             id={`new-extra-valor-debt-${debt.id}`}
                                                             value={newExtras[debt.id].valor ? Math.round(newExtras[debt.id].valor * 100).toString() : ""} 
-                                                            onChange={value => {
-                                                                const digits = value.replace(/\D/g, "")
-                                                                const decimalValue = Number(digits) / 100
-                                                                setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], valor: decimalValue }}))
-                                                            }}
+                                                            onChange={val => setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], valor: parseCurrencyInput(val)}}))}
                                                             placeholder="R$ 0,00"
                                                             className="h-9 text-xs bg-background"
                                                         />
@@ -300,31 +316,11 @@ export const DebtsSection = () => {
                                     <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4 sm:col-span-2">
                                         <Button 
                                             type="button" 
-                                            onClick={async () => {
-                                                const btn = document.activeElement as HTMLButtonElement
-                                                if (btn) {
-                                                    const originalText = btn.innerText
-                                                    btn.innerText = "Salvando..."
-                                                    btn.disabled = true
-                                                    
-                                                    const success = await persistStep(6, debts)
-                                                    
-                                                    btn.disabled = false
-                                                    if (success) {
-                                                        btn.innerText = "Salvo!"
-                                                        setTimeout(() => {
-                                                            if (btn) btn.innerText = originalText
-                                                            setExpandedValue(undefined)
-                                                        }, 1000)
-                                                    } else {
-                                                        btn.innerText = "Erro ao Salvar"
-                                                        setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
-                                                    }
-                                                }
-                                            }}
+                                            disabled={isSaving}
+                                            onClick={handleSave}
                                             className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold"
                                         >
-                                            Salvar DÃ­vida
+                                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Dívida"}
                                         </Button>
                                     </div>
                                 </div>
@@ -336,7 +332,7 @@ export const DebtsSection = () => {
 
             <button type="button" onClick={addDebt} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-all cursor-pointer">
                 <Plus className="h-4 w-4" />
-                Adicionar dÃ­vida
+                Adicionar dívida
             </button>
         </div>
     )

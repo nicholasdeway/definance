@@ -40,7 +40,7 @@ namespace definance_backend.Features.Bills.Repositories
             return await conn.QueryFirstOrDefaultAsync<Bill>(sql, new { Id = id });
         }
 
-        public async Task<IEnumerable<Bill>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null)
+        public async Task<IEnumerable<Bill>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             var sql = @"
                 SELECT
@@ -63,9 +63,17 @@ namespace definance_backend.Features.Bills.Repositories
                 WHERE user_id = @UserId
             ";
 
-            if (month.HasValue && year.HasValue)
+            if (startDate.HasValue && endDate.HasValue)
             {
-                sql += " AND EXTRACT(MONTH FROM due_date) = @Month AND EXTRACT(YEAR FROM due_date) = @Year";
+                sql += " AND (due_date >= @StartDate AND due_date <= @EndDate OR due_date IS NULL)";
+            }
+            else if (month.HasValue && year.HasValue)
+            {
+                sql += @" AND (
+                    (EXTRACT(MONTH FROM due_date) = @Month AND EXTRACT(YEAR FROM due_date) = @Year) 
+                    OR (due_date IS NULL)
+                    OR (is_recurring = true AND status = 'Pendente' AND (EXTRACT(YEAR FROM due_date) < @Year OR (EXTRACT(YEAR FROM due_date) = @Year AND EXTRACT(MONTH FROM due_date) < @Month)))
+                )";
             }
 
             sql += @"
@@ -79,7 +87,7 @@ namespace definance_backend.Features.Bills.Repositories
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
-            return await conn.QueryAsync<Bill>(sql, new { UserId = userId, Month = month, Year = year });
+            return await conn.QueryAsync<Bill>(sql, new { UserId = userId, Month = month, Year = year, StartDate = startDate, EndDate = endDate });
         }
 
         public async Task CreateAsync(Bill bill)

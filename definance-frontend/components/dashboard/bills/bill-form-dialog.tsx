@@ -32,10 +32,12 @@ export const categoriasContas = [
   "Moradia",
   "Alimentação",
   "Transporte",
+  "Veículos",
   "Saúde",
   "Educação",
   "Lazer",
   "Serviços",
+  "Assinaturas",
   "Outros",
 ]
 
@@ -173,6 +175,11 @@ export function BillFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {!form.categoria && (
+                <p className="text-[10px] text-orange-500 font-medium animate-pulse mt-1">
+                  💡 Dica: Vincule uma categoria para organizar melhor suas saídas!
+                </p>
+              )}
             </div>
           </div>
 
