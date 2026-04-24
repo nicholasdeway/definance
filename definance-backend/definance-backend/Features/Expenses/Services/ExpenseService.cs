@@ -26,9 +26,9 @@ namespace definance_backend.Features.Expenses.Services
             return MapToDto(expense);
         }
 
-        public async Task<IEnumerable<ExpenseDto>> GetUserExpensesAsync(Guid userId, int? month = null, int? year = null)
+        public async Task<IEnumerable<ExpenseDto>> GetUserExpensesAsync(Guid userId, int? month = null, int? year = null, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var expenses = await _expenseRepository.GetByUserIdAsync(userId, month, year);
+            var expenses = await _expenseRepository.GetByUserIdAsync(userId, month, year, startDate, endDate);
             return expenses.Select(MapToDto);
         }
 
@@ -85,8 +85,11 @@ namespace definance_backend.Features.Expenses.Services
             if (expense.UserId != userId)
                 throw new UnauthorizedAccessException("Esta despesa não pertence a este usuário.");
 
-            await _expenseRepository.MarkAsPaidAsync(expenseId, userId);
+            if (expense.Status == "Pago")
+                throw new InvalidOperationException("Esta despesa já está marcada como paga.");
+
             expense.Status = "Pago";
+            await _expenseRepository.UpdateAsync(expense);
 
             return MapToDto(expense);
         }

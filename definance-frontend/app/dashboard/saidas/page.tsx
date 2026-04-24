@@ -9,7 +9,18 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { ExpensesSummaryCards } from "@/components/dashboard/expenses/expenses-summary-cards"
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expense-list"
-import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
+import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
+
+export interface ExpenseApiResponse {
+  id: string
+  name: string
+  amount: number
+  category: string
+  date: string
+  expenseType: string
+  status: string
+  billId?: string | null
+}
 
 const emptyForm: ExpenseFormState = {
   nome: "",
@@ -26,8 +37,11 @@ export default function DespesasPage() {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [period, setPeriod] = useState<PeriodFilterState>({
+    type: "monthly",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear()
+  })
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [form, setForm] = useState<ExpenseFormState>(emptyForm)
@@ -40,9 +54,31 @@ export default function DespesasPage() {
     const fetchExpenses = async () => {
       try {
         setIsLoading(true)
-        const data = await apiClient<any[]>(`/api/expenses?month=${selectedMonth}&year=${selectedYear}`) || []
 
-        const mapped: Despesa[] = data.map((e: any) => ({
+        let queryParams = ""
+        if (period.type === "monthly") {
+          queryParams = `month=${period.month}&year=${period.year}`
+        } else if (period.type === "60_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 60)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "90_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 90)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "custom") {
+          if (period.startDate && period.endDate) {
+            queryParams = `startDate=${new Date(period.startDate).toISOString()}&endDate=${new Date(period.endDate).toISOString()}`
+          } else {
+            queryParams = `month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}` // fallback
+          }
+        }
+
+        const data = await apiClient<ExpenseApiResponse[]>(`/api/expenses?${queryParams}`) || []
+
+        const mapped: Despesa[] = data.map((e: ExpenseApiResponse) => ({
           id: e.id,
           nome: e.name,
           valor: e.amount,
@@ -62,7 +98,7 @@ export default function DespesasPage() {
     }
 
     fetchExpenses()
-  }, [selectedMonth, selectedYear])
+  }, [period])
 
   const totalDespesas    = despesas.reduce((sum, d) => sum + d.valor, 0)
   const despesasPagas    = despesas.filter(d => d.status === "Pago").reduce((sum, d) => sum + d.valor, 0)
@@ -116,7 +152,7 @@ export default function DespesasPage() {
       const url = isEditing ? `/api/expenses/${form.id}` : "/api/expenses"
       const method = isEditing ? "PUT" : "POST"
 
-      const response = await apiClient<any>(url, {
+      const response = await apiClient<ExpenseApiResponse>(url, {
         method,
         body: JSON.stringify(payload),
       })
@@ -150,7 +186,7 @@ export default function DespesasPage() {
 
   const handleMarkAsPaid = async (despesa: Despesa) => {
     try {
-      const response = await apiClient<any>(`/api/expenses/${despesa.id}/pay`, { method: "PUT" })
+      const response = await apiClient<ExpenseApiResponse>(`/api/expenses/${despesa.id}/pay`, { method: "PUT" })
       if (response && response.id) {
         setDespesas(despesas.map(d =>
           d.id === despesa.id ? { ...d, status: "Pago" } : d
@@ -196,11 +232,9 @@ export default function DespesasPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <MonthYearPicker 
-            month={selectedMonth} 
-            year={selectedYear} 
-            onMonthChange={setSelectedMonth} 
-            onYearChange={setSelectedYear} 
+          <PeriodFilter 
+            value={period}
+            onChange={setPeriod}
           />
           
           <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">

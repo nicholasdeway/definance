@@ -19,7 +19,7 @@ import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { SyncBadge } from "@/components/dashboard/sync-badge"
 import { apiClient } from "@/lib/api-client"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
-import { MonthYearPicker } from "@/components/dashboard/month-year-picker"
+import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { Download } from "lucide-react"
 
 interface Receita {
@@ -34,23 +34,74 @@ interface Receita {
   diasRecebimento?: string
 }
 
+export interface IncomeApiResponse {
+  id: string
+  name: string
+  amount: number
+  type: string
+  date: string
+  isRecurring: boolean
+}
+
+export interface OnboardingProgressIncome {
+  tipo?: string
+  Tipo?: string
+  valor?: number
+  Valor?: number
+  frequencia?: string
+  Frequencia?: string
+  diasRecebimento?: string
+  DiasRecebimento?: string
+}
+
+export interface OnboardingProgress {
+  incomes?: OnboardingProgressIncome[]
+  Incomes?: OnboardingProgressIncome[]
+  monthlyIncome?: string
+  MonthlyIncome?: string
+}
+
 const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
 
 export default function ReceitasPage() {
   const [receitas, setReceitas] = useState<Receita[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [period, setPeriod] = useState<PeriodFilterState>({
+    type: "monthly",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear()
+  })
 
   useEffect(() => {
     const fetchIncomes = async () => {
       try {
         setIsLoading(true)
         
-        // 1. Busca dados do backend (Incomes reais) com filtro de mês/ano
-        const incomesData = await apiClient<any[]>(`/api/incomes?month=${selectedMonth}&year=${selectedYear}`) || []
+        let queryParams = ""
+        if (period.type === "monthly") {
+          queryParams = `month=${period.month}&year=${period.year}`
+        } else if (period.type === "60_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 60)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "90_days") {
+          const end = new Date()
+          const start = new Date()
+          start.setDate(end.getDate() - 90)
+          queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        } else if (period.type === "custom") {
+          if (period.startDate && period.endDate) {
+            queryParams = `startDate=${new Date(period.startDate).toISOString()}&endDate=${new Date(period.endDate).toISOString()}`
+          } else {
+            queryParams = `month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}` // fallback
+          }
+        }
+
+        // 1. Busca dados do backend (Incomes reais) com filtro dinâmico
+        const incomesData = await apiClient<IncomeApiResponse[]>(`/api/incomes?${queryParams}`) || []
         
-        const mappedIncomes = incomesData.map((inc: any) => ({
+        const mappedIncomes = incomesData.map((inc: IncomeApiResponse) => ({
           id: inc.id,
           nome: inc.name,
           valor: inc.amount, 
@@ -61,13 +112,13 @@ export default function ReceitasPage() {
         }))
 
         // 2. Tenta buscar rendas base do Onboarding
-        const progressData = await apiClient<any>("/api/onboarding/progress")
+        const progressData = await apiClient<OnboardingProgress>("/api/onboarding/progress")
         if (progressData) {
-          const profileIncomes: any[] = progressData.incomes || progressData.Incomes || []
+          const profileIncomes: OnboardingProgressIncome[] = progressData.incomes || progressData.Incomes || []
           
           if (profileIncomes.length > 0) {
             // Mapeia cada renda do perfil para um formato compatível com a lista de receitas
-            const syncedIncomes = profileIncomes.map((inc: any, index: number) => {
+            const syncedIncomes = profileIncomes.map((inc: OnboardingProgressIncome, index: number) => {
                const incomeTipo = (inc.tipo || inc.Tipo || "").toLowerCase()
                const incomeValor = inc.valor || inc.Valor || 0
                
@@ -84,7 +135,7 @@ export default function ReceitasPage() {
                   tipo: typeInfo?.label || incomeTipo.toUpperCase(),
                   frequencia: freqInfo?.label || "Própria",
                   diasRecebimento: inc.diasRecebimento || inc.DiasRecebimento || "",
-                  data: new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("pt-BR"),
+                  data: new Date(period.year, period.month - 1, 1).toLocaleDateString("pt-BR"),
                   recorrente: true,
                   isSynced: true
                }
@@ -101,7 +152,7 @@ export default function ReceitasPage() {
                     nome: "Renda Configurada",
                     valor: parseInt(legacyIncome),
                     tipo: "Geral",
-                    data: new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("pt-BR"),
+                    data: new Date(period.year, period.month - 1, 1).toLocaleDateString("pt-BR"),
                     recorrente: true,
                     isSynced: true
                 })
@@ -118,7 +169,7 @@ export default function ReceitasPage() {
     }
     
     fetchIncomes()
-  }, [selectedMonth, selectedYear])
+  }, [period])
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Receita | null }>({
@@ -130,12 +181,14 @@ export default function ReceitasPage() {
     nome: string;
     valor: string;
     tipo: string;
+    outroTipo?: string;
     data: string;
     recorrente: boolean;
   }>({
     nome: "",
     valor: "",
     tipo: "",
+    outroTipo: "",
     data: "",
     recorrente: false,
   })
@@ -163,12 +216,14 @@ export default function ReceitasPage() {
         const url = isEditing ? `/api/incomes/${newReceita.id}` : "/api/incomes";
         const method = isEditing ? "PUT" : "POST";
 
-        const response = await apiClient<any>(url, {
+        const finalType = newReceita.tipo === "Outros" ? (newReceita.outroTipo || "Outros") : newReceita.tipo
+
+        const response = await apiClient<IncomeApiResponse>(url, {
             method: method,
             body: JSON.stringify({
                 name: newReceita.nome,
                 amount: valorReal,
-                type: newReceita.tipo || "Outros",
+                type: finalType,
                 date: dateParsed,
                 isRecurring: newReceita.recorrente
             })
@@ -195,6 +250,7 @@ export default function ReceitasPage() {
               nome: "",
               valor: "",
               tipo: "",
+              outroTipo: "",
               data: "",
               recorrente: false,
             })
@@ -209,11 +265,14 @@ export default function ReceitasPage() {
     const parts = receita.data.split("/");
     const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
     
+    const isCustomType = receita.tipo && !tiposReceita.includes(receita.tipo)
+    
     setNewReceita({
       id: receita.id,
       nome: receita.nome,
       valor: formatCurrency(receita.valor),
-      tipo: receita.tipo,
+      tipo: isCustomType ? "Outros" : (receita.tipo || ""),
+      outroTipo: isCustomType ? receita.tipo : "",
       data: inputDate,
       recorrente: receita.recorrente,
     })
@@ -221,7 +280,7 @@ export default function ReceitasPage() {
   }
 
   const openAddDialog = () => {
-    setNewReceita({ nome: "", valor: "", tipo: "", data: "", recorrente: false });
+    setNewReceita({ nome: "", valor: "", tipo: "", outroTipo: "", data: "", recorrente: false });
     setIsOpen(true);
   }
 
@@ -253,14 +312,16 @@ export default function ReceitasPage() {
           </div>
 
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <Button 
-              className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
-              onClick={openAddDialog}
-              size="sm"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Receita
-            </Button>
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+                onClick={openAddDialog}
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Receita
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-foreground text-lg sm:text-xl">{newReceita.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
@@ -299,21 +360,36 @@ export default function ReceitasPage() {
                   />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tipo" className="text-sm sm:text-base">Tipo</Label>
-                <Select
-                  value={newReceita.tipo}
-                  onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value })}
-                >
-                  <SelectTrigger className="text-sm sm:text-base">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tiposReceita.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo} className="text-sm sm:text-base">{tipo}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className={cn("grid", newReceita.tipo === "Outros" ? "grid-cols-1 sm:grid-cols-2 gap-4" : "gap-2")}>
+                <div className="grid gap-2">
+                  <Label htmlFor="tipo" className="text-sm sm:text-base">Tipo</Label>
+                  <Select
+                    value={newReceita.tipo}
+                    onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value, outroTipo: value === "Outros" ? newReceita.outroTipo : "" })}
+                  >
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposReceita.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo} className="text-sm sm:text-base">{tipo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {newReceita.tipo === "Outros" && (
+                  <div className="grid gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <Label htmlFor="outroTipo" className="text-sm sm:text-base">Descrição</Label>
+                    <Input
+                      id="outroTipo"
+                      placeholder="Ex: Freelance"
+                      value={newReceita.outroTipo || ""}
+                      onChange={(e) => setNewReceita({ ...newReceita, outroTipo: e.target.value })}
+                      className="text-sm sm:text-base"
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="recorrente" className="text-sm sm:text-base">Receita recorrente?</Label>
@@ -337,11 +413,9 @@ export default function ReceitasPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        <MonthYearPicker 
-          month={selectedMonth} 
-          year={selectedYear} 
-          onMonthChange={setSelectedMonth} 
-          onYearChange={setSelectedYear} 
+        <PeriodFilter 
+          value={period}
+          onChange={setPeriod}
         />
         <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
           <Download className="h-4 w-4" />

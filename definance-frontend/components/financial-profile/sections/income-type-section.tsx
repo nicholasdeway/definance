@@ -1,12 +1,14 @@
 "use client"
 
-import { Check } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { incomeTypes } from "@/components/onboarding/constants"
 import { FieldLabel } from "@/components/onboarding/components/field-label"
 import { Button } from "@/components/ui/button"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
+import { useState } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 export const IncomeTypeSection = () => {
   const { 
@@ -15,6 +17,26 @@ export const IncomeTypeSection = () => {
     wasAttempted 
   } = useOnboarding()
   const { persistStep } = useAutoSave()
+  
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
+
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const success = await persistStep(2, selectedIncomeTypes);
+      if (success) {
+        toast({ title: "Seleção salva com sucesso!", variant: "default" });
+      } else {
+        toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Erro inesperado", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   const toggleIncomeType = (value: string) => {
     setSelectedIncomeTypes(prev =>
@@ -72,28 +94,11 @@ export const IncomeTypeSection = () => {
       <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4">
         <Button 
           type="button" 
+          disabled={isSaving}
+          onClick={handleSave}
           className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold cursor-pointer"
-          onClick={async () => {
-            const btn = document.activeElement as HTMLButtonElement
-            if (btn) {
-              const originalText = btn.innerText
-              btn.innerText = "Salvando..."
-              btn.disabled = true
-              
-              const success = await persistStep(2, selectedIncomeTypes)
-              
-              btn.disabled = false
-              if (success) {
-                btn.innerText = "Salvo!"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 2000)
-              } else {
-                btn.innerText = "Erro ao Salvar"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
-              }
-            }
-          }}
         >
-          Salvar Seleção
+          {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Seleção"}
         </Button>
       </div>
     </div>

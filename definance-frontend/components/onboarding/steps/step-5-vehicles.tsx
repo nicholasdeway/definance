@@ -23,8 +23,10 @@ import { useOnboarding } from "../hooks/use-onboarding"
 import { vehicleTypes } from "../constants"
 
 import { FieldLabel } from "../components/field-label"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 
 import { Vehicle } from "../types"
+import { Button } from "@/components/ui/button"
 
 import { useState } from "react"
 
@@ -37,11 +39,7 @@ export const Step5Vehicles = () => {
 
   const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
 
-  // Formata valor decimal (Reais) para exibição em BRL
-  function displayBRL(value: number): string {
-    if (!value) return ""
-    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-  }
+
 
   const addVehicle = () => {
     const newId = Math.random().toString(36).slice(2)
@@ -50,10 +48,11 @@ export const Step5Vehicles = () => {
       {
         id: newId,
         tipo: "", nome: "", ano: "",
-        ipva: 0, multas: 0,
+        ipvaAnos: [],
+        multas: 0,
         financiado: false,
-        parcelasTotal: 0, parcelasPagas: 0, valorParcela: 0,
         seguro: false, valorSeguro: 0,
+        seguroRecorrente: true,
       },
     ])
     setExpandedValue(newId)
@@ -68,9 +67,79 @@ export const Step5Vehicles = () => {
   }
 
   const updateVehicleCurrency = (id: string, field: keyof Vehicle, rawValue: string) => {
-    const digits = rawValue.replace(/\D/g, "")
-    const decimalValue = Number(digits) / 100
-    updateVehicle(id, field as any, decimalValue)
+    updateVehicle(id, field as any, parseCurrencyInput(rawValue))
+  }
+
+  const addIpvaYear = (vehicleId: string) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return {
+          ...v,
+          ipvaAnos: [...(v.ipvaAnos || []), { id: Math.random().toString(36).slice(2), ano: "", parcelas: [] }]
+        }
+      }
+      return v
+    }))
+  }
+
+  const removeIpvaYear = (vehicleId: string, yearId: string) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return { ...v, ipvaAnos: (v.ipvaAnos || []).filter(y => y.id !== yearId) }
+      }
+      return v
+    }))
+  }
+
+  const updateIpvaYear = (vehicleId: string, yearId: string, ano: string) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return { ...v, ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? { ...y, ano } : y) }
+      }
+      return v
+    }))
+  }
+
+  const addIpvaInstallment = (vehicleId: string, yearId: string) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return {
+          ...v,
+          ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? {
+            ...y, parcelas: [...y.parcelas, { id: Math.random().toString(36).slice(2), valor: 0, vencimento: "" }]
+          } : y)
+        }
+      }
+      return v
+    }))
+  }
+
+  const removeIpvaInstallment = (vehicleId: string, yearId: string, installmentId: string) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return {
+          ...v,
+          ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? {
+            ...y, parcelas: y.parcelas.filter(p => p.id !== installmentId)
+          } : y)
+        }
+      }
+      return v
+    }))
+  }
+
+  const updateIpvaInstallment = (vehicleId: string, yearId: string, installmentId: string, field: "valor" | "vencimento", value: any) => {
+    setVehicles(prev => prev.map(v => {
+      if (v.id === vehicleId) {
+        return {
+          ...v,
+          ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? {
+            ...y, parcelas: y.parcelas.map(p => p.id === installmentId ? { ...p, [field]: value } : p)
+          } : y)
+        }
+      }
+      return v
+    }))
   }
 
   return (
@@ -96,12 +165,17 @@ export const Step5Vehicles = () => {
           const parcelasRestantes = v.parcelasTotal ? Math.max(0, pTotal - pPagas) : 0
           const valorTotalRestante = parcelasRestantes * vParcela
 
+          const hasIpvaError = v.ipvaAnos && v.ipvaAnos.length > 0 && v.ipvaAnos.some(y => 
+            !y.ano || y.ano.length < 4 || y.parcelas.length === 0 || y.parcelas.some(p => !p.valor || !p.vencimento)
+          )
+
           // Validação simples para indicador de erro no Trigger
           const hasError = wasAttempted && (
             !v.tipo ||
             (v.tipo === "outro" && !v.nome) ||
             (v.financiado && (!v.parcelasTotal || v.parcelasTotal === 0 || !v.valorParcela || v.valorParcela === 0)) ||
-            (v.seguro && (!v.valorSeguro || v.valorSeguro === 0))
+            (v.seguro && (!v.valorSeguro || v.valorSeguro === 0 || !v.vencimentoSeguro)) ||
+            hasIpvaError
           )
 
           const isExpanded = expandedValue === v.id
@@ -255,30 +329,108 @@ export const Step5Vehicles = () => {
                     </div>
                   </div>
 
-                  {/* Custos (IPVA/Multas) */}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <FieldLabel label="IPVA pendente/médio" />
-                      <CurrencyInput
-                        id={`v-ipva-${v.id}`}
-                        placeholder="R$ 0,00"
-                        value={v.ipva ? Math.round(v.ipva * 100).toString() : ""}
-                        onChange={(value) => updateVehicleCurrency(v.id, "ipva", value)}
-                        className="h-8 bg-background text-xs"
-                      />
+                  {/* IPVA e Multas */}
+                  <div className="space-y-4 border-t border-border/50 pt-4 mt-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <FieldLabel label="Multas em aberto" />
+                        <CurrencyInput
+                          id={`v-multas-${v.id}`}
+                          placeholder="R$ 0,00"
+                          value={v.multas ? Math.round(v.multas * 100).toString() : ""}
+                          onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
+                          className="h-9 bg-background"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <FieldLabel label="Multas em aberto" />
-                      <CurrencyInput
-                        id={`v-multas-${v.id}`}
-                        placeholder="R$ 0,00"
-                        value={v.multas ? Math.round(v.multas * 100).toString() : ""}
-                        onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
-                        className="h-8 bg-background text-xs"
-                      />
+                    
+                    <div className="space-y-4 p-4 rounded-xl bg-muted/20 border border-border/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Parcelamento de IPVA</Label>
+                      </div>
+                      
+                      {v.ipvaAnos?.map((ipvaYear) => (
+                        <div key={ipvaYear.id} className="space-y-3 bg-background p-4 rounded-lg border border-border/60 relative group">
+                          <button
+                            type="button"
+                            onClick={() => removeIpvaYear(v.id, ipvaYear.id)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                          
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="space-y-1.5 w-full sm:max-w-[200px]">
+                              <Label className="text-xs font-bold uppercase">Ano Base <span className="text-destructive">*</span></Label>
+                              <Input
+                                placeholder="Ex: 2025"
+                                value={ipvaYear.ano}
+                                onChange={e => updateIpvaYear(v.id, ipvaYear.id, e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                className={cn("h-9 border-border/50", (!ipvaYear.ano || ipvaYear.ano.length < 4) && "border-destructive")}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 mt-2 pt-2 border-t border-border/40">
+                            <div className="flex items-center justify-between mb-1">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase">Parcelas <span className="text-destructive">*</span></Label>
+                            </div>
+                            
+                            {ipvaYear.parcelas.map((parcela, idx) => (
+                              <div key={parcela.id} className={cn("flex flex-col sm:flex-row items-center gap-2 bg-muted/10 p-2 rounded-md border border-border/40", (!parcela.valor || !parcela.vencimento) && "border-destructive")}>
+                                <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+                                  <span className="text-xs font-semibold w-6 text-center">{idx + 1}ª</span>
+                                  <CurrencyInput
+                                    id={`ipva-parcela-${parcela.id}`}
+                                    placeholder="Valor *"
+                                    value={parcela.valor ? Math.round(parcela.valor * 100).toString() : ""}
+                                    onChange={(val) => {
+                                      updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "valor", parseCurrencyInput(val))
+                                    }}
+                                    className="h-8 bg-background text-xs w-full"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+                                  <Input
+                                    type="date"
+                                    value={parcela.vencimento}
+                                    onChange={(e) => updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "vencimento", e.target.value)}
+                                    className="h-8 bg-background text-xs w-full"
+                                    required
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeIpvaInstallment(v.id, ipvaYear.id, parcela.id)}
+                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            <button
+                              type="button"
+                              onClick={() => addIpvaInstallment(v.id, ipvaYear.id)}
+                              className="flex items-center justify-center gap-1.5 text-[11px] uppercase font-bold text-primary hover:bg-primary/10 py-1.5 px-3 rounded-md transition-colors w-full sm:w-auto mt-2 border border-primary/20 border-dashed"
+                            >
+                              <Plus className="h-3 w-3" /> Adicionar Parcela
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => addIpvaYear(v.id)}
+                        className="flex items-center justify-center gap-2 w-full p-3 rounded-lg border border-dashed border-primary/40 text-sm text-primary font-bold hover:bg-primary/5 transition-colors"
+                      >
+                        <Plus className="h-4 w-4" /> Adicionar Ano do IPVA
+                      </button>
+
+
                     </div>
                   </div>
-
                   {/* Financiamento */}
                   <div className="space-y-3 border-t border-border/50 pt-4">
                     <div className="flex items-center justify-between">
@@ -336,7 +488,7 @@ export const Step5Vehicles = () => {
                             <div className="space-y-0.5 border-l border-primary/10 pl-3">
                               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Valor em aberto</p>
                               <p className="text-base font-bold text-primary">
-                                {valorTotalRestante.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                {formatCurrency(valorTotalRestante)}
                               </p>
                             </div>
                           </div>
@@ -356,15 +508,37 @@ export const Step5Vehicles = () => {
                       </div>
 
                       {v.seguro && (
-                        <div className="space-y-1.5 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 animate-in slide-in-from-top-2 duration-300">
-                          <FieldLabel label="Valor anual do seguro" required />
-                          <CurrencyInput
-                            id={`v-vseguro-${v.id}`}
-                            placeholder="R$ 0,00"
-                            value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
-                            onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
-                            className="h-8 bg-background text-sm"
-                          />
+                        <div className="grid gap-3 sm:grid-cols-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 animate-in slide-in-from-top-2 duration-300">
+                          <div className="space-y-1.5">
+                            <FieldLabel label="Valor do seguro" required />
+                            <CurrencyInput
+                              id={`v-vseguro-${v.id}`}
+                              placeholder="R$ 0,00"
+                              value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
+                              onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
+                              className="h-8 bg-background text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <FieldLabel label="Data de vencimento" required />
+                            <Input
+                              type="date"
+                              value={v.vencimentoSeguro || ""}
+                              onChange={(e) => updateVehicle(v.id, "vencimentoSeguro", e.target.value)}
+                              className="h-8 bg-background text-sm"
+                            />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 pt-1 sm:col-span-2">
+                            <Switch
+                              id={`v-seg-rec-${v.id}`}
+                              checked={v.seguroRecorrente ?? true}
+                              onCheckedChange={(checked) => updateVehicle(v.id, "seguroRecorrente", checked)}
+                            />
+                            <Label htmlFor={`v-seg-rec-${v.id}`} className="text-[10px] font-bold uppercase text-muted-foreground cursor-pointer">
+                              Pagamento mensal recorrente?
+                            </Label>
+                          </div>
                         </div>
                       )}
                     </div>

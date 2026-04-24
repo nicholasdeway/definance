@@ -31,6 +31,18 @@ export interface CustomExpense {
   valor: number
 }
 
+export interface IpvaInstallment {
+  id: string
+  valor: number
+  vencimento: string
+}
+
+export interface IpvaYear {
+  id: string
+  ano: string
+  parcelas: IpvaInstallment[]
+}
+
 export interface Vehicle {
   id: string
   tipo: string
@@ -44,7 +56,10 @@ export interface Vehicle {
   valorParcela?: number
   seguro: boolean
   valorSeguro?: number
+  vencimentoSeguro?: string
+  seguroRecorrente?: boolean
   extras?: ExtraExpense[]
+  ipvaAnos?: IpvaYear[]
 }
 
 export interface ExtraExpense {

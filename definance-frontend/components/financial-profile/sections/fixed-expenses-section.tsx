@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Fragment } from "react"
-import { Check, Plus, Trash2 } from "lucide-react"
+import { Check, Plus, Trash2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,9 @@ import { fixedExpenseCategories } from "@/components/onboarding/constants"
 import { FieldLabel } from "@/components/onboarding/components/field-label"
 import { Button } from "@/components/ui/button"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
+import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react"
 
 export const FixedExpensesSection = () => {
   const { 
@@ -25,13 +28,25 @@ export const FixedExpensesSection = () => {
   } = useOnboarding()
   const { persistStep } = useAutoSave()
 
-  // Formata dÃ­gitos brutos (centavos) para exibiÃ§Ã£o em BRL
-  function displayBRL(digits: string): string {
-    if (!digits) return ""
-    const number = Number(digits) / 100
-    return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-  }
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
 
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const success = await persistStep(4, { selectedExpenses, customExpenses, billLoans });
+      if (success) {
+        toast({ title: "Despesas salvas com sucesso!", variant: "default" });
+      } else {
+        toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Erro inesperado", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  }
   const toggleExpense = (key: string) => {
     setSelectedExpenses(prev => {
       const next = { ...prev }
@@ -42,8 +57,7 @@ export const FixedExpensesSection = () => {
   }
 
   const setExpenseValue = (key: string, raw: string) => {
-    const digits = raw.replace(/\D/g, "")
-    const decimalValue = Number(digits) / 100
+    const decimalValue = parseCurrencyInput(raw)
     setSelectedExpenses(prev => ({ ...prev, [key]: decimalValue }))
   }
 
@@ -55,8 +69,7 @@ export const FixedExpensesSection = () => {
   }
 
   const setBillLoanValue = (key: string, raw: string) => {
-    const digits = raw.replace(/\D/g, "")
-    const decimalValue = Number(digits) / 100
+    const decimalValue = parseCurrencyInput(raw)
     setBillLoans(prev => ({
       ...prev,
       [key]: { ...prev[key], valor: decimalValue }
@@ -76,8 +89,7 @@ export const FixedExpensesSection = () => {
 
   const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string | number) => {
     if (field === "valor") {
-        const digits = String(value).replace(/\D/g, "")
-        value = Number(digits) / 100
+        value = parseCurrencyInput(String(value))
     }
     setCustomExpenses(prev =>
       prev.map(e => (e.id === id ? { ...e, [field]: value } : e))
@@ -87,7 +99,7 @@ export const FixedExpensesSection = () => {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Toque nas categorias que se aplicam a vocÃª e informe o valor mensal.
+        Toque nas categorias que se aplicam a você e informe o valor mensal.
       </p>
 
       {/* Grade de categorias */}
@@ -112,7 +124,7 @@ export const FixedExpensesSection = () => {
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
               {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
-                  {displayBRL(Math.round(selectedExpenses[cat.key] * 100).toString())}
+                  {formatCurrency(selectedExpenses[cat.key])}
                 </span>
               )}
             </button>
@@ -120,15 +132,15 @@ export const FixedExpensesSection = () => {
         })}
       </div>
 
-      {/* Inputs de valor para categorias prÃ©-definidas selecionadas */}
+      {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
         <div className="space-y-6 border-t border-border/50 pt-4">
-          {/* SeÃ§Ã£o 1: Contas com OpÃ§Ã£o de EmprÃ©stimo */}
+          {/* Seção 1: Contas com Opção de Empréstimo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo (Com EmprÃ©stimo)</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo (Com Empréstimo)</span>
                 <span className="h-px flex-1 bg-border/40" />
               </div>
               <div className="grid gap-4">
@@ -158,13 +170,13 @@ export const FixedExpensesSection = () => {
                         </div>
                       </div>
 
-                      {/* Sub-triagem para EmprÃ©stimo embutido em Contas de Consumo */}
+                      {/* Sub-triagem para Empréstimo embutido em Contas de Consumo */}
                       {["luz", "agua", "celular"].includes(cat.key) && (
                         <div className="rounded-xl border border-primary/10 bg-primary/5 p-3 animate-in fade-in slide-in-from-top-2 duration-300">
                           <div className="flex items-center justify-between mb-3">
                             <div className="space-y-0.5">
                               <Label htmlFor={`loan-toggle-${cat.key}`} className="text-[11px] font-semibold text-primary/80 uppercase tracking-tight">
-                                EmprÃ©stimo embutido?
+                                Empréstimo embutido?
                               </Label>
                               <p className="text-[9px] text-muted-foreground">Parcelas descontadas diretamente na conta</p>
                             </div>
@@ -178,7 +190,7 @@ export const FixedExpensesSection = () => {
                             <div className="space-y-2 pt-2 border-t border-primary/10 animate-in zoom-in-95 duration-200">
                               <div className="space-y-1">
                                 <FieldLabel 
-                                  label="Valor da parcela de emprÃ©stimo" 
+                                  label="Valor da parcela de empréstimo" 
                                   required 
                                   isEmpty={!billLoans[cat.key]?.valor} 
                                   wasAttempted={wasAttempted} 
@@ -199,7 +211,7 @@ export const FixedExpensesSection = () => {
                                   <p className="text-[10px] text-muted-foreground flex justify-between">
                                     <span>Consumo real estimado:</span>
                                     <span className="font-bold text-primary">
-                                      {displayBRL(Math.round(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor) * 100).toString())}
+                                      {formatCurrency(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
                                     </span>
                                   </p>
                                 </div>
@@ -214,12 +226,12 @@ export const FixedExpensesSection = () => {
             </div>
           )}
 
-          {/* SeÃ§Ã£o 2: Moradia, ServiÃ§os e Outros (Grid compacto) */}
+          {/* Seção 2: Moradia, Serviços e Outros (Grid compacto) */}
           {fixedExpenseCategories.some(c => !["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moradia, Assinaturas e ServiÃ§os</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moradia, Assinaturas e Serviços</span>
                 <span className="h-px flex-1 bg-border/40" />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -289,7 +301,7 @@ export const FixedExpensesSection = () => {
                     <Input
                       id={`custom-titulo-${exp.id}`}
                       type="text"
-                      placeholder="Ex: CondomÃ­nio, Seguro..."
+                      placeholder="Ex: Condomínio, Seguro..."
                       value={exp.titulo || ""}
                       onChange={(e) => updateCustomExpense(exp.id, "titulo", e.target.value)}
                       className={cn(
@@ -321,7 +333,7 @@ export const FixedExpensesSection = () => {
         </div>
       )}
 
-      {/* BotÃ£o adicionar personalizado */}
+      {/* Botão adicionar personalizado */}
       <button
         type="button"
         onClick={addCustomExpense}
@@ -334,28 +346,11 @@ export const FixedExpensesSection = () => {
       <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-6">
         <Button 
           type="button" 
+          disabled={isSaving}
+          onClick={handleSave}
           className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold"
-          onClick={async () => {
-            const btn = document.activeElement as HTMLButtonElement
-            if (btn) {
-              const originalText = btn.innerText
-              btn.innerText = "Salvando..."
-              btn.disabled = true
-              
-              const success = await persistStep(4, { selectedExpenses, customExpenses, billLoans })
-              
-              btn.disabled = false
-              if (success) {
-                btn.innerText = "Salvo!"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 2000)
-              } else {
-                btn.innerText = "Erro ao Salvar"
-                setTimeout(() => { if (btn) btn.innerText = originalText }, 3000)
-              }
-            }
-          }}
         >
-          Salvar Despesas
+          {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Despesas"}
         </Button>
       </div>
     </div>

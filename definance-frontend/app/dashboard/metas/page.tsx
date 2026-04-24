@@ -121,8 +121,14 @@ export default function MetasPage() {
   // Render
   if (loading) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
-        <Spinner className="h-8 w-8 text-primary" />
+      <div className="w-full min-h-[70vh] flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+        <div className="relative flex items-center justify-center">
+          <Spinner className="h-10 w-10 text-primary" />
+          <div className="absolute h-10 w-10 border-4 border-primary/20 rounded-full"></div>
+        </div>
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">
+          Carregando seus objetivos...
+        </p>
       </div>
     )
   }

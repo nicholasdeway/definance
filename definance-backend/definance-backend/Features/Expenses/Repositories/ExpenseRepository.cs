@@ -39,7 +39,7 @@ namespace definance_backend.Features.Expenses.Repositories
             return await conn.QueryFirstOrDefaultAsync<Expense>(sql, new { Id = id });
         }
 
-        public async Task<IEnumerable<Expense>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null)
+        public async Task<IEnumerable<Expense>> GetByUserIdAsync(Guid userId, int? month = null, int? year = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             var sql = @"
                 SELECT
@@ -61,19 +61,26 @@ namespace definance_backend.Features.Expenses.Repositories
                 WHERE user_id = @UserId
             ";
 
-            if (month.HasValue)
+            if (startDate.HasValue && endDate.HasValue)
             {
-                sql += " AND EXTRACT(MONTH FROM date) = @Month";
+                sql += " AND date >= @StartDate AND date <= @EndDate";
             }
-            if (year.HasValue)
+            else
             {
-                sql += " AND EXTRACT(YEAR FROM date) = @Year";
+                if (month.HasValue)
+                {
+                    sql += " AND EXTRACT(MONTH FROM date) = @Month";
+                }
+                if (year.HasValue)
+                {
+                    sql += " AND EXTRACT(YEAR FROM date) = @Year";
+                }
             }
 
             sql += " ORDER BY date DESC;";
 
             await using var conn = new NpgsqlConnection(_connectionString);
-            return await conn.QueryAsync<Expense>(sql, new { UserId = userId, Month = month, Year = year });
+            return await conn.QueryAsync<Expense>(sql, new { UserId = userId, Month = month, Year = year, StartDate = startDate, EndDate = endDate });
         }
 
         public async Task CreateAsync(Expense expense)

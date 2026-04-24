@@ -27,10 +27,10 @@ namespace definance_backend.Features.Incomes.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetIncomes([FromQuery] int? month, [FromQuery] int? year)
+        public async Task<IActionResult> GetIncomes([FromQuery] int? month, [FromQuery] int? year, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
             var userId = GetUserId();
-            var incomes = await _incomeService.GetUserIncomesAsync(userId, month, year);
+            var incomes = await _incomeService.GetUserIncomesAsync(userId, month, year, startDate, endDate);
             return Ok(incomes);
         }
 
@@ -56,17 +56,34 @@ namespace definance_backend.Features.Incomes.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateIncome([FromBody] CreateUpdateIncomeDto dto)
         {
+            if (dto == null)
+                return BadRequest(new { message = "Dados da renda são obrigatórios." });
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            var income = await _incomeService.CreateIncomeAsync(userId, dto);
-            return CreatedAtAction(nameof(GetIncomeById), new { id = income.Id }, income);
+            try
+            {
+                var userId = GetUserId();
+                var income = await _incomeService.CreateIncomeAsync(userId, dto);
+                return CreatedAtAction(nameof(GetIncomeById), new { id = income.Id }, income);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Erro ao criar renda." });
+            }
         }
 
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> UpdateIncome(Guid id, [FromBody] CreateUpdateIncomeDto dto)
         {
+            if (dto == null)
+                return BadRequest(new { message = "Dados da renda são obrigatórios." });
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -83,6 +100,14 @@ namespace definance_backend.Features.Incomes.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Erro ao atualizar renda." });
             }
         }
 
