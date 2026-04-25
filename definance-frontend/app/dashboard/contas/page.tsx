@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CreditCard, AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Plus, Pin, Shuffle } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
-import { cn } from "@/lib/utils"
+import { cn, capitalize } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialo
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { Download } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 
 interface ContaItem {
   id: string
@@ -122,6 +123,7 @@ export default function ContasPage() {
     item: null,
   })
   const [showTutorial, setShowTutorial] = useState(false)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const searchParams = useSearchParams()
 
 
@@ -442,7 +444,7 @@ export default function ContasPage() {
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   Vencimento: {conta.vencimento}
-                  {conta.categoria && ` • ${conta.categoria}`}
+                  {conta.categoria && ` • ${capitalize(conta.categoria)}`}
                 </p>
               </div>
             </div>
@@ -521,7 +523,12 @@ export default function ContasPage() {
             value={period}
             onChange={setPeriod}
           />
-          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+            onClick={() => setIsExportDialogOpen(true)}
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
@@ -682,7 +689,6 @@ export default function ContasPage() {
         itemName={deleteDialog.item?.nome}
       />
 
-      {/* Confirm Pay */}
       <ConfirmPayDialog
         open={payDialog.open}
         onOpenChange={(open) => setPayDialog({ ...payDialog, open })}
@@ -690,6 +696,26 @@ export default function ContasPage() {
         itemName={payDialog.item?.nome}
         loading={isPaying}
         hasDate={!!payDialog.item?.rawDueDate}
+      />
+
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Relatório de Contas"
+        subtitle={`Deseja exportar as ${contas.length} contas listadas no PDF?`}
+        data={contas.map(c => ({
+          ...c,
+          statusLabel: c.status === 'paga' ? 'Paga' : c.status === 'atrasada' ? 'Atrasada' : 'A Vencer'
+        }))}
+        columns={[
+          { header: "Nome", key: "nome" },
+          { header: "Vencimento", key: "vencimento" },
+          { header: "Categoria", key: "categoria" },
+          { header: "Tipo", key: "tipo" },
+          { header: "Status", key: "statusLabel" },
+          { header: "Valor", key: "valor", type: "currency" },
+        ]}
+        fileName={`contas-${period.month}-${period.year}`}
       />
 
       {/* Tutorial Hint Overlay */}

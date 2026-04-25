@@ -10,6 +10,7 @@ import { ExpensesSummaryCards, type ExpenseFilterType } from "@/components/dashb
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expense-list"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 
 export interface ExpenseApiResponse {
   id: string
@@ -50,6 +51,7 @@ export default function DespesasPage() {
     open: false,
     item: null,
   })
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -238,7 +240,12 @@ export default function DespesasPage() {
             onChange={setPeriod}
           />
           
-          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+            onClick={() => setIsExportDialogOpen(true)}
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
@@ -283,6 +290,23 @@ export default function DespesasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.nome}
+      />
+
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Relatório de Despesas"
+        subtitle={`Deseja exportar as ${despesas.length} despesas listadas no PDF?`}
+        data={despesas}
+        columns={[
+          { header: "Nome", key: "nome" },
+          { header: "Categoria", key: "categoria" },
+          { header: "Data", key: "data" },
+          { header: "Tipo", key: "tipo" },
+          { header: "Status", key: "status" },
+          { header: "Valor", key: "valor", type: "currency" },
+        ]}
+        fileName={`despesas-${period.month}-${period.year}`}
       />
     </div>
   )

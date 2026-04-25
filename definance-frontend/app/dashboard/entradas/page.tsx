@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { cn, capitalize } from "@/lib/utils"
 import { Plus, ArrowDownLeft, Search, MoreHorizontal, Landmark, Download } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -22,6 +22,7 @@ import { apiClient } from "@/lib/api-client"
 import { toast } from "sonner"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 
 interface Receita {
   id: string
@@ -186,6 +187,8 @@ export default function ReceitasPage() {
     data: "",
     recorrente: false,
   })
+
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
   const filteredReceitas = receitas.filter(r => {
     const matchesSearch = r.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -417,7 +420,12 @@ export default function ReceitasPage() {
             value={period}
             onChange={setPeriod}
           />
-          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+            onClick={() => setIsExportDialogOpen(true)}
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
@@ -545,7 +553,7 @@ export default function ReceitasPage() {
                         {r.isSynced && <SyncBadge />}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-1">
-                        <span>{r.tipo}</span>
+                        <span>{capitalize(r.tipo)}</span>
                         {r.isSynced && r.frequencia && (
                             <>
                                 <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
@@ -627,6 +635,22 @@ export default function ReceitasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteReceita}
         itemName={deleteDialog.item?.nome}
+      />
+
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Relatório de Entradas"
+        subtitle={`Deseja exportar as ${filteredReceitas.length} entradas listadas no PDF?`}
+        data={filteredReceitas}
+        columns={[
+          { header: "Nome", key: "nome" },
+          { header: "Tipo", key: "tipo" },
+          { header: "Data", key: "data" },
+          { header: "Recorrente", key: "recorrente", type: "text" },
+          { header: "Valor", key: "valor", type: "currency" },
+        ]}
+        fileName={`entradas-${period.month}-${period.year}`}
       />
     </div>
   )

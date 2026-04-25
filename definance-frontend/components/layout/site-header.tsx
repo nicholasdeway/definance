@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Menu, X, User as UserIcon, LogOut } from "lucide-react"
