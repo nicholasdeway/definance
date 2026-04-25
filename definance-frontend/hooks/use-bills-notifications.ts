@@ -29,9 +29,14 @@ export function useBillsNotifications() {
   useEffect(() => {
     fetchBills()
 
-    // Opcional: Atualizar a cada X minutos ou em eventos específicos
+    const handleUpdate = () => fetchBills()
+    window.addEventListener("finance-update", handleUpdate)
+
     const interval = setInterval(fetchBills, 1000 * 60 * 5) // 5 min
-    return () => clearInterval(interval)
+    return () => {
+      window.removeEventListener("finance-update", handleUpdate)
+      clearInterval(interval)
+    }
   }, [])
 
   const notifications = useMemo(() => {

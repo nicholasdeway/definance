@@ -38,6 +38,8 @@ export async function apiClient<T>(
       ...(!isFormData && { "Content-Type": "application/json" }),
       ...options.headers,
     },
+    // Desabilitar cache para garantir dados sempre atualizados
+    cache: options.method === "GET" || !options.method ? "no-store" : "default"
   }
 
   // Importante: incluir credenciais para cookies HttpOnly no navegador

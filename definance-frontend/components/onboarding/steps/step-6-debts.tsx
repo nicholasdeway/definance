@@ -10,7 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { cn } from "@/lib/utils"
+import { cn, generateId } from "@/lib/utils"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { FieldLabel } from "../components/field-label"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
@@ -29,7 +29,7 @@ export const Step6Debts = () => {
 
 
   const addDebt = () => {
-    const newId = Math.random().toString(36).slice(2)
+    const newId = generateId()
     setDebts(prev => [
       ...prev,
       {
@@ -49,19 +49,16 @@ export const Step6Debts = () => {
   }
 
   const updateDebt = (id: string, field: keyof Omit<Debt, "id">, value: any) => {
-    setDebts(prev => prev.map(d => {
-      if (d.id === id) {
-        if (field === "parcelado" && value === true) {
-          return { ...d, [field]: value, valor: 0 }
-        }
-        return { ...d, [field]: value }
-      }
-      return d
-    }))
+    setDebts(prev => prev.map(d => (d.id === id ? { ...d, [field]: value } : d)))
   }
 
   const updateDebtValue = (id: string, raw: string) => {
-    setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: parseCurrencyInput(raw) } : d)))
+    try {
+      const val = parseCurrencyInput(raw)
+      setDebts(prev => prev.map(d => (d.id === id ? { ...d, valor: val } : d)))
+    } catch (error) {
+      console.error("Erro ao converter valor da dívida:", error)
+    }
   }
 
   return (
@@ -103,72 +100,67 @@ export const Step6Debts = () => {
                 hasError && "border-destructive/30"
               )}
             >
-              {/* Header personalizado sem o AccordionTrigger */}
-              <div className="w-full">
-                <div className="flex items-center justify-between w-full px-5 py-5">
-                  {/* Lado Esquerdo: Info Básica + Badges - Torna clicável para expandir */}
-                  <button
-                    onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
-                    className="flex items-center flex-1 text-left hover:no-underline focus:outline-none group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all shadow-sm ring-1 ring-border/50",
-                          isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
-                      )}>
-                        <CreditCard className={cn("h-6 w-6", isExpanded ? "text-primary" : "text-muted-foreground")} />
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-card-foreground tracking-tight">
-                            {debt.descricao || `Dívida ${idx + 1}`}
-                          </span>
-                          {debt.parcelado && (
-                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
-                                  {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal}` : "Parcelado"}
-                              </Badge>
-                          )}
-                        </div>
-                        <span className="text-xs font-semibold text-muted-foreground/60 mt-1">
-                          {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
+              <AccordionTrigger className="hover:no-underline px-5 py-5 group data-[state=open]:pb-2">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-4 text-left">
+                    <div className={cn(
+                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all shadow-sm ring-1 ring-border/50",
+                        isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
+                    )}>
+                      <CreditCard className={cn("h-6 w-6", isExpanded ? "text-primary" : "text-muted-foreground")} />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-card-foreground tracking-tight">
+                          {debt.descricao || `Dívida ${idx + 1}`}
                         </span>
-                        {hasError && (
-                          <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
-                            <AlertCircle className="h-3 w-3" /> Preenchimento pendente
-                          </div>
+                        {debt.parcelado && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
+                                {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal}` : "Parcelado"}
+                            </Badge>
                         )}
                       </div>
+                      <span className="text-xs font-semibold text-muted-foreground/60 mt-1">
+                        {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
+                      </span>
+                      {hasError && (
+                        <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
+                          <AlertCircle className="h-3 w-3" /> Preenchimento pendente
+                        </div>
+                      )}
                     </div>
-                  </button>
+                  </div>
 
-                  {/* Lado Direito: Ícones agrupados com gap/margin à direita */}
                   <div className="flex items-center gap-3 shrink-0 ml-6">
-                    {/* Texto "Ver detalhes" clicável */}
-                    <button
-                      onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
-                      className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] hidden sm:inline-block transition-colors hover:text-primary whitespace-nowrap"
-                    >
+                    <span className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] hidden sm:inline-block transition-colors hover:text-primary whitespace-nowrap">
                       {isExpanded ? "Recolher" : "Ver detalhes"}
-                    </button>
+                    </span>
 
-                    {/* Separador vertical */}
                     <div className="h-6 w-px bg-border/40 hidden sm:block" />
 
-                    {/* Botão de remover (lixeira) */}
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => {
+                        e.preventDefault()
                         e.stopPropagation()
                         removeDebt(debt.id)
                       }}
-                      className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer shrink-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          removeDebt(debt.id)
+                        }
+                      }}
+                      className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer shrink-0 z-10"
                       title="Remover dívida"
                     >
                       <Trash2 className="h-4.5 w-4.5" />
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </AccordionTrigger>
 
               <AccordionContent className="px-4 pb-4">
                 <div className="pt-2 grid gap-4 sm:grid-cols-2">
@@ -193,7 +185,7 @@ export const Step6Debts = () => {
                   </div>
                   <div className="space-y-1.5">
                     <FieldLabel 
-                      label={debt.parcelado ? "Valor da parcela" : "Valor total"} 
+                      label="Valor Total" 
                       required 
                       isEmpty={!debt.valor || debt.valor === 0} 
                       wasAttempted={wasAttempted} 
@@ -201,7 +193,7 @@ export const Step6Debts = () => {
                     <CurrencyInput
                       id={`debt-valor-${debt.id}`}
                       placeholder="R$ 0,00"
-                      value={debt.valor ? Math.round(debt.valor * 100).toString() : ""}
+                      value={debt.valor ? Math.round(Number(debt.valor) * 100).toString() : ""}
                       onChange={(value) => updateDebtValue(debt.id, value)}
                       className={cn(
                         "h-9 bg-background font-medium",
@@ -261,9 +253,10 @@ export const Step6Debts = () => {
                         {!!debt.parcelasTotal && !!debt.valor && (
                           <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 animate-in zoom-in-95 duration-300">
                             {(() => {
-                                const pTotal = debt.parcelasTotal || 0
+                                const pTotal = debt.parcelasTotal || 1
                                 const pPagas = debt.parcelasPagas || 0
-                                const vParcela = debt.valor || 0
+                                const valorTotal = debt.valor || 0
+                                const vParcela = valorTotal / pTotal
                                 const restantes = Math.max(0, pTotal - pPagas)
                                 const totalRestante = restantes * vParcela
                                 return (

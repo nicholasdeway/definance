@@ -9,9 +9,10 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion"
 
-import { cn } from "@/lib/utils"
+import { cn, generateId } from "@/lib/utils"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { vehicleTypes } from "../constants"
 import { FieldLabel } from "../components/field-label"
@@ -31,7 +32,7 @@ export const Step5Vehicles = () => {
 
 
   const addVehicle = () => {
-    const newId = Math.random().toString(36).slice(2)
+    const newId = generateId()
     setVehicles(prev => [
       ...prev,
       {
@@ -55,8 +56,12 @@ export const Step5Vehicles = () => {
     setVehicles(prev => prev.map(v => (v.id === id ? { ...v, [field]: value } : v)))
   }
 
-  const updateVehicleCurrency = (id: string, field: keyof Vehicle, rawValue: string) => {
-    updateVehicle(id, field as any, parseCurrencyInput(rawValue))
+  const updateVehicleCurrency = (id: string, field: keyof Omit<Vehicle, "id">, rawValue: string) => {
+    try {
+      updateVehicle(id, field, parseCurrencyInput(rawValue))
+    } catch (error) {
+      console.error("Erro ao converter valor monetário:", error)
+    }
   }
 
   const addIpvaYear = (vehicleId: string) => {
@@ -64,7 +69,7 @@ export const Step5Vehicles = () => {
       if (v.id === vehicleId) {
         return {
           ...v,
-          ipvaAnos: [...(v.ipvaAnos || []), { id: Math.random().toString(36).slice(2), ano: "", parcelas: [] }]
+          ipvaAnos: [...(v.ipvaAnos || []), { id: generateId(), ano: "", parcelas: [] }]
         }
       }
       return v
@@ -95,7 +100,7 @@ export const Step5Vehicles = () => {
         return {
           ...v,
           ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? {
-            ...y, parcelas: [...y.parcelas, { id: Math.random().toString(36).slice(2), valor: 0, vencimento: "" }]
+            ...y, parcelas: [...y.parcelas, { id: generateId(), valor: 0, vencimento: "" }]
           } : y)
         }
       }
@@ -179,77 +184,72 @@ export const Step5Vehicles = () => {
                 hasError && "border-destructive/30"
               )}
             >
-              {/* Header personalizado sem o AccordionTrigger */}
-              <div className="w-full">
-                <div className="flex items-center justify-between w-full px-5 py-5">
-                  {/* Lado Esquerdo: Info Básica + Badges - Torna clicável para expandir */}
-                  <button
-                    onClick={() => setExpandedValue(isExpanded ? undefined : v.id)}
-                    className="flex items-center flex-1 text-left hover:no-underline focus:outline-none group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl transition-all shadow-sm ring-1 ring-border/50",
-                        isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
-                      )}>
-                        {tipoInfo?.emoji || "🚗"}
-                      </div>
-
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-card-foreground tracking-tight">
-                            {v.nome || (tipoInfo ? tipoInfo.label : `Veículo ${idx + 1}`)}
-                          </span>
-                          <div className="hidden xs:flex items-center gap-1.5 ml-1">
-                            {v.financiado && (
-                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
-                                Financiado
-                              </Badge>
-                            )}
-                            {v.seguro && (
-                              <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
-                                Seguro
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {hasError && (
-                          <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
-                            <AlertCircle className="h-3 w-3" /> Preenchimento pendente
-                          </div>
-                        )}
-                      </div>
+              <AccordionTrigger className="hover:no-underline px-5 py-5 group data-[state=open]:pb-2">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-4 text-left">
+                    <div className={cn(
+                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl transition-all shadow-sm ring-1 ring-border/50",
+                      isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
+                    )}>
+                      {tipoInfo ? <tipoInfo.icon className={cn("h-6 w-6 transition-all", isExpanded ? "text-primary" : "text-muted-foreground")} /> : "🚗"}
                     </div>
-                  </button>
 
-                  {/* Lado Direito: Ícones agrupados com gap/margin à direita */}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-card-foreground tracking-tight">
+                          {v.nome || (tipoInfo ? tipoInfo.label : `Veículo ${idx + 1}`)}
+                        </span>
+                        <div className="hidden xs:flex items-center gap-1.5 ml-1">
+                          {v.financiado && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
+                              Financiado
+                            </Badge>
+                          )}
+                          {v.seguro && (
+                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">
+                              Seguro
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {hasError && (
+                        <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 font-semibold animate-pulse">
+                          <AlertCircle className="h-3 w-3" /> Preenchimento pendente
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3 shrink-0 ml-6">
-                    {/* Texto "Ver detalhes" clicável */}
-                    <button
-                      onClick={() => setExpandedValue(isExpanded ? undefined : v.id)}
-                      className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] hidden sm:inline-block transition-colors hover:text-primary whitespace-nowrap"
-                    >
+                    <span className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] hidden sm:inline-block transition-colors hover:text-primary whitespace-nowrap">
                       {isExpanded ? "Recolher" : "Ver detalhes"}
-                    </button>
+                    </span>
 
-                    {/* Separador vertical */}
                     <div className="h-6 w-px bg-border/40 hidden sm:block" />
 
-                    {/* Botão de remover (lixeira) */}
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => {
+                        e.preventDefault()
                         e.stopPropagation()
                         removeVehicle(v.id)
                       }}
-                      className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer shrink-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          removeVehicle(v.id)
+                        }
+                      }}
+                      className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer shrink-0 z-10"
                       title="Remover veículo"
                     >
                       <Trash2 className="h-4.5 w-4.5" />
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </AccordionTrigger>
 
               <AccordionContent className="px-4 pb-4">
                 <div className="pt-2 space-y-4">
@@ -277,7 +277,7 @@ export const Step5Vehicles = () => {
                                 : "border-border/50 bg-background/50 hover:border-primary/30"
                             )}
                           >
-                            <span className="text-xl">{t.emoji}</span>
+                            <t.icon className={cn("h-6 w-6 transition-colors", isSelected ? "text-primary" : "text-muted-foreground")} />
                             <span className="text-[9px] font-medium text-muted-foreground truncate w-full">{t.label}</span>
                           </button>
                         )
@@ -326,7 +326,7 @@ export const Step5Vehicles = () => {
                         <CurrencyInput
                           id={`v-multas-${v.id}`}
                           placeholder="R$ 0,00"
-                          value={v.multas ? Math.round(v.multas * 100).toString() : ""}
+                          value={v.multas ? Math.round(Number(v.multas) * 100).toString() : ""}
                           onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
                           className="h-9 bg-background"
                         />
@@ -372,9 +372,13 @@ export const Step5Vehicles = () => {
                                   <CurrencyInput
                                     id={`ipva-parcela-${parcela.id}`}
                                     placeholder="Valor *"
-                                    value={parcela.valor ? Math.round(parcela.valor * 100).toString() : ""}
+                                    value={parcela.valor ? Math.round(Number(parcela.valor) * 100).toString() : ""}
                                     onChange={(val) => {
-                                      updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "valor", parseCurrencyInput(val))
+                                      try {
+                                        updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "valor", parseCurrencyInput(val))
+                                      } catch (e) {
+                                        console.error("Erro ao converter valor do IPVA:", e)
+                                      }
                                     }}
                                     className="h-8 bg-background text-xs w-full"
                                   />
@@ -461,7 +465,7 @@ export const Step5Vehicles = () => {
                             <CurrencyInput
                               id={`v-vparcela-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorParcela ? Math.round(v.valorParcela * 100).toString() : ""}
+                              value={v.valorParcela ? Math.round(Number(v.valorParcela) * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorParcela", value)}
                               className="h-10 bg-background text-sm"
                             />
@@ -499,11 +503,11 @@ export const Step5Vehicles = () => {
                       {v.seguro && (
                         <div className="grid gap-3 sm:grid-cols-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 animate-in slide-in-from-top-2 duration-300">
                           <div className="space-y-1.5">
-                            <FieldLabel label="Valor do seguro" required />
+                            <FieldLabel label="Valor da parcela do seguro" required />
                             <CurrencyInput
                               id={`v-vseguro-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
+                              value={v.valorSeguro ? Math.round(Number(v.valorSeguro) * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
                               className="h-8 bg-background text-sm"
                             />

@@ -10,8 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import Link from "next/link"
-import { cn, capitalize } from "@/lib/utils"
-import { Plus, ArrowDownLeft, Search, MoreHorizontal, Landmark, Download } from "lucide-react"
+import { cn, capitalize, formatDateBR } from "@/lib/utils"
+import { 
+  Plus, 
+  ArrowDownLeft, 
+  Search, 
+  MoreHorizontal, 
+  Landmark, 
+  Download,
+  Briefcase,
+  Building2,
+  User,
+  Laptop,
+  GraduationCap,
+  TrendingUp,
+  Home,
+  Wallet2,
+  Coins
+} from "lucide-react"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { useSettings } from "@/lib/settings-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CurrencyInput } from "@/components/ui/currency-input"
@@ -54,6 +71,14 @@ export interface OnboardingProgressIncome {
   Frequencia?: string
   diasRecebimento?: string
   DiasRecebimento?: string
+  configuradoEm?: string
+  ConfiguradoEm?: string
+  configuracaoAnterior?: {
+    valor: number
+    frequencia: string
+    diasRecebimento?: string
+    validoAte: string
+  }
 }
 
 const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
@@ -100,48 +125,102 @@ export default function ReceitasPage() {
 
         const incomesData = await apiClient<IncomeApiResponse[]>(`/api/incomes?${queryParams}`) || []
         
-        const mappedIncomes = incomesData.map((inc: IncomeApiResponse) => ({
-          id: inc.id,
-          nome: inc.name,
-          valor: inc.amount, 
-          tipo: inc.type,
-          data: new Date(inc.date).toLocaleDateString("pt-BR"),
-          recorrente: inc.isRecurring,
-          isSynced: false
-        }))
+        const mappedIncomes = incomesData.map((inc: IncomeApiResponse) => {
+          const typeLower = inc.type.toLowerCase()
+          const typeInfo = incomeTypes.find(t => t.value === typeLower)
+          const isBaseType = !!typeInfo
+
+          return {
+            id: inc.id,
+            nome: isBaseType && inc.name.toLowerCase() === typeLower
+              ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})`
+              : inc.name,
+            valor: inc.amount, 
+            tipo: inc.type,
+            data: (() => {
+              const datePart = inc.date.split('T')[0]
+              const [y, m, d] = datePart.split('-').map(Number)
+              return new Date(y, m - 1, d).toLocaleDateString("pt-BR")
+            })(),
+            recorrente: inc.isRecurring,
+            isSynced: isBaseType
+          }
+        })
 
         const progressData = await apiClient<any>("/api/onboarding/progress")
         if (progressData) {
-          const isCompleted = progressData.hasCompletedOnboarding || progressData.HasCompletedOnboarding
           const profileIncomes: OnboardingProgressIncome[] = progressData.incomes || progressData.Incomes || []
           
-          if (profileIncomes.length > 0 && !isCompleted) {
+          if (profileIncomes.length > 0) {
+            // 1. Calcular as projeções primeiro
             const syncedIncomes = profileIncomes
-              .filter(inc => {
-                const tipo = (inc.tipo || inc.Tipo || "").toLowerCase()
-                return !mappedIncomes.some(m => m.tipo.toLowerCase() === tipo)
-              })
               .map((inc: OnboardingProgressIncome, index: number) => {
                 const incomeTipo = (inc.tipo || inc.Tipo || "").toLowerCase()
-                const incomeValor = inc.valor || inc.Valor || 0
                 const typeInfo = incomeTypes.find(t => t.value === incomeTipo)
-                const freqValue = (inc.frequencia || inc.Frequencia || "").toLowerCase()
-                const freqInfo = incomeFrequencies.find(f => f.value === freqValue)
+                const selectedMonthDate = new Date(period.year, period.month - 1, 1)
+
+                // --- Lógica de Histórico ---
+                let effectiveValor = inc.valor || inc.Valor || 0
+                let effectiveFreq = (inc.frequencia || inc.Frequencia || "").toLowerCase()
+                let effectiveDias = inc.diasRecebimento || inc.DiasRecebimento || ""
+
+                if (inc.configuracaoAnterior && inc.configuracaoAnterior.validoAte) {
+                  const validoAte = new Date(inc.configuracaoAnterior.validoAte)
+                  const validUntilMonth = new Date(validoAte.getFullYear(), validoAte.getMonth(), 1)
+                  
+                  if (selectedMonthDate < validUntilMonth) {
+                    effectiveValor = inc.configuracaoAnterior.valor
+                    effectiveFreq = inc.configuracaoAnterior.frequencia.toLowerCase()
+                    effectiveDias = inc.configuracaoAnterior.diasRecebimento || ""
+                  }
+                }
+
+                const freqInfo = incomeFrequencies.find(f => f.value === effectiveFreq)
+                
+                const isVariable = effectiveFreq === "variavel"
+                const firstDateStr = isVariable ? "" : (effectiveDias.split(',')[0] || "").trim()
+                const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
+                
+                const startDate = baseDateStr ? (() => {
+                  const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
+                  const [y, m, d] = datePart.split('-').map(Number)
+                  return new Date(y, m - 1, d)
+                })() : null
+                
+                if (startDate && selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
+                  return null
+                }
 
                 return {
                   id: `synced-${incomeTipo}-${index}`,
                   nome: typeInfo ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})` : `Fonte: ${incomeTipo.toUpperCase()}`,
-                  valor: incomeValor,
+                  valor: effectiveValor,
                   tipo: typeInfo?.label || incomeTipo.toUpperCase(),
-                  frequencia: freqInfo?.label || "Própria",
-                  diasRecebimento: inc.diasRecebimento || inc.DiasRecebimento || "",
-                  data: new Date(period.year, period.month - 1, 1).toLocaleDateString("pt-BR"),
+                  frequencia: freqInfo?.label || "Mensal",
+                  diasRecebimento: effectiveDias,
+                  data: (startDate && selectedMonthDate.getMonth() === startDate.getMonth() && selectedMonthDate.getFullYear() === startDate.getFullYear())
+                    ? startDate.toLocaleDateString("pt-BR")
+                    : new Date(period.year, period.month - 1, startDate ? startDate.getDate() : 1).toLocaleDateString("pt-BR"),
                   recorrente: true,
                   isSynced: true
                 }
               })
+              .filter((inc): inc is NonNullable<typeof inc> => inc !== null)
 
-            mappedIncomes.unshift(...syncedIncomes)
+            // 2. Filtrar mappedIncomes (DB) para remover conflitos com as projeções ativas
+            const cleanedMappedIncomes = mappedIncomes.filter(m => {
+               const typeLower = m.tipo.toLowerCase()
+               const isBaseType = incomeTypes.some(t => t.value === typeLower)
+               
+               // Se for um tipo base e nós já temos uma projeção ativa para este tipo neste mês, removemos o do banco
+               if (isBaseType && syncedIncomes.some(s => s.tipo.toLowerCase() === typeLower)) {
+                  return false
+               }
+               return true
+            })
+
+            setReceitas([...syncedIncomes, ...cleanedMappedIncomes])
+            return
           }
         }
         
@@ -166,6 +245,7 @@ export default function ReceitasPage() {
 
   const [isOpen, setIsOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [search, setSearch] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Receita | null }>({
     open: false,
@@ -202,6 +282,20 @@ export default function ReceitasPage() {
   const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0)
   const receitasRecorrentes = receitas.filter(r => r.recorrente).reduce((sum, r) => sum + r.valor, 0)
   const receitasExtras = receitas.filter(r => !r.recorrente).reduce((sum, r) => sum + r.valor, 0)
+
+  const getIncomeIcon = (tipo: string, isSynced?: boolean) => {
+    const t = tipo.toLowerCase()
+    if (t.includes("clt")) return <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("pj")) return <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("autonomo") || t.includes("autônomo")) return <User className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("freelancer") || t.includes("freelance")) return <Laptop className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("mesada")) return <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("investimento")) return <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+    if (t.includes("aluguel")) return <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+    
+    if (isSynced) return <Landmark className="h-4 w-4 sm:h-5 sm:w-5" />
+    return <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+  }
 
   const handleSaveReceita = async () => {
     if (!newReceita.nome || !newReceita.valor || isSaving) return
@@ -247,6 +341,7 @@ export default function ReceitasPage() {
 
             setNewReceita({ nome: "", valor: "", tipo: "", outroTipo: "", data: "", recorrente: false })
             setIsOpen(false)
+            window.dispatchEvent(new CustomEvent("finance-update"))
         }
     } catch (error: any) {
         toast.error(error.message || "Erro ao salvar a renda");
@@ -280,12 +375,15 @@ export default function ReceitasPage() {
   const handleDeleteReceita = async () => {
     if (deleteDialog.item) {
       try {
+        setIsDeleting(true)
         await apiClient(`/api/incomes/${deleteDialog.item.id}`, { method: "DELETE" })
         setReceitas(receitas.filter(r => r.id !== deleteDialog.item!.id))
+        setDeleteDialog({ open: false, item: null })
+        window.dispatchEvent(new CustomEvent("finance-update"))
       } catch (e) {
         console.error("Erro ao deletar entrada", e)
       } finally {
-        setDeleteDialog({ open: false, item: null })
+        setIsDeleting(false)
       }
     }
   }
@@ -296,17 +394,19 @@ export default function ReceitasPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <BillsAlert />
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Entradas</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">Gerencie todas as suas fontes de renda</p>
-          </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Entradas</h1>
+          <p className="text-muted-foreground text-sm">Gerencie todas as suas fontes de renda</p>
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto shadow-sm active:scale-95 transition-all" 
+                className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto shadow-sm active:scale-95 transition-all" 
                 onClick={openAddDialog}
                 size="sm"
               >
@@ -321,105 +421,104 @@ export default function ReceitasPage() {
                   {newReceita.id ? "Edite as informações da sua fonte de renda" : "Adicione uma nova fonte de renda"}
                 </DialogDescription>
               </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nome" className="text-sm sm:text-base">Nome</Label>
-                <Input
-                  id="nome"
-                  placeholder="Ex: Salário"
-                  value={newReceita.nome}
-                  onChange={(e) => setNewReceita({ ...newReceita, nome: e.target.value })}
-                  className="text-sm sm:text-base focus-visible:ring-primary"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="valor" className="text-sm sm:text-base">Valor</Label>
-                  <CurrencyInput
-                    id="valor"
-                    value={newReceita.valor}
-                    onChange={(value) => setNewReceita({ ...newReceita, valor: value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="data" className="text-sm sm:text-base">Data</Label>
+                  <Label htmlFor="nome" className="text-sm sm:text-base">Nome</Label>
                   <Input
-                    id="data"
-                    type="date"
-                    value={newReceita.data}
-                    onChange={(e) => setNewReceita({ ...newReceita, data: e.target.value })}
+                    id="nome"
+                    placeholder="Ex: Salário"
+                    value={newReceita.nome}
+                    onChange={(e) => setNewReceita({ ...newReceita, nome: e.target.value })}
                     className="text-sm sm:text-base focus-visible:ring-primary"
                   />
                 </div>
-              </div>
-              <div className={cn("grid", newReceita.tipo === "Outros" ? "grid-cols-1 sm:grid-cols-2 gap-4" : "gap-2")}>
-                <div className="grid gap-2">
-                  <Label htmlFor="tipo" className="text-sm sm:text-base">Tipo</Label>
-                  <Select
-                    value={newReceita.tipo}
-                    onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value, outroTipo: value === "Outros" ? newReceita.outroTipo : "" })}
-                  >
-                    <SelectTrigger className="text-sm sm:text-base focus:ring-primary">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tiposReceita.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo} className="text-sm sm:text-base">{tipo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {newReceita.tipo === "Outros" && (
-                  <div className="grid gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <Label htmlFor="outroTipo" className="text-sm sm:text-base">Descrição</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="valor" className="text-sm sm:text-base">Valor</Label>
+                    <CurrencyInput
+                      id="valor"
+                      value={newReceita.valor}
+                      onChange={(value) => setNewReceita({ ...newReceita, valor: value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="data" className="text-sm sm:text-base">Data</Label>
                     <Input
-                      id="outroTipo"
-                      placeholder="Ex: Freelance"
-                      value={newReceita.outroTipo || ""}
-                      onChange={(e) => setNewReceita({ ...newReceita, outroTipo: e.target.value })}
+                      id="data"
+                      type="date"
+                      value={newReceita.data}
+                      onChange={(e) => setNewReceita({ ...newReceita, data: e.target.value })}
                       className="text-sm sm:text-base focus-visible:ring-primary"
                     />
                   </div>
-                )}
+                </div>
+                <div className={cn("grid", newReceita.tipo === "Outros" ? "grid-cols-1 sm:grid-cols-2 gap-4" : "gap-2")}>
+                  <div className="grid gap-2">
+                    <Label htmlFor="tipo" className="text-sm sm:text-base">Tipo</Label>
+                    <Select
+                      value={newReceita.tipo}
+                      onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value, outroTipo: value === "Outros" ? newReceita.outroTipo : "" })}
+                    >
+                      <SelectTrigger className="text-sm sm:text-base focus:ring-primary">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tiposReceita.map((tipo) => (
+                          <SelectItem key={tipo} value={tipo} className="text-sm sm:text-base">{tipo}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {newReceita.tipo === "Outros" && (
+                    <div className="grid gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                      <Label htmlFor="outroTipo" className="text-sm sm:text-base">Descrição</Label>
+                      <Input
+                        id="outroTipo"
+                        placeholder="Ex: Freelance"
+                        value={newReceita.outroTipo || ""}
+                        onChange={(e) => setNewReceita({ ...newReceita, outroTipo: e.target.value })}
+                        className="text-sm sm:text-base focus-visible:ring-primary"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="recorrente" className="text-sm sm:text-base">Receita recorrente?</Label>
+                  <Switch
+                    id="recorrente"
+                    checked={newReceita.recorrente}
+                    onCheckedChange={(checked) =>
+                      setNewReceita({ ...newReceita, recorrente: checked })
+                    }
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="recorrente" className="text-sm sm:text-base">Receita recorrente?</Label>
-                <Switch
-                  id="recorrente"
-                  checked={newReceita.recorrente}
-                  onCheckedChange={(checked) =>
-                    setNewReceita({ ...newReceita, recorrente: checked })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
-              <Button 
-                className="bg-primary text-primary-foreground w-full sm:w-auto hover:bg-primary/90" 
-                onClick={handleSaveReceita}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                    Salvando...
-                  </>
-                ) : (
-                  newReceita.id ? "Salvar Alterações" : "Salvar"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        </div>
-        
-        <div className="flex items-center gap-2">
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto cursor-pointer">Cancelar</Button>
+                <Button 
+                  className="bg-primary/70 text-primary-foreground cursor-pointer w-full sm:w-auto hover:bg-primary" 
+                  onClick={handleSaveReceita}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                      Salvando...
+                    </>
+                  ) : (
+                    newReceita.id ? "Salvar Alterações" : "Salvar"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <PeriodFilter 
             value={period}
             onChange={setPeriod}
           />
+          
           <Button 
             variant="outline" 
             size="sm" 
@@ -540,7 +639,7 @@ export default function ReceitasPage() {
                     "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform hover:scale-110 flex-shrink-0",
                     r.isSynced ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
                   )}>
-                    {r.isSynced ? <Landmark className="h-4 w-4 sm:h-5 sm:w-5" /> : <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5" />}
+                    {getIncomeIcon(r.tipo, r.isSynced)}
                   </div>
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -553,7 +652,10 @@ export default function ReceitasPage() {
                         {r.isSynced && <SyncBadge />}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-1">
-                        <span>{capitalize(r.tipo)}</span>
+                        <span>{(() => {
+                          const typeInfo = incomeTypes.find(t => t.value === r.tipo.toLowerCase())
+                          return typeInfo ? typeInfo.label : capitalize(r.tipo)
+                        })()}</span>
                         {r.isSynced && r.frequencia && (
                             <>
                                 <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
@@ -563,7 +665,9 @@ export default function ReceitasPage() {
                         {r.isSynced && r.diasRecebimento && (
                             <>
                                 <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />
-                                <span className="italic text-xs break-words">({r.diasRecebimento})</span>
+                                <span className="italic text-xs break-words">
+                                  ({r.diasRecebimento.split(',').map(d => formatDateBR(d.trim())).join(' — ')})
+                                </span>
                             </>
                         )}
                         {!r.isSynced && (
@@ -635,6 +739,7 @@ export default function ReceitasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteReceita}
         itemName={deleteDialog.item?.nome}
+        loading={isDeleting}
       />
 
       <ExportPdfDialog 

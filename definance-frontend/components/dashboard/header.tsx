@@ -16,6 +16,7 @@ import { useBillsNotifications } from "@/hooks/use-bills-notifications"
 import { useSettings } from "@/lib/settings-context"
 import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 export function DashboardHeader() {
   const { totalCount, overdueCount, setupCount, isLoading } = useBillsNotifications()
@@ -29,7 +30,7 @@ export function DashboardHeader() {
       <div className="flex flex-1 items-center justify-end gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm active:scale-95 transition-all">
+            <Button size="sm" className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer shadow-sm active:scale-95 transition-all">
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Nova Transação</span>
             </Button>
@@ -86,7 +87,7 @@ export function DashboardHeader() {
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9 cursor-pointer">
-              <Bell className="h-4 w-4" />
+              <Bell className={cn("h-4 w-4", !isLoading && totalCount > 0 && "animate-pulse text-primary")} />
               {!isLoading && totalCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-in zoom-in duration-300">
                   {totalCount}

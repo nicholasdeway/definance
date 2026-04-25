@@ -46,7 +46,7 @@ export const Step2IncomeType = () => {
           >
             <div className={cn(
               "flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300",
-              isSelected ? "bg-primary text-primary-foreground scale-110" : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+              isSelected ? "bg-primary/70 text-primary-foreground scale-110" : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
             )}>
               <type.icon className="h-6 w-6" />
             </div>
@@ -58,7 +58,7 @@ export const Step2IncomeType = () => {
               <p className="text-sm text-muted-foreground leading-tight">{type.description}</p>
             </div>
             {isSelected && (
-              <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center animate-in zoom-in duration-300 shadow-sm">
+              <div className="h-6 w-6 rounded-full bg-primary/70 flex items-center justify-center animate-in zoom-in duration-300 shadow-sm">
                 <Check className="h-3.5 w-3.5 text-primary-foreground" />
               </div>
             )}

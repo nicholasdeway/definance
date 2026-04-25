@@ -115,6 +115,14 @@ export const useOnboardingValidation = () => {
               errors.push(ONBOARDING_ERRORS.vehicles.insuranceIncomplete(index))
             }
           }
+          if (v.ipvaAnos && v.ipvaAnos.length > 0) {
+            if (v.ipvaAnos.some(y => !y.ano || y.ano.length < 4)) {
+              errors.push(ONBOARDING_ERRORS.vehicles.ipvaInvalidYear(index))
+            }
+            if (v.ipvaAnos.some(y => y.parcelas.length === 0 || y.parcelas.some(p => !p.valor || p.valor === 0 || !p.vencimento))) {
+              errors.push(ONBOARDING_ERRORS.vehicles.ipvaIncomplete(index))
+            }
+          }
         }
         break
 

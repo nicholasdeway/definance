@@ -24,7 +24,7 @@ namespace definance_backend.Features.Bills.Repositories
                     category      AS ""Category"",
                     bill_type     AS ""BillType"",
                     due_day       AS ""DueDay"",
-                    due_date::timestamp AS ""DueDate"",
+                    due_date      AS ""DueDate"",
                     status        AS ""Status"",
                     is_recurring  AS ""IsRecurring"",
                     description   AS ""Description"",
@@ -51,7 +51,7 @@ namespace definance_backend.Features.Bills.Repositories
                     category      AS ""Category"",
                     bill_type     AS ""BillType"",
                     due_day       AS ""DueDay"",
-                    due_date::timestamp AS ""DueDate"",
+                    due_date      AS ""DueDate"",
                     status        AS ""Status"",
                     is_recurring  AS ""IsRecurring"",
                     description   AS ""Description"",
@@ -72,7 +72,7 @@ namespace definance_backend.Features.Bills.Repositories
                 sql += @" AND (
                     (EXTRACT(MONTH FROM due_date) = @Month AND EXTRACT(YEAR FROM due_date) = @Year) 
                     OR (due_date IS NULL)
-                    OR (is_recurring = true AND status = 'Pendente' AND (EXTRACT(YEAR FROM due_date) < @Year OR (EXTRACT(YEAR FROM due_date) = @Year AND EXTRACT(MONTH FROM due_date) < @Month)))
+                    OR ((status = 'Pendente' OR status = 'Atrasado') AND (EXTRACT(YEAR FROM due_date) < @Year OR (EXTRACT(YEAR FROM due_date) = @Year AND EXTRACT(MONTH FROM due_date) < @Month)))
                 )";
             }
 
@@ -83,7 +83,8 @@ namespace definance_backend.Features.Bills.Repositories
                         WHEN 'Pendente' THEN 1
                         WHEN 'Pago'     THEN 2
                     END,
-                    due_date ASC NULLS LAST;
+                    due_date ASC NULLS LAST,
+                    name ASC;
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
@@ -135,6 +136,30 @@ namespace definance_backend.Features.Bills.Repositories
 
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.ExecuteAsync(sql, new { Id = id });
+        }
+
+        public async Task CreateBatchAsync(IEnumerable<Bill> bills)
+        {
+            const string sql = @"
+                INSERT INTO bills (
+                    id, user_id, name, amount, category, bill_type, due_day, due_date,
+                    status, is_recurring, description, notes, goal_id, created_at, updated_at
+                ) VALUES (
+                    @Id, @UserId, @Name, @Amount, @Category, @BillType, @DueDay, @DueDate,
+                    @Status, @IsRecurring, @Description, @Notes, @GoalId, NOW(), NOW()
+                );
+            ";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.ExecuteAsync(sql, bills);
+        }
+
+        public async Task DeleteBatchAsync(IEnumerable<Guid> ids)
+        {
+            const string sql = "DELETE FROM bills WHERE id = ANY(@Ids);";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.ExecuteAsync(sql, new { Ids = ids.ToArray() });
         }
     }
 }

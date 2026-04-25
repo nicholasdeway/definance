@@ -21,6 +21,16 @@ namespace definance_backend.Features.Onboarding.DTOs
         public decimal Valor { get; set; } = 0;
         public string Frequencia { get; set; } = "fixo_mensal";
         public string DiasRecebimento { get; set; } = "";
+        public string? ConfiguradoEm { get; set; }
+        public PreviousConfigDto? ConfiguracaoAnterior { get; set; }
+    }
+
+    public class PreviousConfigDto
+    {
+        public decimal Valor { get; set; }
+        public string Frequencia { get; set; } = null!;
+        public string? DiasRecebimento { get; set; }
+        public string ValidoAte { get; set; } = null!;
     }
 
     public class CustomExpenseDto

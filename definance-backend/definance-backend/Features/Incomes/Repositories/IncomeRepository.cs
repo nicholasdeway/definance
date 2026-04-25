@@ -111,5 +111,27 @@ namespace definance_backend.Features.Incomes.Repositories
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.ExecuteAsync(sql, new { Id = id });
         }
+
+        public async Task CreateBatchAsync(IEnumerable<Income> incomes)
+        {
+            const string sql = @"
+                INSERT INTO incomes (
+                    id, user_id, name, amount, type, date, is_recurring, created_at, updated_at
+                ) VALUES (
+                    @Id, @UserId, @Name, @Amount, @Type, @Date, @IsRecurring, NOW(), NOW()
+                );
+            ";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.ExecuteAsync(sql, incomes);
+        }
+
+        public async Task DeleteBatchAsync(IEnumerable<Guid> ids)
+        {
+            const string sql = "DELETE FROM incomes WHERE id = ANY(@Ids);";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.ExecuteAsync(sql, new { Ids = ids.ToArray() });
+        }
     }
 }

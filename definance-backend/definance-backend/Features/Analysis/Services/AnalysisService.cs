@@ -27,12 +27,11 @@ namespace definance_backend.Features.Analysis.Services
             }
             else if (month.HasValue && year.HasValue)
             {
-                start = new DateTime(year.Value, month.Value, 1);
-                end = start.AddMonths(1).AddDays(-1);
+                start = new DateTime(year.Value, month.Value, 1, 0, 0, 0, DateTimeKind.Utc);
+                end = start.AddMonths(1).AddTicks(-1);
             }
             else
             {
-                // Default: last 6 months
                 end = DateTime.UtcNow;
                 start = end.AddMonths(-6);
             }

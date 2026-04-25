@@ -10,8 +10,9 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion"
-import { cn } from "@/lib/utils"
+import { cn, generateId } from "@/lib/utils"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { vehicleTypes } from "@/components/onboarding/constants"
 import { FieldLabel } from "@/components/onboarding/components/field-label"
@@ -22,8 +23,9 @@ import { apiClient } from "@/lib/api-client"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { useToast } from "@/components/ui/use-toast"
 import { useState } from "react"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 
-export const VehiclesSection = () => {
+export const VehiclesSection = ({ onSavingStateChange }: { onSavingStateChange?: (saving: boolean) => void }) => {
   const { 
     vehicles, 
     setVehicles, 
@@ -34,15 +36,19 @@ export const VehiclesSection = () => {
   const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
   const [newExtras, setNewExtras] = useState<Record<string, { descricao: string; valor: number }>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const { toast } = useToast()
 
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
+    onSavingStateChange?.(true);
     try {
       const success = await persistStep(5, vehicles);
       if (success) {
         await apiClient("/api/onboarding/sync-vehicles", { method: "POST" });
+        window.dispatchEvent(new CustomEvent("finance-update"));
         toast({ title: "Veículos salvos com sucesso!", variant: "default" });
         setExpandedValue(undefined);
       } else {
@@ -53,11 +59,12 @@ export const VehiclesSection = () => {
       toast({ title: "Erro inesperado", variant: "destructive" });
     } finally {
       setIsSaving(false);
+      onSavingStateChange?.(false);
     }
   }
 
   const addVehicle = () => {
-    const newId = Math.random().toString(36).slice(2)
+    const newId = generateId()
     setVehicles(prev => [
       ...prev,
       {
@@ -93,7 +100,7 @@ export const VehiclesSection = () => {
       if (v.id === vehicleId) {
         return {
           ...v,
-          ipvaAnos: [...(v.ipvaAnos || []), { id: Math.random().toString(36).slice(2), ano: "", parcelas: [] }]
+          ipvaAnos: [...(v.ipvaAnos || []), { id: generateId(), ano: "", parcelas: [] }]
         }
       }
       return v
@@ -127,7 +134,7 @@ export const VehiclesSection = () => {
         return {
           ...v,
           ipvaAnos: (v.ipvaAnos || []).map(y => y.id === yearId ? {
-            ...y, parcelas: [...y.parcelas, { id: Math.random().toString(36).slice(2), valor: 0, vencimento: "" }]
+            ...y, parcelas: [...y.parcelas, { id: generateId(), valor: 0, vencimento: "" }]
           } : y)
         }
       }
@@ -174,7 +181,7 @@ export const VehiclesSection = () => {
       if (v.id === vehicleId) {
         return {
           ...v,
-          extras: [...(v.extras || []), { id: Math.random().toString(36).slice(2), descricao: data.descricao, valor: data.valor }]
+          extras: [...(v.extras || []), { id: generateId(), descricao: data.descricao, valor: data.valor }]
         }
       }
       return v
@@ -245,73 +252,71 @@ export const VehiclesSection = () => {
                 hasError && "border-destructive/30"
               )}
             >
-              <div 
-                className="flex items-center justify-between w-full px-5 py-4 cursor-pointer hover:bg-muted/5 transition-colors"
-                onClick={() => setExpandedValue(isExpanded ? undefined : v.id)}
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <div className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl transition-all",
-                    isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
-                  )}>
-                    {tipoInfo?.emoji || "🚗"}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-card-foreground">
-                      {v.nome || (tipoInfo ? tipoInfo.label : `Veículo ${idx + 1}`)}
-                    </span>
-                    {hasError && (
-                      <div className="flex items-center gap-1 text-[10px] text-destructive mt-0.5 font-medium animate-pulse">
-                        <AlertCircle className="h-3 w-3" /> Pendente
+              <AccordionTrigger className="hover:no-underline px-5 py-4 group data-[state=open]:pb-2 w-full">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3 flex-1 text-left">
+                        <div className={cn(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl transition-all",
+                          isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
+                        )}>
+                          {tipoInfo ? <tipoInfo.icon className={cn("h-5 w-5 transition-all", isExpanded ? "text-primary" : "text-muted-foreground")} /> : "🚗"}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-card-foreground">
+                            {v.nome || (tipoInfo ? tipoInfo.label : `Veículo ${idx + 1}`)}
+                          </span>
+                          {hasError && (
+                            <div className="flex items-center gap-1 text-[10px] text-destructive mt-0.5 font-medium animate-pulse">
+                              <AlertCircle className="h-3 w-3" /> Pendente
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4 ml-auto">
-                  <div className="hidden md:flex items-center gap-1.5">
-                    {v.financiado && (
-                      <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 text-[9px] h-4 px-1.5 flex items-center gap-0.5">
-                        <Landmark className="h-2 w-2" /> Financiado
-                      </Badge>
-                    )}
-                    {v.seguro && (
-                      <Badge variant="secondary" className="bg-blue-500/5 text-blue-500 border-blue-500/10 text-[9px] h-4 px-1.5 flex items-center gap-0.5">
-                        <Shield className="h-2 w-2" /> Seguro
-                      </Badge>
-                    )}
-                    {!v.nome && tipoInfo && <Badge variant="outline" className="text-[9px] h-4 px-1.5 uppercase opacity-60">Base</Badge>}
-                  </div>
-                  
-                  {/* Texto "Ver detalhes" */}
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden sm:inline-block hover:text-primary transition-colors">
-                    {isExpanded ? "Recolher" : "Ver detalhes"}
-                  </span>
-                  
-                  {/* Ícone da seta (expansão) */}
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground/60" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
-                  )}
-                  
-                  {/* Separador vertical */}
-                  <div className="h-6 w-px bg-border/40" />
-                  
-                  {/* Botão de remover (lixeira) */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeVehicle(v.id)
-                    }}
-                    className="p-1.5 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0"
-                    title="Remover veículo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+                      <div className="flex items-center gap-4 ml-auto">
+                        <div className="hidden md:flex items-center gap-1.5">
+                          {v.financiado && (
+                            <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 text-[9px] h-4 px-1.5 flex items-center gap-0.5">
+                              <Landmark className="h-2 w-2" /> Financiado
+                            </Badge>
+                          )}
+                          {v.seguro && (
+                            <Badge variant="secondary" className="bg-blue-500/5 text-blue-500 border-blue-500/10 text-[9px] h-4 px-1.5 flex items-center gap-0.5">
+                              <Shield className="h-2 w-2" /> Seguro
+                            </Badge>
+                          )}
+                          {!v.nome && tipoInfo && <Badge variant="outline" className="text-[9px] h-4 px-1.5 uppercase opacity-60">Base</Badge>}
+                        </div>
+                        
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden sm:inline-block transition-colors">
+                          {isExpanded ? "Recolher" : "Ver detalhes"}
+                        </span>
+                        
+                        <div className="h-6 w-px bg-border/40" />
+                        
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setItemToDelete(v.id)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setItemToDelete(v.id)
+                            }
+                          }}
+                          className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0 z-20"
+                          title="Remover veículo"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
 
               <AccordionContent className="px-4 pb-4">
                 <div className="pt-2 space-y-4">
@@ -339,7 +344,7 @@ export const VehiclesSection = () => {
                                 : "border-border/50 bg-background/50 hover:border-primary/30"
                             )}
                           >
-                            <span className="text-xl">{t.emoji}</span>
+                            <t.icon className={cn("h-6 w-6 transition-colors", isSelected ? "text-primary" : "text-muted-foreground")} />
                             <span className="text-[9px] font-medium text-muted-foreground truncate w-full">{t.label}</span>
                           </button>
                         )
@@ -388,7 +393,7 @@ export const VehiclesSection = () => {
                         <CurrencyInput
                           id={`v-multas-${v.id}`}
                           placeholder="R$ 0,00"
-                          value={v.multas ? Math.round(v.multas * 100).toString() : ""}
+                          value={v.multas ? Math.round(Number(v.multas) * 100).toString() : ""}
                           onChange={(value) => updateVehicleCurrency(v.id, "multas", value)}
                           className="h-9 bg-background"
                         />
@@ -417,7 +422,10 @@ export const VehiclesSection = () => {
                                 placeholder="Ex: 2025"
                                 value={ipvaYear.ano}
                                 onChange={e => updateIpvaYear(v.id, ipvaYear.id, e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                className={cn("h-9 border-border/50", (!ipvaYear.ano || ipvaYear.ano.length < 4) && "border-destructive")}
+                                className={cn(
+                                  "h-9 border-border/50 bg-background", 
+                                  wasAttempted && (!ipvaYear.ano || ipvaYear.ano.length < 4) && "border-destructive border-2"
+                                )}
                               />
                             </div>
                           </div>
@@ -429,13 +437,16 @@ export const VehiclesSection = () => {
                             </div>
                             
                             {ipvaYear.parcelas.map((parcela, idx) => (
-                              <div key={parcela.id} className={cn("flex flex-col sm:flex-row items-center gap-2 bg-muted/10 p-2 rounded-md border border-border/40", (!parcela.valor || !parcela.vencimento) && "border-destructive")}>
+                              <div key={parcela.id} className={cn(
+                                "flex flex-col sm:flex-row items-center gap-2 bg-muted/10 p-2 rounded-md border border-border/40 transition-colors", 
+                                wasAttempted && (!parcela.valor || !parcela.vencimento) && "border-destructive/60 bg-destructive/5"
+                              )}>
                                 <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
                                   <span className="text-xs font-semibold w-6 text-center">{idx + 1}ª</span>
                                   <CurrencyInput
                                     id={`ipva-parcela-${parcela.id}`}
                                     placeholder="Valor *"
-                                    value={parcela.valor ? Math.round(parcela.valor * 100).toString() : ""}
+                                    value={parcela.valor ? Math.round(Number(parcela.valor) * 100).toString() : ""}
                                     onChange={(val) => {
                                       updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "valor", parseCurrencyInput(val))
                                     }}
@@ -530,7 +541,7 @@ export const VehiclesSection = () => {
                             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
                             <CurrencyInput 
                               id={`new-extra-valor-${v.id}`}
-                              value={newExtras[v.id].valor ? Math.round(newExtras[v.id].valor * 100).toString() : ""} 
+                              value={newExtras[v.id].valor ? Math.round(Number(newExtras[v.id].valor) * 100).toString() : ""} 
                               onChange={value => {
                                 setNewExtras(p => ({...p, [v.id]: {...p[v.id], valor: parseCurrencyInput(value)}}))
                               }}
@@ -552,7 +563,7 @@ export const VehiclesSection = () => {
                           <Button 
                             type="button"
                             size="sm" 
-                            className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/70" 
+                            className="h-8 text-xs bg-primary/70 text-primary-foreground hover:bg-primary/80" 
                             onClick={() => handleAddNewExtra(v.id)}
                           >
                             Salvar Gasto
@@ -562,7 +573,7 @@ export const VehiclesSection = () => {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setNewExtras(p => ({...p, [v.id]: {descricao: "", valor: 0}}))}
+                        onClick={() => setNewExtras(p => ({...p, [v.id]: {id: generateId(), descricao: "", valor: 0}}))}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary cursor-pointer transition-all"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -612,7 +623,7 @@ export const VehiclesSection = () => {
                             <CurrencyInput
                               id={`v-parcela-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorParcela ? Math.round(v.valorParcela * 100).toString() : ""}
+                              value={v.valorParcela ? Math.round(Number(v.valorParcela) * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorParcela", value)}
                               className="h-8 bg-background text-sm font-medium"
                             />
@@ -650,11 +661,11 @@ export const VehiclesSection = () => {
                       {v.seguro && (
                         <div className="grid gap-3 sm:grid-cols-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 animate-in slide-in-from-top-2 duration-300">
                           <div className="space-y-1.5">
-                            <FieldLabel label="Valor do seguro" required />
+                            <FieldLabel label="Valor da parcela do seguro" required />
                             <CurrencyInput
                               id={`v-vseguro-${v.id}`}
                               placeholder="R$ 0,00"
-                              value={v.valorSeguro ? Math.round(v.valorSeguro * 100).toString() : ""}
+                              value={v.valorSeguro ? Math.round(Number(v.valorSeguro) * 100).toString() : ""}
                               onChange={(value) => updateVehicleCurrency(v.id, "valorSeguro", value)}
                               className="h-8 bg-background text-sm font-medium"
                             />
@@ -693,7 +704,7 @@ export const VehiclesSection = () => {
                       type="button" 
                       disabled={isSaving || hasIpvaError}
                       onClick={handleSave}
-                      className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold"
+                      className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary/80 font-bold"
                     >
                       {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Veículo"}
                     </Button>
@@ -720,6 +731,42 @@ export const VehiclesSection = () => {
           Sem veículos? Tudo bem! Você pode pular esta etapa.
         </p>
       )}
+
+      <ConfirmDeleteDialog
+        open={itemToDelete !== null}
+        onOpenChange={(open) => !open && !isDeleting && setItemToDelete(null)}
+        loading={isDeleting}
+        onConfirm={async () => {
+          if (itemToDelete) {
+            setIsDeleting(true)
+            try {
+              // Primeiro removemos do estado local
+              const updatedVehicles = vehicles.filter(v => v.id !== itemToDelete)
+              setVehicles(updatedVehicles)
+              
+              // Depois persistimos imediatamente no backend
+              const success = await persistStep(5, updatedVehicles)
+              if (success) {
+                window.dispatchEvent(new CustomEvent("finance-update"))
+                toast({ title: "Veículo removido com sucesso!" })
+              } else {
+                toast({ 
+                  title: "Atenção", 
+                  description: "O veículo foi removido da tela, mas houve um erro ao sincronizar com o servidor. Clique em Salvar para garantir.",
+                  variant: "destructive" 
+                })
+              }
+            } catch (error) {
+              console.error("Erro ao deletar veículo", error)
+            } finally {
+              setIsDeleting(false)
+              setItemToDelete(null)
+            }
+          }
+        }}
+        title="Confirmar Exclusão"
+        description="Tem certeza que deseja remover este veículo? Todos os custos de IPVA, seguro e parcelas associados a ele também serão excluídos das suas contas."
+      />
     </div>
   )
 }

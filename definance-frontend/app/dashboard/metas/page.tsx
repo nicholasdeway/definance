@@ -144,7 +144,7 @@ export default function MetasPage() {
           </div>
           <Button 
             id="btn-nova-meta" 
-            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+            className="bg-primary/70 text-primary-foreground hover:bg-primary w-full sm:w-auto cursor-pointer" 
             onClick={() => setModalForm({ open: true, meta: null })}
             size="sm"
           >
