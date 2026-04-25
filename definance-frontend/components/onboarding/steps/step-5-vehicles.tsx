@@ -2,32 +2,21 @@ import { Plus, Trash2, Landmark, Shield, AlertCircle, ChevronDown, ChevronUp } f
 
 import { Input } from "@/components/ui/input"
 import { CurrencyInput } from "@/components/ui/currency-input"
-
 import { Label } from "@/components/ui/label"
-
 import { Switch } from "@/components/ui/switch"
-
 import { Badge } from "@/components/ui/badge"
-
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
 } from "@/components/ui/accordion"
 
 import { cn } from "@/lib/utils"
-
 import { useOnboarding } from "../hooks/use-onboarding"
-
 import { vehicleTypes } from "../constants"
-
 import { FieldLabel } from "../components/field-label"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
-
 import { Vehicle } from "../types"
-import { Button } from "@/components/ui/button"
-
 import { useState } from "react"
 
 export const Step5Vehicles = () => {

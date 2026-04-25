@@ -11,7 +11,7 @@ import {
 import { ArrowUpRight, Search, MoreHorizontal, Link2 } from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
-import { cn } from "@/lib/utils"
+import { cn, capitalize } from "@/lib/utils"
 
 export interface Despesa {
   id: string
@@ -119,7 +119,7 @@ export function ExpenseList({
                       )}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      {d.categoria} • {d.data}
+                      {capitalize(d.categoria)} • {d.data}
                     </p>
                   </div>
                 </div>
