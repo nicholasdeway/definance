@@ -50,7 +50,7 @@ export default function ConfiguracoesPage() {
           <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
           <p className="text-muted-foreground">Personalize sua experiência no Definance</p>
         </div>
-        <Button onClick={handleSave} disabled={isActionLoading} className="bg-primary hover:bg-primary/70 text-primary-foreground cursor-pointer">
+        <Button onClick={handleSave} disabled={isActionLoading} className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer">
           Salvar Alterações
         </Button>
       </div>
@@ -154,7 +154,7 @@ export default function ConfiguracoesPage() {
               </Button>
               <Button variant="outline" className="text-xs h-auto py-12 px-2 flex flex-col gap-3 cursor-pointer hover:border-emerald-500/50 transition-all group">
                 <Download className="h-6 w-6 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold">Exportar (Excel)</span>
+                <span className="font-semibold">Exportar (Google Sheets)</span>
               </Button>
             </div>
             </div>

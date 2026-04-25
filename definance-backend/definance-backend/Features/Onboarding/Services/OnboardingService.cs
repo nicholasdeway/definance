@@ -31,226 +31,133 @@ namespace definance_backend.Features.Onboarding.Services
             if (user == null)
                 throw new ApplicationException("Usuário não encontrado.");
 
-            // 1. Processar Gastos Fixos Selecionados
-            foreach (var expense in dto.SelectedExpenses)
-            {
-                if (expense.Value <= 0) continue;
-
-                var label = GetExpenseLabel(expense.Key);
-                await _billRepository.CreateAsync(new Bill
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Name = label,
-                    Amount = expense.Value,
-                    Category = "Moradia",
-                    BillType = "Fixa",
-                    DueDay = null,
-                    Status = "Pendente",
-                    IsRecurring = true,
-                    Description = $"Importado do Onboarding ({label})"
-                });
-
-                // Se houver empréstimo vinculado a esta conta
-                if (dto.BillLoans.TryGetValue(expense.Key, out var loan) && loan.HasLoan && loan.Valor > 0)
-                {
-                    await _billRepository.CreateAsync(new Bill
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = $"{label} (Empréstimo)",
-                        Amount = loan.Valor,
-                        Category = "Dívidas",
-                        BillType = "Fixa",
-                        DueDay = null,
-                        Status = "Pendente",
-                        IsRecurring = true,
-                        Description = $"Empréstimo embutido na conta de {label}"
-                    });
-                }
-            }
-
-            // 2. Processar Gastos Personalizados
-            foreach (var custom in dto.CustomExpenses)
-            {
-                if (custom.Valor <= 0) continue;
-
-                await _billRepository.CreateAsync(new Bill
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Name = custom.Titulo,
-                    Amount = custom.Valor,
-                    Category = "Outros",
-                    BillType = "Fixa",
-                    DueDay = null,
-                    Status = "Pendente",
-                    IsRecurring = true,
-                    Description = "Vindo do Onboarding (Personalizado)"
-                });
-            }
-
-            // 3. Processar Veículos
-            foreach (var v in dto.Vehicles)
-            {
-                if (v.IpvaAnos != null && v.IpvaAnos.Count > 0)
-                {
-                    foreach (var ano in v.IpvaAnos)
-                    {
-                        int parcelaCount = 1;
-                        foreach (var parcela in ano.Parcelas)
-                        {
-                            if (parcela.Valor <= 0) continue;
-
-                            int? dueDay = null;
-                            DateTime? dueDate = null;
-                            if (DateTime.TryParse(parcela.Vencimento, out var dt))
-                            {
-                                dueDate = dt.ToUniversalTime();
-                                dueDay = dt.Day;
-                            }
-
-                            await _billRepository.CreateAsync(new Bill
-                            {
-                                Id = Guid.NewGuid(),
-                                UserId = userId,
-                                Name = $"IPVA {ano.Ano} - {v.Nome} ({parcelaCount}/{ano.Parcelas.Count})",
-                                Amount = parcela.Valor,
-                                Category = "Veículos",
-                                BillType = "Variável",
-                                DueDay = dueDay,
-                                DueDate = dueDate,
-                                Status = "Pendente",
-                                IsRecurring = false,
-                                Description = $"IPVA do veículo {v.Nome} (Ano {ano.Ano})"
-                            });
-                            parcelaCount++;
-                        }
-                    }
-                }
-
-                if (v.Financiado && v.ValorParcela > 0)
-                {
-                    await _billRepository.CreateAsync(new Bill
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = $"Parcela - {v.Nome}",
-                        Amount = v.ValorParcela.Value,
-                        Category = "Veículos",
-                        BillType = "Fixa",
-                        DueDay = null,
-                        Status = "Pendente",
-                        IsRecurring = true,
-                        Description = $"Financiamento do veículo {v.Nome}"
-                    });
-                }
-
-                if (v.Seguro && v.ValorSeguro > 0)
-                {
-                    int? dueDay = null;
-                    DateTime? dueDate = null;
-                    if (!string.IsNullOrEmpty(v.VencimentoSeguro) && DateTime.TryParse(v.VencimentoSeguro, out var dt))
-                    {
-                        dueDate = dt.ToUniversalTime();
-                        dueDay = dt.Day;
-                    }
-
-                    await _billRepository.CreateAsync(new Bill
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = $"Seguro - {v.Nome}",
-                        Amount = v.ValorSeguro.Value,
-                        Category = "Veículos",
-                        BillType = "Fixa",
-                        DueDay = dueDay,
-                        DueDate = dueDate,
-                        Status = "Pendente",
-                        IsRecurring = v.SeguroRecorrente ?? true,
-                        Description = $"Seguro do veículo {v.Nome}"
-                    });
-                }
-            }
-
-            // 4. Processar Dívidas
-            foreach (var d in dto.Debts)
-            {
-                if (d.Valor <= 0) continue;
-
-                await _billRepository.CreateAsync(new Bill
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Name = d.Descricao,
-                    Amount = d.Valor,
-                    Category = "Dívidas",
-                    BillType = d.Parcelado ? "Fixa" : "Variável",
-                    DueDay = null,
-                    Status = "Pendente",
-                    IsRecurring = d.Parcelado,
-                    Description = d.Parcelado ? "Dívida Parcelada" : "Dívida única/avulsa"
-                });
-            }
-
-            // 5. Processar Rendas (Materialização)
-            foreach (var inc in dto.Incomes)
-            {
-                if (inc.Valor <= 0) continue;
-
-                var dates = inc.DiasRecebimento.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                
-                // Se for quinzenal e tivermos duas datas, dividimos o valor
-                if (inc.Frequencia.ToLower() == "quinzenal" && dates.Length > 0)
-                {
-                    decimal halfAmount = inc.Valor / (dates.Length > 1 ? 2 : 1);
-                    foreach (var dateStr in dates)
-                    {
-                        if (DateTime.TryParse(dateStr.Trim(), out var dt))
-                        {
-                            await _incomeRepository.CreateAsync(new Income
-                            {
-                                Id = Guid.NewGuid(),
-                                UserId = userId,
-                                Name = inc.Tipo,
-                                Amount = halfAmount,
-                                Type = inc.Tipo,
-                                Date = dt.ToUniversalTime(),
-                                IsRecurring = true
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    // Caso padrão (Mensal ou única data)
-                    DateTime? incomeDate = null;
-                    if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
-                    {
-                        incomeDate = dt.ToUniversalTime();
-                    }
-
-                    await _incomeRepository.CreateAsync(new Income
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = inc.Tipo,
-                        Amount = inc.Valor,
-                        Type = inc.Tipo,
-                        Date = incomeDate ?? DateTime.UtcNow,
-                        IsRecurring = true
-                    });
-                }
-            }
-
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            // Atualiza os dados de onboarding no usuário
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true 
+            };
             var jsonData = JsonSerializer.Serialize(dto, options);
-
-            user.HasCompletedOnboarding = true;
             user.OnboardingData = jsonData;
+            user.HasCompletedOnboarding = true;
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
+
+            // Sincronização única e otimizada
+            await SyncAllEntitiesAsync(userId);
+        }
+
+        private async Task SyncAllEntitiesAsync(Guid userId)
+        {
+            try 
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+                var options = new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+                };
+                var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+                if (dto == null) return;
+
+                // Busca todas as entradas existentes UMA VEZ para uso nos métodos otimizados
+                var existingIncomes = (await _incomeRepository.GetByUserIdAsync(userId)).ToList();
+                var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
+
+                // Processamento paralelo das sincronizações
+                await Task.WhenAll(
+                    SyncIncomesOptimizedAsync(userId, dto, existingIncomes),
+                    SyncFixedExpensesOptimizedAsync(userId, dto, existingBills),
+                    SyncVehiclesOptimizedAsync(userId, dto, existingBills),
+                    SyncDebtsOptimizedAsync(userId, dto, existingBills)
+                );
+            }
+            catch (Exception ex)
+            {
+                // Rethrow para que o chamador possa tratar (Controller ja tem try-catch)
+                throw new ApplicationException($"Erro durante a sincronização do onboarding: {ex.Message}", ex);
+            }
+        }
+
+        public async Task SyncDeleteBillWithProfileAsync(Guid userId, definance_backend.Domain.Entities.Bill bill)
+        {
+            if (bill == null || bill.Description == null) return;
+
+            // Só processamos se vier do Perfil Financeiro ou Onboarding
+            if (!bill.Description.Contains("Perfil Financeiro") && !bill.Description.Contains("Onboarding")) return;
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+            if (data == null) return;
+
+            bool changed = false;
+            var billNameLower = bill.Name.ToLower();
+
+            // 1. Verificar em SelectedExpenses (Dicionário)
+            var expenseKey = data.SelectedExpenses.Keys.FirstOrDefault(k => GetExpenseLabel(k).ToLower() == billNameLower);
+            if (expenseKey != null)
+            {
+                data.SelectedExpenses.Remove(expenseKey);
+                data.BillLoans.Remove(expenseKey);
+                changed = true;
+            }
+
+            // 2. Verificar em CustomExpenses
+            var custom = data.CustomExpenses.FirstOrDefault(c => c.Titulo.ToLower() == billNameLower);
+            if (custom != null)
+            {
+                data.CustomExpenses.Remove(custom);
+                changed = true;
+            }
+
+            // 3. Verificar em Veículos (Empréstimos/Seguros)
+            foreach (var v in data.Vehicles)
+            {
+                if (billNameLower.Contains(v.Nome.ToLower()))
+                {
+                    if (billNameLower.Contains("parcela") || billNameLower.Contains("financiamento"))
+                    {
+                        v.Financiado = false;
+                        v.ValorParcela = null;
+                        changed = true;
+                    }
+                    if (billNameLower.Contains("seguro"))
+                    {
+                        v.Seguro = false;
+                        v.ValorSeguro = null;
+                        changed = true;
+                    }
+                    if (billNameLower.Contains("ipva"))
+                    {
+                        var yearStr = billNameLower.Split(' ').FirstOrDefault(x => x.Length == 4 && int.TryParse(x, out _));
+                        if (yearStr != null)
+                        {
+                            v.IpvaAnos.RemoveAll(a => a.Ano == yearStr);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
+            // 4. Verificar em Dívidas
+            var debt = data.Debts.FirstOrDefault(d => d.Descricao.ToLower() == billNameLower);
+            if (debt != null)
+            {
+                data.Debts.Remove(debt);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                user.OnboardingData = JsonSerializer.Serialize(data, options);
+                await _userRepository.UpdateAsync(user);
+            }
         }
 
         private string GetExpenseLabel(string key)
@@ -328,8 +235,9 @@ namespace definance_backend.Features.Onboarding.Services
             await _userRepository.UpdateAsync(user);
         }
 
-        public async Task SyncVehiclesAsync(Guid userId)
+        public async Task SyncIncomesAsync(Guid userId)
         {
+            var existingIncomes = (await _incomeRepository.GetByUserIdAsync(userId)).ToList();
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
 
@@ -339,19 +247,154 @@ namespace definance_backend.Features.Onboarding.Services
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
             };
             var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
-            if (dto == null || dto.Vehicles == null || dto.Vehicles.Count == 0) return;
+            if (dto == null) return;
 
-            var existingBills = await _billRepository.GetByUserIdAsync(userId);
-            var pendingVehicleBills = existingBills.Where(b => b.Category == "Veículos" && b.Status == "Pendente").ToList();
+            await SyncIncomesOptimizedAsync(userId, dto, existingIncomes);
+        }
 
-            foreach (var bill in pendingVehicleBills)
+        public async Task SyncVehiclesAsync(Guid userId)
+        {
+            var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+            var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+            if (dto == null) return;
+
+            await SyncVehiclesOptimizedAsync(userId, dto, existingBills);
+        }
+
+        public async Task SyncFixedExpensesAsync(Guid userId)
+        {
+            var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+            var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+            if (dto == null) return;
+
+            await SyncFixedExpensesOptimizedAsync(userId, dto, existingBills);
+        }
+
+        public async Task SyncDebtsAsync(Guid userId)
+        {
+            var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
+
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+            var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+            if (dto == null) return;
+
+            await SyncDebtsOptimizedAsync(userId, dto, existingBills);
+        }
+
+        private async Task SyncIncomesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Income> existingIncomes)
+        {
+            if (dto.Incomes == null) return;
+            
+            var baseTypes = new[] { "clt", "pj", "autonomo", "freelancer", "mesada" };
+            
+            var toDelete = existingIncomes.Where(i => baseTypes.Contains(i.Type.ToLower())).Select(i => i.Id).ToList();
+            if (toDelete.Any())
             {
-                await _billRepository.DeleteAsync(bill.Id);
+                await _incomeRepository.DeleteBatchAsync(toDelete);
             }
 
+            var newIncomes = new List<Income>();
+            foreach (var inc in dto.Incomes)
+            {
+                if (inc.Valor <= 0) continue;
+
+                var dates = (inc.DiasRecebimento ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                
+                if (inc.Frequencia.ToLower() == "quinzenal" && dates.Length > 0)
+                {
+                    decimal halfAmount = inc.Valor / (dates.Length > 1 ? 2 : 1);
+                    foreach (var dateStr in dates)
+                    {
+                        if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                        {
+                            newIncomes.Add(new Income
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Name = inc.Tipo,
+                                Amount = halfAmount,
+                                Type = inc.Tipo,
+                                Date = dt.ToUniversalTime(),
+                                IsRecurring = true,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    DateTime? incomeDate = null;
+                    if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
+                    {
+                        incomeDate = dt.ToUniversalTime();
+                    }
+
+                    newIncomes.Add(new Income
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = inc.Tipo,
+                        Amount = inc.Valor,
+                        Type = inc.Tipo,
+                        Date = incomeDate ?? DateTime.UtcNow,
+                        IsRecurring = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            if (newIncomes.Any())
+            {
+                await _incomeRepository.CreateBatchAsync(newIncomes);
+            }
+        }
+
+        private async Task SyncVehiclesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
+        {
+            var toDelete = existingBills.Where(b => 
+                b.Category == "Veículos" && 
+                b.Status == "Pendente" && 
+                (
+                    (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
+                    b.Name.Contains("IPVA") || b.Name.Contains("Seguro") || b.Name.Contains("Parcela") || b.Name.Contains("Financiamento") || b.Name.Contains("Multa")
+                )
+            ).Select(b => b.Id).ToList();
+            
+            if (toDelete.Any())
+            {
+                await _billRepository.DeleteBatchAsync(toDelete);
+            }
+
+            if (dto.Vehicles == null || dto.Vehicles.Count == 0) return;
+
+            var newBills = new List<Bill>();
             foreach (var v in dto.Vehicles)
             {
-                if (v.IpvaAnos != null && v.IpvaAnos.Count > 0)
+                if (v.IpvaAnos != null)
                 {
                     foreach (var ano in v.IpvaAnos)
                     {
@@ -368,7 +411,7 @@ namespace definance_backend.Features.Onboarding.Services
                                 dueDay = dt.Day;
                             }
 
-                            await _billRepository.CreateAsync(new Bill
+                            newBills.Add(new Bill
                             {
                                 Id = Guid.NewGuid(),
                                 UserId = userId,
@@ -380,7 +423,7 @@ namespace definance_backend.Features.Onboarding.Services
                                 DueDate = dueDate,
                                 Status = "Pendente",
                                 IsRecurring = false,
-                                Description = $"IPVA do veículo {v.Nome} (Ano {ano.Ano})"
+                                Description = $"IPVA do veículo {v.Nome} (Ano {ano.Ano}) (Sincronizado Perfil)"
                             });
                             parcelaCount++;
                         }
@@ -389,18 +432,18 @@ namespace definance_backend.Features.Onboarding.Services
 
                 if (v.Financiado && v.ValorParcela > 0)
                 {
-                    await _billRepository.CreateAsync(new Bill
+                    newBills.Add(new Bill
                     {
                         Id = Guid.NewGuid(),
                         UserId = userId,
-                        Name = $"Parcela - {v.Nome}",
+                        Name = $"Financiamento - {v.Nome}",
                         Amount = v.ValorParcela.Value,
                         Category = "Veículos",
                         BillType = "Fixa",
                         DueDay = null,
                         Status = "Pendente",
                         IsRecurring = true,
-                        Description = $"Financiamento do veículo {v.Nome}"
+                        Description = $"Financiamento do veículo {v.Nome} (Sincronizado Perfil)"
                     });
                 }
 
@@ -414,7 +457,7 @@ namespace definance_backend.Features.Onboarding.Services
                         dueDay = dt.Day;
                     }
 
-                    await _billRepository.CreateAsync(new Bill
+                    newBills.Add(new Bill
                     {
                         Id = Guid.NewGuid(),
                         UserId = userId,
@@ -426,9 +469,230 @@ namespace definance_backend.Features.Onboarding.Services
                         DueDate = dueDate,
                         Status = "Pendente",
                         IsRecurring = v.SeguroRecorrente ?? true,
-                        Description = $"Seguro do veículo {v.Nome}"
+                        Description = $"Seguro do veículo {v.Nome} (Sincronizado Perfil)"
                     });
                 }
+
+                if (v.Extras != null)
+                {
+                    foreach (var extra in v.Extras)
+                    {
+                        if (extra.Valor <= 0) continue;
+                        newBills.Add(new Bill
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            Name = $"{extra.Descricao} ({v.Nome})",
+                            Amount = extra.Valor,
+                            Category = "Veículos",
+                            BillType = "Fixa",
+                            DueDay = null,
+                            Status = "Pendente",
+                            IsRecurring = true,
+                            Description = $"Gasto extra do veículo {v.Nome} (Sincronizado Perfil)"
+                        });
+                    }
+                }
+
+                if (v.Multas > 0)
+                {
+                    newBills.Add(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = $"Multas - {v.Nome}",
+                        Amount = v.Multas,
+                        Category = "Veículos",
+                        BillType = "Variável",
+                        DueDay = null,
+                        Status = "Pendente",
+                        IsRecurring = false,
+                        Description = $"Multas pendentes do veículo {v.Nome} (Sincronizado Perfil)"
+                    });
+                }
+            }
+
+            if (newBills.Any())
+            {
+                await _billRepository.CreateBatchAsync(newBills);
+            }
+        }
+
+        private async Task SyncFixedExpensesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
+        {
+            if (dto.SelectedExpenses == null) return;
+
+            var toDelete = existingBills.Where(b => 
+                b.Status == "Pendente" && 
+                b.Description != null && 
+                (b.Description.Contains("Onboarding") || 
+                 b.Description.Contains("Perfil Financeiro") || 
+                 b.Description.Contains("Empréstimo vinculado")) &&
+                !b.Description.Contains("(Instância)")
+            ).Select(b => b.Id).ToList();
+
+            if (toDelete.Any())
+            {
+                await _billRepository.DeleteBatchAsync(toDelete);
+            }
+
+            var newBills = new List<Bill>();
+            foreach (var expense in dto.SelectedExpenses)
+            {
+                if (expense.Value <= 0) continue;
+
+                var label = GetExpenseLabel(expense.Key);
+                newBills.Add(new Bill
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Name = label,
+                    Amount = expense.Value,
+                    Category = expense.Key == "educacao" ? "Educação" : 
+                               expense.Key == "saude" ? "Saúde" : 
+                               expense.Key == "alimentacao" ? "Alimentação" :
+                               expense.Key == "transporte" ? "Transporte" : "Moradia",
+                    BillType = "Fixa",
+                    Status = "Pendente",
+                    IsRecurring = true,
+                    Description = $"Vindo do Perfil Financeiro ({label})"
+                });
+
+                if (dto.BillLoans != null && dto.BillLoans.TryGetValue(expense.Key, out var loan) && loan.HasLoan && loan.Valor > 0)
+                {
+                    newBills.Add(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = $"{label} (Empréstimo)",
+                        Amount = loan.Valor,
+                        Category = "Dívidas",
+                        BillType = "Fixa",
+                        Status = "Pendente",
+                        IsRecurring = true,
+                        Description = $"Empréstimo vinculado à conta de {label}"
+                    });
+                }
+            }
+
+            if (dto.CustomExpenses != null)
+            {
+                foreach (var custom in dto.CustomExpenses)
+                {
+                    if (custom.Valor <= 0) continue;
+
+                    newBills.Add(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = custom.Titulo,
+                        Amount = custom.Valor,
+                        Category = "Outros",
+                        BillType = "Fixa",
+                        Status = "Pendente",
+                        IsRecurring = true,
+                        Description = "Vindo do Perfil Financeiro (Personalizado)"
+                    });
+                }
+            }
+
+            if (newBills.Any())
+            {
+                await _billRepository.CreateBatchAsync(newBills);
+            }
+        }
+
+        private async Task SyncDebtsOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
+        {
+            var toDelete = existingBills.Where(b => 
+                b.Category == "Dívidas" && 
+                b.Status == "Pendente" && 
+                (
+                    (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
+                    b.Description.Contains("Dívida")
+                )
+            ).Select(b => b.Id).ToList();
+
+            if (toDelete.Any())
+            {
+                await _billRepository.DeleteBatchAsync(toDelete);
+            }
+
+            if (dto.Debts == null || dto.Debts.Count == 0) return;
+
+            var newBills = new List<Bill>();
+            foreach (var d in dto.Debts)
+            {
+                if (d.Valor <= 0) continue;
+
+                if (d.Parcelado && d.ParcelasTotal > 0)
+                {
+                    int total = d.ParcelasTotal.Value;
+                    int pagas = d.ParcelasPagas ?? 0;
+                    int restantes = total - pagas;
+                    decimal valorParcela = d.Valor / total;
+
+                    for (int i = 1; i <= restantes; i++)
+                    {
+                        int numeroParcela = pagas + i;
+                        newBills.Add(new Bill
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            Name = $"{d.Descricao} ({numeroParcela}/{total})",
+                            Amount = valorParcela,
+                            Category = "Dívidas",
+                            BillType = "Fixa",
+                            DueDay = null,
+                            DueDate = null,
+                            Status = "Pendente",
+                            IsRecurring = false,
+                            Description = $"Dívida Parcelada ({numeroParcela}/{total}) (Sincronizado Perfil)"
+                        });
+                    }
+                }
+                else
+                {
+                    newBills.Add(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = d.Descricao,
+                        Amount = d.Valor,
+                        Category = "Dívidas",
+                        BillType = "Variável",
+                        DueDay = null,
+                        Status = "Pendente",
+                        IsRecurring = false,
+                        Description = "Dívida única (Sincronizado Perfil)"
+                    });
+                }
+
+                if (d.Extras != null)
+                {
+                    foreach (var extra in d.Extras)
+                    {
+                        if (extra.Valor <= 0) continue;
+                        newBills.Add(new Bill
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            Name = $"{extra.Descricao} ({d.Descricao})",
+                            Amount = extra.Valor,
+                            Category = "Dívidas",
+                            BillType = "Fixa",
+                            DueDay = null,
+                            Status = "Pendente",
+                            IsRecurring = true,
+                            Description = $"Gasto extra da dívida {d.Descricao} (Sincronizado Perfil)"
+                        });
+                    }
+                }
+            }
+
+            if (newBills.Any())
+            {
+                await _billRepository.CreateBatchAsync(newBills);
             }
         }
 

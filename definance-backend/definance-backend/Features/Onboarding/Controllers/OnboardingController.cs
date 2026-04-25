@@ -59,6 +59,21 @@ namespace definance_backend.Features.Onboarding.Controllers
             }
         }
 
+        [HttpPost("sync-incomes")]
+        public async Task<IActionResult> SyncIncomes()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                await _onboardingService.SyncIncomesAsync(userId);
+                return Ok(new { message = "Receitas sincronizadas com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
         [HttpPost("sync-vehicles")]
         public async Task<IActionResult> SyncVehicles()
         {
@@ -67,6 +82,36 @@ namespace definance_backend.Features.Onboarding.Controllers
                 var userId = User.GetUserId();
                 await _onboardingService.SyncVehiclesAsync(userId);
                 return Ok(new { message = "Veículos sincronizados com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("sync-fixed-expenses")]
+        public async Task<IActionResult> SyncFixedExpenses()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                await _onboardingService.SyncFixedExpensesAsync(userId);
+                return Ok(new { message = "Gastos fixos sincronizados com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("sync-debts")]
+        public async Task<IActionResult> SyncDebts()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                await _onboardingService.SyncDebtsAsync(userId);
+                return Ok(new { message = "Dívidas sincronizadas com sucesso." });
             }
             catch (Exception ex)
             {

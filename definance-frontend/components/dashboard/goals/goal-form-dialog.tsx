@@ -327,11 +327,11 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="cursor-pointer">
               Cancelar
             </Button>
             <Button
-              className="bg-primary text-primary-foreground"
+              className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer"
               onClick={handleSubmit}
               disabled={saving || !isFormValid}
             >

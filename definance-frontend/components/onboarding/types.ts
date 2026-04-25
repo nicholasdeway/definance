@@ -13,6 +13,13 @@ export interface IncomeDetail {
   valor: number
   frequencia: IncomeFrequency
   diasRecebimento?: string
+  configuradoEm?: string
+  configuracaoAnterior?: {
+    valor: number
+    frequencia: IncomeFrequency
+    diasRecebimento?: string
+    validoAte: string
+  }
 }
 
 export interface Debt {

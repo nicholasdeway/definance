@@ -14,35 +14,42 @@ import { IncomeDetail, IncomeFrequency } from "@/components/onboarding/types"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { useToast } from "@/components/ui/use-toast"
-import { useState } from "react"
+import { apiClient } from "@/lib/api-client"
+import { useState, useMemo } from "react"
+import { format, parseISO, isValid } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { CalendarIcon } from "lucide-react"
+import { formatDateBR, generateId } from "@/lib/utils"
 
-export const MonthlyIncomeSection = () => {
+export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateChange?: (saving: boolean) => void }) => {
   const { 
     selectedIncomeTypes,
     incomes, 
     setIncomes,
-    wasAttempted 
+    wasAttempted,
+    lastSavedHashesRef
   } = useOnboarding()
   const { persistStep } = useAutoSave()
 
   // Sincronizar array de rendas: Garantir que cada tipo selecionado tenha um objeto de detalhe
   React.useEffect(() => {
     setIncomes(prev => {
-      const updated = [...prev]
-      let changed = false
-      selectedIncomeTypes.forEach(tipoStr => {
-        if (!updated.find(i => i.tipo === tipoStr)) {
-          updated.push({
-            id: Math.random().toString(36).slice(2),
-            tipo: tipoStr,
-            valor: 0,
-            frequencia: IncomeFrequency.FIXO_MENSAL,
-            diasRecebimento: ""
-          })
-          changed = true
-        }
-      })
-      return changed ? updated : prev
+      const existingTypes = new Set(prev.map(i => i.tipo))
+      const missingTypes = selectedIncomeTypes.filter(tipo => !existingTypes.has(tipo))
+
+      if (missingTypes.length === 0) return prev
+
+      const newEntries = missingTypes.map(tipo => ({
+        id: generateId(),
+        tipo,
+        valor: 0,
+        frequencia: IncomeFrequency.FIXO_MENSAL,
+        diasRecebimento: ""
+      }))
+
+      return [...prev, ...newEntries]
     })
   }, [selectedIncomeTypes, setIncomes])
 
@@ -52,26 +59,72 @@ export const MonthlyIncomeSection = () => {
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
+    onSavingStateChange?.(true);
     try {
-      const success = await persistStep(3, incomes);
+      const previousIncomesRaw = lastSavedHashesRef.current[3]
+      const previousIncomes: IncomeDetail[] = previousIncomesRaw ? JSON.parse(previousIncomesRaw) : []
+      
+      const incomesWithHistory = incomes.map(income => {
+        const prev = previousIncomes.find((p: any) => p.tipo === income.tipo)
+        
+        // Se algo fundamental mudou (valor, frequencia, diasRecebimento)
+        const hasChanged = prev && (
+          prev.valor !== income.valor || 
+          prev.frequencia !== income.frequencia || 
+          prev.diasRecebimento !== income.diasRecebimento
+        )
+
+        if (hasChanged) {
+          // Extraímos a data de início da nova configuração para definir até quando a antiga era válida
+          const newStartDateStr = income.diasRecebimento?.split(',')[0].trim()
+          let validoAte = new Date().toISOString()
+          
+          if (newStartDateStr) {
+            const newStartDate = new Date(newStartDateStr)
+            // A configuração antiga é válida até o último dia do mês anterior ao novo início
+            const lastDayOfPrevMonth = new Date(newStartDate.getFullYear(), newStartDate.getMonth(), 0)
+            validoAte = lastDayOfPrevMonth.toISOString()
+          }
+
+          return {
+            ...income,
+            configuradoEm: new Date().toISOString(),
+            configuracaoAnterior: {
+              valor: prev.valor,
+              frequencia: prev.frequencia,
+              diasRecebimento: prev.diasRecebimento,
+              validoAte: validoAte
+            }
+          }
+        }
+        return income
+      })
+
+      const success = await persistStep(3, incomesWithHistory);
       if (success) {
+        await apiClient("/api/onboarding/sync-incomes", { method: "POST" });
+        setIncomes(incomesWithHistory); // Atualiza o estado local com a história para evitar "perder" na próxima comparação
+        window.dispatchEvent(new CustomEvent("finance-update"));
         toast({ title: "Rendas salvas com sucesso!", variant: "default" });
       } else {
         toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
       }
     } catch (e) {
+      console.error("Erro ao salvar rendas:", e);
       toast({ title: "Erro inesperado", variant: "destructive" });
     } finally {
       setIsSaving(false);
+      onSavingStateChange?.(false);
     }
   }
 
-  const updateIncome = (tipo: string, field: keyof Omit<IncomeDetail, "id" | "tipo">, value: any) => {
+  const updateIncome = <K extends keyof Omit<IncomeDetail, "id" | "tipo">>(
+    tipo: string, 
+    field: K, 
+    value: IncomeDetail[K]
+  ) => {
     setIncomes(prev => prev.map(inc => {
       if (inc.tipo === tipo) {
-        if (field === "frequencia" && (value === IncomeFrequency.VARIAVEL || value === IncomeFrequency.SEMANAL)) {
-           return { ...inc, [field]: value, diasRecebimento: "" }
-        }
         return { ...inc, [field]: value }
       }
       return inc
@@ -145,7 +198,7 @@ export const MonthlyIncomeSection = () => {
                    <CurrencyInput
                      id={`income-${typeInfo.value}`}
                      placeholder="R$ 0,00"
-                     value={inc.valor ? Math.round(inc.valor * 100).toString() : ""}
+                     value={inc.valor ? Math.round(Number(inc.valor) * 100).toString() : ""}
                      onChange={(value) => updateIncomeValue(typeInfo.value, value)}
                      className="h-11 text-base font-bold bg-muted/5 focus:bg-background transition-colors"
                    />
@@ -165,7 +218,7 @@ export const MonthlyIncomeSection = () => {
                                className={cn(
                                   "text-[10px] p-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter",
                                   isSelected 
-                                    ? "bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]" 
+                                    ? "bg-primary/70 text-primary-foreground border-primary/50 shadow-sm scale-[1.02]" 
                                     : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 hover:border-border"
                                )}
                             >
@@ -177,26 +230,138 @@ export const MonthlyIncomeSection = () => {
                  </div>
 
                  {/* Dias de Recebimento (Definance Helper) */}
-                 {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
-                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-400">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-none mt-1">
-                        <CalendarDays className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 space-y-1.5">
-                         <Label className="text-[10px] font-black text-primary uppercase tracking-widest">Ajudante Definance:</Label>
-                         <Input
-                           type="text"
-                           placeholder={inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Qual o dia do pagamento? (Ex: dia 5 ou todo dia 1)" : "Quais os dois dias? (Ex: dia 5 e dia 20)"}
-                           value={inc.diasRecebimento || ""}
-                           onChange={(e) => updateIncome(typeInfo.value, "diasRecebimento", e.target.value)}
-                           className="h-8 text-xs bg-background border-primary/20 focus:border-primary/40"
-                         />
-                         <p className="text-[9px] text-muted-foreground italic font-medium">
-                            O Definance usará esta data para projetar seu saldo futuro automaticamente.
-                         </p>
-                      </div>
-                   </div>
-                 )}
+                  {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-400">
+                       <div className="flex items-center gap-2">
+                         <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-none">
+                           <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                         </div>
+                         <Label className="text-[10px] font-black text-primary uppercase tracking-widest">Ajudante de Projeção:</Label>
+                       </div>
+
+                       {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
+                         <div className="space-y-1.5">
+                            <Label className="text-[9px] uppercase font-bold text-muted-foreground/70">Data do Próximo Recebimento</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                    !inc.diasRecebimento && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary" />
+                                  {inc.diasRecebimento && isValid(parseISO(inc.diasRecebimento)) ? formatDateBR(inc.diasRecebimento) : <span>Escolha a data (DD/MM/AAAA)</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={(() => {
+                                    if (!inc.diasRecebimento) return undefined
+                                    try {
+                                      const date = parseISO(inc.diasRecebimento)
+                                      return isValid(date) ? date : undefined
+                                    } catch { return undefined }
+                                  })()}
+                                  onSelect={(date) => {
+                                    if (date && isValid(date)) {
+                                      updateIncome(typeInfo.value, "diasRecebimento", format(date, "yyyy-MM-dd"))
+                                    }
+                                  }}
+                                  locale={ptBR}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                         </div>
+                       ) : (
+                         <div className="grid grid-cols-2 gap-3">
+                           <div className="space-y-1.5">
+                              <Label className="text-[9px] uppercase font-bold text-muted-foreground/70">1º Recebimento</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                      !inc.diasRecebimento?.split(',')[0] && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary" />
+                                    {inc.diasRecebimento?.split(',')[0] ? formatDateBR(inc.diasRecebimento.split(',')[0]) : <span>Data 1</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={(() => {
+                                       const dateStr = inc.diasRecebimento?.split(',')[0]
+                                       if (!dateStr) return undefined
+                                       try {
+                                         const date = parseISO(dateStr)
+                                         return isValid(date) ? date : undefined
+                                       } catch { return undefined }
+                                     })()}
+                                    onSelect={(date) => {
+                                      if (date && isValid(date)) {
+                                        const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                        updateIncome(typeInfo.value, "diasRecebimento", `${format(date, "yyyy-MM-dd")},${dates[1] || ""}`)
+                                      }
+                                    }}
+                                    locale={ptBR}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                           </div>
+                           <div className="space-y-1.5">
+                              <Label className="text-[9px] uppercase font-bold text-muted-foreground/70">2º Recebimento</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                      !inc.diasRecebimento?.split(',')[1] && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary" />
+                                    {inc.diasRecebimento?.split(',')[1] ? formatDateBR(inc.diasRecebimento.split(',')[1]) : <span>Data 2</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={(() => {
+                                       const dateStr = inc.diasRecebimento?.split(',')[1]
+                                       if (!dateStr) return undefined
+                                       try {
+                                         const date = parseISO(dateStr)
+                                         return isValid(date) ? date : undefined
+                                       } catch { return undefined }
+                                     })()}
+                                    onSelect={(date) => {
+                                      if (date && isValid(date)) {
+                                        const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                        updateIncome(typeInfo.value, "diasRecebimento", `${dates[0] || ""},${format(date, "yyyy-MM-dd")}`)
+                                      }
+                                    }}
+                                    locale={ptBR}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                           </div>
+                         </div>
+                       )}
+                       
+                       <p className="text-[9px] text-muted-foreground italic font-medium leading-tight">
+                          O Definance usará {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "esta data" : "estas datas"} para projetar suas entradas automaticamente nos próximos meses.
+                       </p>
+                    </div>
+                  )}
               </div>
             </div>
           )
@@ -208,7 +373,7 @@ export const MonthlyIncomeSection = () => {
           type="button" 
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold"
+          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary font-bold cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Informações"}
         </Button>

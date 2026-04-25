@@ -28,6 +28,7 @@ import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
 import { cn, capitalize } from "@/lib/utils"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
+import { incomeTypes } from "@/components/onboarding/constants"
 
 interface MonthlyData {
   month: string
@@ -149,9 +150,112 @@ export default function RelatoriosPage() {
       }
 
       const response = await apiClient<AnalysisData>(`/api/Analysis?${queryParams}`)
+      
       if (response) {
         response.categoryAnalysis = response.categoryAnalysis.map(c => ({ ...c, categoria: capitalize(c.categoria) }))
-        response.incomeAnalysis = response.incomeAnalysis.map(i => ({ ...i, tipo: capitalize(i.tipo) }))
+        
+        // 1. Buscar progresso do onboarding para incluir rendas "sincronizadas" que ainda não foram salvas no banco
+        try {
+          const progressData = await apiClient<any>("/api/onboarding/progress")
+          if (progressData) {
+            const profileIncomes: any[] = progressData.incomes || progressData.Incomes || []
+            let totalAdjustment = 0
+            
+            profileIncomes.forEach(pInc => {
+              const pTipo = (pInc.tipo || pInc.Tipo || "").toLowerCase()
+              const pDias = pInc.diasRecebimento || pInc.DiasRecebimento || ""
+              const pConfigEm = pInc.configuradoEm || pInc.ConfiguradoEm
+              
+              // --- Lógica de Histórico e Projeção ---
+              let effectiveValor = pInc.valor || pInc.Valor || 0
+              
+              const isVariable = (pInc.frequencia || pInc.Frequencia || "").toLowerCase() === "variavel"
+              const firstDateStr = pDias.split(',')[0]?.trim()
+              const baseDateStr = isVariable ? pConfigEm : (firstDateStr || pConfigEm)
+              const selectedMonthDate = new Date(period.year, period.month - 1, 1)
+
+              // 1. Verificar se deve usar a configuração anterior (histórico)
+              if (pInc.configuracaoAnterior && pInc.configuracaoAnterior.validoAte) {
+                const validoAte = new Date(pInc.configuracaoAnterior.validoAte)
+                const validUntilMonth = new Date(validoAte.getFullYear(), validoAte.getMonth(), 1)
+                
+                if (selectedMonthDate < validUntilMonth) {
+                  effectiveValor = pInc.configuracaoAnterior.valor
+                }
+              }
+
+              // 2. Verificar se a renda já começou neste período
+              if (baseDateStr) {
+                const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
+                const [y, m, d] = datePart.split('-').map(Number)
+                const startDate = new Date(y, m - 1, d)
+
+                if (selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
+                  effectiveValor = 0 // Ainda não começou, então o valor projetado é 0
+                }
+              }
+              
+              // 3. Mesclar com os dados do banco (Analysis)
+              const existingIndex = response.incomeAnalysis.findIndex(i => {
+                const iTipo = i.tipo.toLowerCase()
+                return iTipo === pTipo || (incomeTypes.find(t => t.value === pTipo)?.label.toLowerCase() === iTipo)
+              })
+              
+              if (existingIndex !== -1) {
+                // Já existe no banco: ajustamos o valor para bater com o Perfil (nossa fonte de verdade)
+                const dbValor = response.incomeAnalysis[existingIndex].valor
+                const diff = effectiveValor - dbValor
+                
+                response.incomeAnalysis[existingIndex].valor = effectiveValor
+                response.totalReceitas += diff
+                response.saldoFinal += diff
+                totalAdjustment += diff
+              } else if (effectiveValor > 0) {
+                // Não existe no banco: adicionamos como novo
+                response.incomeAnalysis.push({
+                  tipo: pTipo,
+                  valor: effectiveValor
+                })
+                response.totalReceitas += effectiveValor
+                response.saldoFinal += effectiveValor
+                totalAdjustment += effectiveValor
+              }
+            })
+
+            // Atualizar o gráfico de comparação mensal (Receitas vs Despesas)
+            if (totalAdjustment !== 0) {
+              const currentMonthStr = new Date(period.year, period.month - 1, 1).toLocaleString('en-US', { month: 'short' }).toLowerCase()
+              const monthEntry = response.monthlyComparison.find(m => m.month.toLowerCase() === currentMonthStr)
+              
+              if (monthEntry) {
+                monthEntry.receitas += totalAdjustment
+              } else {
+                response.monthlyComparison.push({
+                  month: currentMonthStr.charAt(0).toUpperCase() + currentMonthStr.slice(1),
+                  receitas: totalAdjustment,
+                  despesas: 0
+                })
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Erro ao sincronizar rendas do perfil na análise:", e)
+        }
+
+        // 2. Agrupar e normalizar tipos de renda (evita duplicidade clt vs CLT e usa labels amigáveis)
+        response.incomeAnalysis = response.incomeAnalysis.reduce((acc, curr) => {
+          const typeLower = curr.tipo.toLowerCase()
+          const typeInfo = incomeTypes.find(t => t.value === typeLower)
+          const label = typeInfo ? typeInfo.label : capitalize(curr.tipo)
+          
+          const existing = acc.find(a => a.tipo === label)
+          if (existing) {
+            existing.valor += curr.valor
+          } else {
+            acc.push({ tipo: label, valor: curr.valor })
+          }
+          return acc
+        }, [] as IncomeDetailData[])
       }
       setData(response)
     } catch (error) {

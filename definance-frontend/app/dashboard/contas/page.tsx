@@ -5,7 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CreditCard, AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Plus, Pin, Shuffle } from "lucide-react"
+import Link from "next/link"
+import { 
+  CreditCard, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Clock, 
+  MoreHorizontal, 
+  Plus, 
+  Pin, 
+  Shuffle,
+  Home,
+  Zap,
+  Droplets,
+  Globe,
+  Smartphone,
+  Clapperboard,
+  Dumbbell,
+  Bus,
+  Utensils,
+  HeartPulse,
+  BookOpen,
+  CarFront,
+  ShieldCheck,
+  TrendingUp,
+  Wallet2
+} from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
 import { cn, capitalize } from "@/lib/utils"
 import {
@@ -35,6 +60,7 @@ interface ContaItem {
   dias: number
   tipo: "Fixa" | "Variável"
   isRecorrente: boolean
+  isSynced?: boolean
 }
 
 type TypeFilter = "Todas" | "Fixa" | "Variável"
@@ -59,11 +85,18 @@ export interface ApiBill {
   status: string
   billType?: string | null
   isRecurring?: boolean | null
+  description?: string | null
 }
 
 function mapApiToConta(b: ApiBill): ContaItem {
   const rawDue = b.dueDate ?? null
-  const dueDate = rawDue ? new Date(rawDue) : null
+  let dueDate: Date | null = null
+  
+  if (rawDue) {
+    const datePart = rawDue.split('T')[0]
+    const [year, month, day] = datePart.split('-').map(Number)
+    dueDate = new Date(year, month - 1, day)
+  }
 
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
@@ -92,6 +125,7 @@ function mapApiToConta(b: ApiBill): ContaItem {
     dias,
     tipo: b.billType === "Variável" ? "Variável" : "Fixa",
     isRecorrente: b.isRecurring ?? false,
+    isSynced: b.description?.includes("Perfil Financeiro") || b.description?.includes("Onboarding"),
   }
 }
 
@@ -105,6 +139,7 @@ export default function ContasPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isPaying, setIsPaying] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [period, setPeriod] = useState<PeriodFilterState>({
     type: "monthly",
     month: new Date().getMonth() + 1,
@@ -123,6 +158,7 @@ export default function ContasPage() {
     item: null,
   })
   const [showTutorial, setShowTutorial] = useState(false)
+  const [hasTriggeredTutorial, setHasTriggeredTutorial] = useState(false)
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const searchParams = useSearchParams()
 
@@ -181,12 +217,13 @@ export default function ContasPage() {
   }, [searchParams])
 
   useEffect(() => {
-    if (searchParams.get("tutorial") === "true" && setupCount > 0) {
+    if (searchParams.get("tutorial") === "true" && setupCount > 0 && !hasTriggeredTutorial) {
       setActiveTab("vencer")
       setTypeFilter("Todas")
       setShowTutorial(true)
+      setHasTriggeredTutorial(true)
     }
-  }, [searchParams, setupCount])
+  }, [searchParams, setupCount, hasTriggeredTutorial])
 
   const overdueCount = useMemo(() => 
     contas.filter(c => c.status === "atrasada").length, 
@@ -227,8 +264,7 @@ export default function ContasPage() {
   }
 
   const openEditDialog = (conta: ContaItem) => {
-    const parts = conta.vencimento !== "—" ? conta.vencimento.split("/") : []
-    const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : ""
+    const inputDate = conta.rawDueDate ? conta.rawDueDate.split('T')[0] : ""
 
     setForm({
       id: conta.id,
@@ -250,8 +286,17 @@ export default function ContasPage() {
     try {
       setIsSaving(true)
       const amount = parseCurrencyInput(form.valor)
-      const dueDate = form.dueDate ? new Date(form.dueDate).toISOString() : null
-      const dueDay = form.dueDate ? new Date(form.dueDate).getDate() : null
+      
+      let dueDate = null
+      let dueDay = null
+      
+      if (form.dueDate) {
+        const [y, m, d] = form.dueDate.split("-").map(Number)
+        // Criar data ao meio-dia para evitar problemas de fuso horário ao converter para ISO
+        const dateObj = new Date(y, m - 1, d, 12, 0, 0)
+        dueDate = dateObj.toISOString()
+        dueDay = d
+      }
 
       const payload = {
         name: form.nome,
@@ -281,6 +326,7 @@ export default function ContasPage() {
         }
         setForm(emptyForm)
         setIsOpen(false)
+        window.dispatchEvent(new CustomEvent("finance-update"))
       }
     } catch (err) {
       console.error("Erro ao salvar conta:", err)
@@ -300,9 +346,10 @@ export default function ContasPage() {
       })
       if (response?.bill) {
         setContas((prev) =>
-          prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga", rawDueDate: date ? new Date(date).toISOString() : c.rawDueDate } : c))
+          prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga", rawDueDate: date ? `${date}T12:00:00Z` : c.rawDueDate } : c))
         )
         setActiveTab("pagas")
+        window.dispatchEvent(new CustomEvent("finance-update"))
       }
     } catch (err) {
       console.error("Erro ao pagar conta:", err)
@@ -315,13 +362,43 @@ export default function ContasPage() {
   const handleDelete = async () => {
     if (!deleteDialog.item) return
     try {
+      setIsDeleting(true)
       await apiClient(`/api/bills/${deleteDialog.item.id}`, { method: "DELETE" })
       setContas((prev) => prev.filter((c) => c.id !== deleteDialog.item!.id))
+      setDeleteDialog({ open: false, item: null })
+      window.dispatchEvent(new CustomEvent("finance-update"))
     } catch (err) {
       console.error("Erro ao excluir conta:", err)
     } finally {
-      setDeleteDialog({ open: false, item: null })
+      setIsDeleting(false)
     }
+  }
+
+  const getBillIcon = (categoria: string, nome: string, status: string) => {
+    const c = categoria.toLowerCase()
+    const n = nome.toLowerCase()
+    const iconColor = status === "paga" ? "text-primary" : status === "atrasada" ? "text-destructive" : "text-yellow-500"
+    const iconClass = `h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`
+
+    // Prioridade por nome
+    if (n.includes("ipva")) return <CarFront className={iconClass} />
+    if (n.includes("seguro")) return <ShieldCheck className={iconClass} />
+    if (n.includes("parcela") || n.includes("empréstimo") || n.includes("empréstimo")) return <CreditCard className={iconClass} />
+    
+    // Categorias
+    if (c.includes("aluguel") || c.includes("moradia")) return <Home className={iconClass} />
+    if (c.includes("luz") || c.includes("energia")) return <Zap className={iconClass} />
+    if (c.includes("agua") || c.includes("água")) return <Droplets className={iconClass} />
+    if (c.includes("internet")) return <Globe className={iconClass} />
+    if (c.includes("celular") || c.includes("telefone")) return <Smartphone className={iconClass} />
+    if (c.includes("streaming") || c.includes("netflix") || c.includes("spotify")) return <Clapperboard className={iconClass} />
+    if (c.includes("academia")) return <Dumbbell className={iconClass} />
+    if (c.includes("transporte")) return <Bus className={iconClass} />
+    if (c.includes("alimentação") || c.includes("alimentacao")) return <Utensils className={iconClass} />
+    if (c.includes("saúde") || c.includes("saude")) return <HeartPulse className={iconClass} />
+    if (c.includes("educação") || c.includes("educacao")) return <BookOpen className={iconClass} />
+    
+    return <CreditCard className={iconClass} />
   }
 
   const handleAlertAction = (type: "overdue" | "setup") => {
@@ -332,6 +409,7 @@ export default function ContasPage() {
       setActiveTab("vencer")
       setTypeFilter("Todas")
       setShowTutorial(true)
+      setHasTriggeredTutorial(true)
     }
   }
 
@@ -421,15 +499,7 @@ export default function ContasPage() {
                     : "bg-yellow-500/10"
                 }`}
               >
-                <CreditCard
-                  className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                    conta.status === "paga"
-                      ? "text-primary"
-                      : conta.status === "atrasada"
-                      ? "text-destructive"
-                      : "text-yellow-500"
-                  }`}
-                />
+                {getBillIcon(conta.categoria, conta.nome, conta.status)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -486,6 +556,17 @@ export default function ContasPage() {
                   >
                     Excluir
                   </DropdownMenuItem>
+                  {conta.isSynced && (
+                    <>
+                      <div className="h-px bg-muted my-1" />
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer text-sm">
+                          <TrendingUp className="h-4 w-4" />
+                          Ajustar no Perfil
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -509,7 +590,7 @@ export default function ContasPage() {
             </p>
           </div>
           <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto"
+            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >
@@ -687,6 +768,7 @@ export default function ContasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.nome}
+        loading={isDeleting}
       />
 
       <ConfirmPayDialog

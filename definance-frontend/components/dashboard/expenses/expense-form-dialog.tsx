@@ -227,12 +227,12 @@ export function ExpenseFormDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto cursor-pointer"
           >
             Cancelar
           </Button>
           <Button
-            className="bg-primary text-primary-foreground w-full sm:w-auto"
+            className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer w-full sm:w-auto"
             onClick={onSave}
             disabled={isSaving}
           >

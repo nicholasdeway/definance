@@ -8,27 +8,32 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react"
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import { cn, generateId } from "@/lib/utils"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
+import { FieldLabel } from "@/components/onboarding/components/field-label"
 import { Debt } from "@/components/onboarding/types"
 import { Button } from "@/components/ui/button"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { useToast } from "@/components/ui/use-toast"
+import { apiClient } from "@/lib/api-client"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 
-export const DebtsSection = () => {
+export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (saving: boolean) => void }) => {
     const { 
         debts, 
         setDebts, 
@@ -39,14 +44,32 @@ export const DebtsSection = () => {
     const [expandedValue, setExpandedValue] = useState<string | undefined>(undefined)
     const [newExtras, setNewExtras] = useState<Record<string, { descricao: string; valor: number }>>({})
     const [isSaving, setIsSaving] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null)
     const { toast } = useToast()
     
     const handleSave = async () => {
         if (isSaving) return;
         setIsSaving(true);
+        onSavingStateChange?.(true);
         try {
-            const success = await persistStep(6, debts);
+            // Sanitização para garantir tipos numéricos
+            const sanitizedDebts = debts.map(d => ({
+                ...d,
+                valor: Number(d.valor) || 0,
+                parcelasTotal: d.parcelasTotal ? Number(d.parcelasTotal) : 0,
+                parcelasPagas: d.parcelasPagas ? Number(d.parcelasPagas) : 0,
+                extras: d.extras?.map(e => ({
+                    ...e,
+                    valor: Number(e.valor) || 0
+                })) || []
+            }))
+
+            const success = await persistStep(6, sanitizedDebts);
             if (success) {
+                await apiClient("/api/onboarding/sync-debts", { method: "POST" });
+                setDebts(sanitizedDebts); // Atualiza estado local com dados limpos
+                window.dispatchEvent(new CustomEvent("finance-update"));
                 toast({ title: "Dívidas salvas com sucesso!", variant: "default" });
                 setExpandedValue(undefined);
             } else {
@@ -56,10 +79,11 @@ export const DebtsSection = () => {
             toast({ title: "Erro inesperado", variant: "destructive" });
         } finally {
             setIsSaving(false);
+            onSavingStateChange?.(false);
         }
     }
     const addDebt = () => {
-        const newId = Math.random().toString(36).slice(2)
+        const newId = generateId()
         setDebts(prev => [
             ...prev,
             { id: newId, descricao: "", valor: 0, parcelado: false, parcelasTotal: 0, parcelasPagas: 0, extras: [] },
@@ -88,7 +112,7 @@ export const DebtsSection = () => {
             if (d.id === debtId) {
                 return {
                     ...d,
-                    extras: [...(d.extras || []), { id: Math.random().toString(36).slice(2), descricao: data.descricao, valor: data.valor }]
+                    extras: [...(d.extras || []), { id: generateId(), descricao: data.descricao, valor: data.valor }]
                 }
             }
             return d
@@ -115,117 +139,189 @@ export const DebtsSection = () => {
             <Accordion type="single" collapsible value={expandedValue} onValueChange={setExpandedValue} className="w-full space-y-3">
                 {debts.map((debt, idx) => {
                     const isExpanded = expandedValue === debt.id
+                    
+                    const hasError = wasAttempted && (
+                        !debt.descricao || 
+                        !debt.valor || 
+                        debt.valor === 0 ||
+                        (debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0))
+                    )
+
                     return (
                         <AccordionItem key={debt.id} value={debt.id} className={cn(
                             "w-full rounded-xl border border-border/60 bg-background/50 overflow-hidden transition-all duration-300",
-                            isExpanded && "border-primary/30 shadow-lg bg-background"
+                            isExpanded && "border-primary/30 shadow-lg bg-background",
+                            hasError && "border-destructive/30"
                         )}>
-                            <div 
-                                className="flex items-center justify-between w-full px-5 py-4 cursor-pointer hover:bg-muted/5 transition-colors"
-                                onClick={() => setExpandedValue(isExpanded ? undefined : debt.id)}
-                            >
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className={cn(
-                                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
-                                        isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
-                                    )}>
-                                        <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-sm font-semibold text-card-foreground truncate">
-                                            {debt.descricao || `Dívida ${idx + 1}`}
-                                        </span>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs font-medium text-muted-foreground">
-                                                {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
+                            <AccordionTrigger className="hover:no-underline px-5 py-4 group data-[state=open]:pb-2 w-full">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-3 flex-1 text-left">
+                                        <div className={cn(
+                                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
+                                            isExpanded ? "bg-primary/20 scale-110" : "bg-muted"
+                                        )}>
+                                            <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-sm font-semibold text-card-foreground truncate">
+                                                {debt.descricao || `Dívida ${idx + 1}`}
                                             </span>
-                                            {debt.extras && debt.extras.length > 0 && (
-                                                <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
-                                                    + {formatCurrency(debt.extras.reduce((acc, curr) => acc + curr.valor, 0))} extras
+                                            {hasError && (
+                                                <div className="flex items-center gap-1 text-[10px] text-destructive mt-0.5 font-medium animate-pulse">
+                                                    <AlertCircle className="h-3 w-3" /> Pendente
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-xs font-medium text-muted-foreground">
+                                                    {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
                                                 </span>
-                                            )}
-                                            {debt.parcelado && (
-                                                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 flex items-center gap-0.5 shrink-0">
-                                                    <Landmark className="h-2 w-2" /> 
-                                                    {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal} parc` : "Parcelado"}
-                                                </Badge>
-                                            )}
+                                                {debt.extras && debt.extras.length > 0 && (
+                                                    <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
+                                                        + {formatCurrency(debt.extras.reduce((acc, curr) => acc + curr.valor, 0))} extras
+                                                    </span>
+                                                )}
+                                                {debt.parcelado && (
+                                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] h-4 px-1.5 flex items-center gap-0.5 shrink-0">
+                                                        <Landmark className="h-2 w-2" /> 
+                                                        {debt.parcelasTotal ? `${debt.parcelasPagas || 0}/${debt.parcelasTotal} parc` : "Parcelado"}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 ml-auto">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden md:inline-block transition-colors">
+                                            {isExpanded ? "Recolher" : "Ver detalhes"}
+                                        </span>
+                                        
+                                        <div className="h-6 w-px bg-border/40" />
+                                        
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => { 
+                                                e.preventDefault()
+                                                e.stopPropagation(); 
+                                                setItemToDelete(debt.id); 
+                                            }} 
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault()
+                                                    e.stopPropagation(); 
+                                                    setItemToDelete(debt.id); 
+                                                }
+                                            }}
+                                            className="p-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0 z-20"
+                                            title="Remover dívida"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-4 ml-auto">
-                                    <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden md:inline-block group-hover:text-primary transition-colors">
-                                        {isExpanded ? "Recolher" : "Ver detalhes"}
-                                    </span>
-                                    
-                                    {/* Ã cone da seta (expansão) */}
-                                    {isExpanded ? (
-                                        <ChevronUp className="h-4 w-4 text-muted-foreground/60" />
-                                    ) : (
-                                        <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
-                                    )}
-                                    
-                                    {/* Separador vertical */}
-                                    <div className="h-6 w-px bg-border/40" />
-                                    
-                                    {/* Botão de remover (lixeira) */}
-                                    <button 
-                                        type="button" 
-                                        onClick={(e) => { e.stopPropagation(); removeDebt(debt.id); }} 
-                                        className="p-1.5 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer shrink-0"
-                                        title="Remover dívida"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
+                            </AccordionTrigger>
 
                             <AccordionContent className="px-4 pb-4 border-t border-border/20 bg-muted/5">
                                 <div className="pt-4 grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5 sm:col-span-2">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição</Label>
+                                        <FieldLabel 
+                                            label="Descrição" 
+                                            required 
+                                            isEmpty={!debt.descricao} 
+                                            wasAttempted={wasAttempted} 
+                                        />
                                         <Input
                                             placeholder="Ex: Cartão de crédito..."
                                             value={debt.descricao || ""}
                                             onChange={(e) => updateDebt(debt.id, "descricao", e.target.value)}
-                                            className="h-9 bg-background"
+                                            className={cn(
+                                                "h-9 bg-background",
+                                                wasAttempted && !debt.descricao && "border-destructive/50"
+                                            )}
                                         />
                                     </div>
                                     <div className="space-y-1.5">
+                                        <FieldLabel 
+                                            label="Valor Total" 
+                                            required 
+                                            isEmpty={!debt.valor || debt.valor === 0} 
+                                            wasAttempted={wasAttempted} 
+                                        />
                                         <CurrencyInput
                                             id={`debt-valor-${debt.id}`}
                                             placeholder="R$ 0,00"
-                                            value={debt.valor ? Math.round(debt.valor * 100).toString() : ""}
+                                            value={debt.valor ? Math.round(Number(debt.valor) * 100).toString() : ""}
                                             onChange={(value) => updateDebtValue(debt.id, value)}
-                                            className="h-9 bg-background font-medium"
+                                            className={cn(
+                                                "h-9 bg-background font-medium",
+                                                wasAttempted && (!debt.valor || debt.valor === 0) && "border-destructive/50"
+                                            )}
                                         />
                                     </div>
                                     <div className="flex items-center justify-between pt-2">
                                         <Label className="text-xs font-semibold text-primary/80 uppercase">Parcelada?</Label>
                                         <Switch checked={debt.parcelado} onCheckedChange={(checked) => updateDebt(debt.id, "parcelado", checked)} />
                                     </div>
+
                                     {debt.parcelado && (
-                                        <div className="grid grid-cols-2 gap-3 sm:col-span-2 pt-2 border-t border-border/20">
-                                            <div className="space-y-1.5">
-                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Total Parcelas</Label>
-                                                <Input
-                                                    placeholder="12"
-                                                    value={debt.parcelasTotal || ""}
-                                                    onChange={(e) => updateDebt(debt.id, "parcelasTotal", e.target.value.replace(/\D/g, ""))}
-                                                    className="h-9 bg-background"
-                                                />
+                                        <>
+                                            <div className="grid grid-cols-2 gap-3 sm:col-span-2 pt-2 border-t border-border/20">
+                                                <div className="space-y-1.5">
+                                                    <FieldLabel 
+                                                        label="Total Parcelas" 
+                                                        required 
+                                                        isEmpty={!debt.parcelasTotal || debt.parcelasTotal === 0} 
+                                                        wasAttempted={wasAttempted} 
+                                                    />
+                                                    <Input
+                                                        placeholder="12"
+                                                        value={debt.parcelasTotal !== undefined ? String(debt.parcelasTotal) : ""}
+                                                        onChange={(e) => updateDebt(debt.id, "parcelasTotal", Number(e.target.value.replace(/\D/g, "")))}
+                                                        className={cn(
+                                                            "h-9 bg-background",
+                                                            wasAttempted && debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0) && "border-destructive/50"
+                                                        )}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Pagas</Label>
+                                                    <Input
+                                                        placeholder="3"
+                                                        value={debt.parcelasPagas !== undefined ? String(debt.parcelasPagas) : ""}
+                                                        onChange={(e) => updateDebt(debt.id, "parcelasPagas", Number(e.target.value.replace(/\D/g, "")))}
+                                                        className="h-9 bg-background"
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Pagas</Label>
-                                                <Input
-                                                    placeholder="3"
-                                                    value={debt.parcelasPagas || ""}
-                                                    onChange={(e) => updateDebt(debt.id, "parcelasPagas", e.target.value.replace(/\D/g, ""))}
-                                                    className="h-9 bg-background"
-                                                />
-                                            </div>
-                                        </div>
+
+                                            {/* Resumo calculado da dívida */}
+                                            {!!debt.parcelasTotal && !!debt.valor && (
+                                                <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 animate-in zoom-in-95 duration-300">
+                                                {(() => {
+                                                    const pTotal = debt.parcelasTotal || 1
+                                                    const pPagas = debt.parcelasPagas || 0
+                                                    const valorTotal = debt.valor || 0
+                                                    const vParcela = valorTotal / pTotal
+                                                    const restantes = Math.max(0, pTotal - pPagas)
+                                                    const totalRestante = restantes * vParcela
+                                                    return (
+                                                    <>
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Resíduo</p>
+                                                            <p className="text-base font-bold text-card-foreground">{restantes}x restantes</p>
+                                                        </div>
+                                                        <div className="space-y-0.5 border-l border-primary/10 pl-3">
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-70">Saldo Aberto</p>
+                                                            <p className="text-base font-bold text-primary">
+                                                                {formatCurrency(totalRestante)}
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                    )
+                                                })()}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
 
                                     {/* Gastos Adicionais da Dívida */}
@@ -274,7 +370,7 @@ export const DebtsSection = () => {
                                                         <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
                                                         <CurrencyInput 
                                                             id={`new-extra-valor-debt-${debt.id}`}
-                                                            value={newExtras[debt.id].valor ? Math.round(newExtras[debt.id].valor * 100).toString() : ""} 
+                                                            value={newExtras[debt.id].valor ? Math.round(Number(newExtras[debt.id].valor) * 100).toString() : ""} 
                                                             onChange={val => setNewExtras(p => ({...p, [debt.id]: {...p[debt.id], valor: parseCurrencyInput(val)}}))}
                                                             placeholder="R$ 0,00"
                                                             className="h-9 text-xs bg-background"
@@ -294,7 +390,7 @@ export const DebtsSection = () => {
                                                     <Button 
                                                         type="button"
                                                         size="sm" 
-                                                        className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/70" 
+                                                        className="h-8 text-xs bg-primary/70 text-primary-foreground hover:bg-primary/80" 
                                                         onClick={() => handleAddNewExtra(debt.id)}
                                                     >
                                                         Salvar Gasto
@@ -318,7 +414,7 @@ export const DebtsSection = () => {
                                             type="button" 
                                             disabled={isSaving}
                                             onClick={handleSave}
-                                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/70 font-bold"
+                                            className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary/80 font-bold"
                                         >
                                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Dívida"}
                                         </Button>
@@ -334,6 +430,40 @@ export const DebtsSection = () => {
                 <Plus className="h-4 w-4" />
                 Adicionar dívida
             </button>
+
+            <ConfirmDeleteDialog
+                open={itemToDelete !== null}
+                onOpenChange={(open) => !open && !isDeleting && setItemToDelete(null)}
+                loading={isDeleting}
+                onConfirm={async () => {
+                    if (itemToDelete) {
+                        setIsDeleting(true)
+                        try {
+                            const updatedDebts = debts.filter(d => d.id !== itemToDelete)
+                            setDebts(updatedDebts)
+                            
+                            const success = await persistStep(6, updatedDebts)
+                            if (success) {
+                                window.dispatchEvent(new CustomEvent("finance-update"))
+                                toast({ title: "Dívida removida com sucesso!" })
+                            } else {
+                                toast({ 
+                                    title: "Atenção", 
+                                    description: "A dívida foi removida da tela, mas houve um erro ao sincronizar com o servidor.",
+                                    variant: "destructive" 
+                                })
+                            }
+                        } catch (error) {
+                            console.error("Erro ao deletar dívida", error)
+                        } finally {
+                            setIsDeleting(false)
+                            setItemToDelete(null)
+                        }
+                    }
+                }}
+                title="Confirmar Exclusão"
+                description="Tem certeza que deseja remover esta dívida? Esta ação não poderá ser desfeita e os dados associados serão perdidos tanto aqui quanto no seu dashboard."
+            />
         </div>
     )
 }

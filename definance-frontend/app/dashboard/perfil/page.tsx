@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth-provider"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { ImageCropperModal } from "@/components/dashboard/perfil/image-cropper-modal"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 
 export default function PerfilPage() {
   const { user, updateProfile, changePassword, updateAvatar, removeAvatar, isActionLoading } = useAuth()
@@ -172,6 +173,7 @@ export default function PerfilPage() {
 
   return (
     <div className="relative space-y-6">
+      <BillsAlert />
       {/* Image Cropper Modal */}
       <ImageCropperModal
         image={selectedImage}
@@ -270,7 +272,7 @@ export default function PerfilPage() {
 
                 <Button 
                   type="submit" 
-                  className="bg-primary text-primary-foreground hover:bg-primary/70 min-w-[140px] cursor-pointer"
+                  className="bg-primary/70 text-primary-foreground hover:bg-primary min-w-[140px] cursor-pointer"
                   disabled={isActionLoading}
                 >
                   <Save className="mr-2 h-4 w-4" />
