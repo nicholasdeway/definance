@@ -5,7 +5,7 @@ import { Check, Plus, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { cn } from "@/lib/utils"
+import { cn, generateId } from "@/lib/utils"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { fixedExpenseCategories } from "../constants"
@@ -54,7 +54,7 @@ export const Step4FixedExpenses = () => {
   const addCustomExpense = () => {
     setCustomExpenses(prev => [
       ...prev,
-      { id: Math.random().toString(36).slice(2), titulo: "", valor: 0 }
+      { id: generateId(), titulo: "", valor: 0 }
     ])
   }
 
@@ -63,8 +63,18 @@ export const Step4FixedExpenses = () => {
   }
 
   const updateCustomExpense = (id: string, field: "titulo" | "valor", value: string | number) => {
+    let finalValue = value
+    if (field === "valor" && typeof value === "string") {
+      try {
+        finalValue = parseCurrencyInput(value)
+      } catch (error) {
+        console.error("Erro ao converter valor:", error)
+        finalValue = 0
+      }
+    }
+
     setCustomExpenses(prev =>
-      prev.map(e => (e.id === id ? { ...e, [field]: value } : e))
+      prev.map(e => (e.id === id ? { ...e, [field]: finalValue } : e))
     )
   }
 
@@ -88,11 +98,11 @@ export const Step4FixedExpenses = () => {
               }`}
             >
               {isSelected && (
-                <div className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary">
+                <div className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/70">
                   <Check className="h-2 w-2 text-primary-foreground" />
                 </div>
               )}
-              <span className="text-2xl">{cat.emoji}</span>
+              <cat.icon className={cn("h-6 w-6 transition-colors", isSelected ? "text-primary" : "text-muted-foreground")} />
               <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
               {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
                 <span className="text-[10px] font-semibold text-primary">
@@ -121,7 +131,7 @@ export const Step4FixedExpenses = () => {
                   .map((cat) => (
                     <Fragment key={cat.key}>
                       <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/30 p-3">
-                        <span className="text-2xl">{cat.emoji}</span>
+                        <cat.icon className="h-6 w-6 text-primary" />
                         <div className="flex-1 space-y-1">
                           <FieldLabel 
                             label={cat.label} 
@@ -132,7 +142,7 @@ export const Step4FixedExpenses = () => {
                           <CurrencyInput
                             id={`exp-${cat.key}`}
                             placeholder={cat.placeholder}
-                            value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
+                            value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
                               "h-9 bg-background text-sm",
@@ -170,7 +180,7 @@ export const Step4FixedExpenses = () => {
                                 <CurrencyInput
                                   id={`loan-value-${cat.key}`}
                                   placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? Math.round(billLoans[cat.key].valor * 100).toString() : ""}
+                                  value={billLoans[cat.key]?.valor ? Math.round(Number(billLoans[cat.key].valor) * 100).toString() : ""}
                                   onChange={(value) => setBillLoanValue(cat.key, value)}
                                   className={cn(
                                     "h-8 bg-background/50 text-xs font-medium",
@@ -211,7 +221,7 @@ export const Step4FixedExpenses = () => {
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
                     <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-border/40 bg-background/30 p-2.5">
-                      <span className="text-xl">{cat.emoji}</span>
+                      <cat.icon className="h-5 w-5 text-primary" />
                       <div className="flex-1 space-y-1">
                         <FieldLabel 
                           label={cat.label} 
@@ -222,7 +232,7 @@ export const Step4FixedExpenses = () => {
                         <CurrencyInput
                           id={`exp-${cat.key}`}
                           placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] !== undefined ? Math.round(selectedExpenses[cat.key] * 100).toString() : ""}
+                          value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
                           onChange={(value) => setExpenseValue(cat.key, value)}
                           className={cn(
                             "h-8 bg-background text-sm",
@@ -290,8 +300,8 @@ export const Step4FixedExpenses = () => {
                     <CurrencyInput
                       id={`custom-valor-${exp.id}`}
                       placeholder="R$ 0,00"
-                      value={exp.valor ? Math.round(exp.valor * 100).toString() : ""}
-                      onChange={(value) => updateCustomExpense(exp.id, "valor", parseCurrencyInput(value))}
+                      value={exp.valor ? Math.round(Number(exp.valor) * 100).toString() : ""}
+                      onChange={(value) => updateCustomExpense(exp.id, "valor", value)}
                       className={cn(
                         "h-8 bg-background text-sm font-medium",
                         wasAttempted && (!exp.valor || exp.valor === 0) && "border-destructive/50"

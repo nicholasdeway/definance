@@ -75,9 +75,9 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                   <AlertTriangle className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 leading-none mb-0.5">Configuração</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 leading-none mb-0.5">Ação Necessária</h4>
                   <p className="text-[11px] font-medium text-foreground/90">
-                    {setupCount} {setupCount === 1 ? 'fatura pendente' : 'faturas pendentes'}
+                    {setupCount} {setupCount === 1 ? 'conta sincronizada sem data de vencimento' : 'contas sincronizadas sem data de vencimento'}
                   </p>
                 </div>
               </div>
@@ -85,7 +85,7 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                 variant="default"
                 size="sm"
                 onClick={() => onAction?.("setup")}
-                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
+                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer"
                 asChild={!onAction}
               >
                 {!onAction ? (

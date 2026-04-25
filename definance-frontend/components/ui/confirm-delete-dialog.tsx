@@ -48,14 +48,14 @@ export function ConfirmDeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               onConfirm();
             }}
             disabled={loading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-w-[100px]"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-w-[100px] cursor-pointer"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
           </AlertDialogAction>

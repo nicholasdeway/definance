@@ -8,7 +8,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowUpRight, Search, MoreHorizontal, Link2 } from "lucide-react"
+import { 
+  ArrowUpRight, 
+  Search, 
+  MoreHorizontal, 
+  Link2,
+  Home,
+  Zap,
+  Droplets,
+  Globe,
+  Smartphone,
+  Clapperboard,
+  Dumbbell,
+  Bus,
+  Utensils,
+  HeartPulse,
+  BookOpen,
+  CarFront,
+  ShieldCheck,
+  CreditCard,
+  AlertCircle
+} from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
 import { cn, capitalize } from "@/lib/utils"
@@ -57,6 +77,32 @@ export function ExpenseList({
     }
   )
 
+  const getCategoryIcon = (categoria: string, nome: string) => {
+    const c = categoria.toLowerCase()
+    const n = nome.toLowerCase()
+    
+    // Prioridade por nome (para itens sincronizados específicos)
+    if (n.includes("ipva")) return <CarFront className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (n.includes("seguro")) return <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (n.includes("parcela")) return <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    
+    // Categorias padrão
+    if (c.includes("aluguel")) return <Home className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("luz") || c.includes("energia")) return <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("agua") || c.includes("água")) return <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("internet")) return <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("celular") || c.includes("telefone")) return <Smartphone className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("streaming") || c.includes("netflix") || c.includes("spotify")) return <Clapperboard className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("academia")) return <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("transporte") || c.includes("combustível") || c.includes("combustivel")) return <Bus className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("alimentacao") || c.includes("alimentação") || n.includes("mercado")) return <Utensils className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("saude") || c.includes("saúde") || c.includes("farmacia")) return <HeartPulse className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("educacao") || c.includes("educação") || c.includes("curso")) return <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("veículo") || c.includes("carro")) return <CarFront className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    
+    return <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+  }
+
   return (
     <Card className="border-border/50">
       <CardHeader>
@@ -97,7 +143,7 @@ export function ExpenseList({
                 {/* Ícone + Info */}
                 <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                   <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-destructive/10 flex-shrink-0">
-                    <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+                    {getCategoryIcon(d.categoria, d.nome)}
                   </div>
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex flex-wrap items-center gap-1.5">

@@ -11,6 +11,7 @@ import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard
 import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expense-list"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 
 export interface ExpenseApiResponse {
   id: string
@@ -38,6 +39,7 @@ export default function DespesasPage() {
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [period, setPeriod] = useState<PeriodFilterState>({
     type: "monthly",
     month: new Date().getMonth() + 1,
@@ -179,6 +181,7 @@ export default function DespesasPage() {
 
         setForm(emptyForm)
         setIsOpen(false)
+        window.dispatchEvent(new CustomEvent("finance-update"))
       }
     } catch (error) {
       console.error("Erro ao salvar despesa:", error)
@@ -203,17 +206,21 @@ export default function DespesasPage() {
   const handleDelete = async () => {
     if (!deleteDialog.item) return
     try {
+      setIsDeleting(true)
       await apiClient(`/api/expenses/${deleteDialog.item.id}`, { method: "DELETE" })
       setDespesas(despesas.filter(d => d.id !== deleteDialog.item!.id))
+      setDeleteDialog({ open: false, item: null })
+      window.dispatchEvent(new CustomEvent("finance-update"))
     } catch (error) {
       console.error("Erro ao excluir despesa:", error)
     } finally {
-      setDeleteDialog({ open: false, item: null })
+      setIsDeleting(false)
     }
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <BillsAlert />
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-4">
@@ -225,7 +232,7 @@ export default function DespesasPage() {
           </div>
 
           <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto"
+            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >
@@ -290,6 +297,7 @@ export default function DespesasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.nome}
+        loading={isDeleting}
       />
 
       <ExportPdfDialog 

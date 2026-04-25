@@ -4,6 +4,7 @@ using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Expenses.DTOs;
 using definance_backend.Features.Expenses.Repositories;
 using definance_backend.Features.Goals.Repositories;
+using definance_backend.Features.Onboarding.Services;
 using System.Transactions;
 
 namespace definance_backend.Features.Bills.Services
@@ -13,15 +14,18 @@ namespace definance_backend.Features.Bills.Services
         private readonly IBillRepository _billRepository;
         private readonly IExpenseRepository _expenseRepository;
         private readonly IGoalRepository _goalRepository;
+        private readonly IOnboardingService _onboardingService;
 
         public BillService(
             IBillRepository billRepository, 
             IExpenseRepository expenseRepository,
-            IGoalRepository goalRepository)
+            IGoalRepository goalRepository,
+            IOnboardingService onboardingService)
         {
             _billRepository = billRepository;
             _expenseRepository = expenseRepository;
             _goalRepository = goalRepository;
+            _onboardingService = onboardingService;
         }
 
         public async Task<BillDto> GetBillByIdAsync(Guid userId, Guid billId)
@@ -142,7 +146,7 @@ namespace definance_backend.Features.Bills.Services
                     DueDate = nextDueDate,
                     Status = "Pendente",
                     IsRecurring = true,
-                    Description = bill.Description,
+                    Description = bill.Description + " (Instância)",
                     Notes = bill.Notes
                 };
 
@@ -212,6 +216,9 @@ namespace definance_backend.Features.Bills.Services
 
             if (bill.UserId != userId)
                 throw new UnauthorizedAccessException("Esta conta não pertence a este usuário.");
+
+            // Sincroniza exclusão com o Perfil Financeiro se necessário
+            await _onboardingService.SyncDeleteBillWithProfileAsync(userId, bill);
 
             await _billRepository.DeleteAsync(billId);
         }
