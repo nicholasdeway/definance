@@ -10,24 +10,18 @@ import {
   Palette, 
   Bell, 
   Database, 
-  Monitor, 
-  Moon, 
-  Sun, 
   Download,
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSettings } from "@/lib/settings-context"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function ConfiguracoesPage() {
   const [isActionLoading, setIsActionLoading] = useState(false)
   
   // Estados Globais
   const { discreetMode, setDiscreetMode } = useSettings()
-  
-  // Estados para Mockup
-  const [theme, setTheme] = useState("dark")
   
   const [notifs, setNotifs] = useState({
     expenses: true,
@@ -76,33 +70,9 @@ export default function ConfiguracoesPage() {
               <div className="flex items-center justify-between">
                 <div className="max-w-[70%]">
                   <Label className="text-card-foreground">Tema do Sistema</Label>
-                  <p className="text-xs text-muted-foreground">Escolha entre o modo claro, escuro ou automático</p>
+                  <p className="text-xs text-muted-foreground">Alternar entre modo claro e escuro</p>
                 </div>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-[120px] bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">
-                      <div className="flex items-center gap-2">
-                        <Sun className="h-3 w-3" />
-                        <span>Claro</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="dark">
-                      <div className="flex items-center gap-2">
-                        <Moon className="h-3 w-3" />
-                        <span>Escuro</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="system">
-                      <div className="flex items-center gap-2">
-                        <Monitor className="h-3 w-3" />
-                        <span>Sistema</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <ThemeToggle />
               </div>
               
               <Separator />

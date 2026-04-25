@@ -26,7 +26,8 @@ import { formatCurrency } from "@/lib/currency"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
-import { cn } from "@/lib/utils"
+import { cn, capitalize } from "@/lib/utils"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 
 interface MonthlyData {
   month: string
@@ -116,6 +117,7 @@ export default function RelatoriosPage() {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear()
   })
+  const [isExportDialogOpen, setIsExportDialogOpen] = React.useState(false)
   
   React.useEffect(() => {
     setMounted(true)
@@ -147,6 +149,10 @@ export default function RelatoriosPage() {
       }
 
       const response = await apiClient<AnalysisData>(`/api/Analysis?${queryParams}`)
+      if (response) {
+        response.categoryAnalysis = response.categoryAnalysis.map(c => ({ ...c, categoria: capitalize(c.categoria) }))
+        response.incomeAnalysis = response.incomeAnalysis.map(i => ({ ...i, tipo: capitalize(i.tipo) }))
+      }
       setData(response)
     } catch (error) {
       toast.error("Erro ao carregar análises financeiras")
@@ -170,7 +176,11 @@ export default function RelatoriosPage() {
             value={period}
             onChange={setPeriod}
           />
-          <Button variant="outline">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsExportDialogOpen(true)}
+            className="cursor-pointer"
+          >
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -536,6 +546,25 @@ export default function RelatoriosPage() {
           </div>
         </div>
       )}
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Relatório Consolidado"
+        subtitle="Deseja exportar o resumo financeiro do período selecionado em PDF?"
+        data={[
+          { item: "Total Receitas", valor: data?.totalReceitas || 0 },
+          { item: "Total Despesas", valor: data?.totalDespesas || 0 },
+          { item: "Contas Atrasadas", valor: data?.totalAtrasadas || 0 },
+          { item: "Saldo Líquido", valor: data?.saldoFinal || 0 },
+          ...(data?.categoryAnalysis || []).map(c => ({ item: `Despesa: ${c.categoria}`, valor: c.valor })),
+          ...(data?.incomeAnalysis || []).map(i => ({ item: `Receita: ${i.tipo}`, valor: i.valor }))
+        ]}
+        columns={[
+          { header: "Descrição", key: "item" },
+          { header: "Valor", key: "valor", type: "currency" },
+        ]}
+        fileName={`analise-${period.month}-${period.year}`}
+      />
     </div>
   )
 }

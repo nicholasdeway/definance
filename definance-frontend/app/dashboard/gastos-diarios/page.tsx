@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUpRight, Send, Trash2 } from "lucide-react"
+import { ArrowUpRight, Send, Trash2, Download } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
 import { cn } from "@/lib/utils"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 
 interface Gasto {
   id: number
@@ -37,6 +38,7 @@ export default function GastosDiariosPage() {
     open: false,
     item: null,
   })
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
   const parseInput = (input: string) => {
     // Aceita formatos: "Café 15,50" ou "Café 15.50" ou "Café 1550" (centavos)
@@ -91,9 +93,20 @@ export default function GastosDiariosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Gastos Diários</h1>
-        <p className="text-muted-foreground">Registre seus gastos rapidamente</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Gastos Diários</h1>
+          <p className="text-muted-foreground">Registre seus gastos rapidamente</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+          onClick={() => setIsExportDialogOpen(true)}
+        >
+          <Download className="h-4 w-4" />
+          Exportar
+        </Button>
       </div>
 
       <Card className="border-border/50">
@@ -247,6 +260,21 @@ export default function GastosDiariosPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteGasto}
         itemName={deleteDialog.item?.descricao}
+      />
+
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Gastos Diários Rápidos"
+        subtitle={`Deseja exportar os ${gastos.length} lançamentos rápidos para PDF?`}
+        data={gastos}
+        columns={[
+          { header: "Descrição", key: "descricao" },
+          { header: "Valor", key: "valor", type: "currency" },
+          { header: "Data", key: "data" },
+          { header: "Hora", key: "hora" },
+        ]}
+        fileName="gastos-diarios"
       />
     </div>
   )
