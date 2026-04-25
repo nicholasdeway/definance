@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CreditCard, AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Plus, Pin, Shuffle } from "lucide-react"
+import { useSettings } from "@/lib/settings-context"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +98,8 @@ function mapApiToConta(b: ApiBill): ContaItem {
 import { BillsAlert } from "@/components/dashboard/bills-alert"
 
 export default function ContasPage() {
+  const { discreetMode } = useSettings()
+  
   const [contas, setContas] = useState<ContaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -166,6 +170,13 @@ export default function ContasPage() {
   const firstPendingBillId = useMemo(() => 
     contas.find(c => !c.rawDueDate)?.id, 
   [contas])
+
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    if (tab === "atrasadas") setActiveTab("atrasadas")
+    else if (tab === "pagas") setActiveTab("pagas")
+    else if (tab === "vencer") setActiveTab("vencer")
+  }, [searchParams])
 
   useEffect(() => {
     if (searchParams.get("tutorial") === "true" && setupCount > 0) {
@@ -276,14 +287,18 @@ export default function ContasPage() {
     }
   }
 
-  const handlePayBill = async () => {
+  const handlePayBill = async (date?: string) => {
     if (!payDialog.item) return
     try {
       setIsPaying(true)
-      const response = await apiClient<{ bill: ApiBill }>(`/api/bills/${payDialog.item.id}/pay`, { method: "PUT" })
+      const payload = date ? { paymentDate: new Date(date).toISOString() } : {}
+      const response = await apiClient<{ bill: ApiBill }>(`/api/bills/${payDialog.item.id}/pay`, { 
+        method: "PUT",
+        body: JSON.stringify(payload)
+      })
       if (response?.bill) {
         setContas((prev) =>
-          prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga" } : c))
+          prev.map((c) => (c.id === payDialog.item!.id ? { ...c, status: "paga", rawDueDate: date ? new Date(date).toISOString() : c.rawDueDate } : c))
         )
         setActiveTab("pagas")
       }
@@ -307,10 +322,11 @@ export default function ContasPage() {
     }
   }
 
-  const handleAlertAction = () => {
-    if (overdueCount > 0) {
+  const handleAlertAction = (type: "overdue" | "setup") => {
+    if (type === "overdue") {
       setActiveTab("atrasadas")
-    } else if (setupCount > 0) {
+      setTypeFilter("Todas")
+    } else if (type === "setup") {
       setActiveTab("vencer")
       setTypeFilter("Todas")
       setShowTutorial(true)
@@ -415,7 +431,10 @@ export default function ContasPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <p className="font-medium text-card-foreground text-sm sm:text-base break-words">
+                  <p className={cn(
+                    "font-medium text-card-foreground text-sm sm:text-base break-words transition-opacity duration-300",
+                    discreetMode && "discreet-mode-blur"
+                  )}>
                     {conta.nome}
                   </p>
                   {getStatusIcon(conta.status)}
@@ -431,7 +450,10 @@ export default function ContasPage() {
             {/* Badge + Valor + Ações */}
             <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0">
               {getStatusBadge(conta.status, conta.dias, !!conta.rawDueDate)}
-              <span className="font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap">
+              <span className={cn(
+                "font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap transition-opacity duration-300",
+                discreetMode && "discreet-mode-blur"
+              )}>
                 {formatCurrency(conta.valor)}
               </span>
               <DropdownMenu>
@@ -512,41 +534,65 @@ export default function ContasPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
               A Vencer
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-yellow-500">
+            <div className={cn(
+              "text-xl sm:text-2xl font-bold text-yellow-500 transition-opacity duration-300",
+              (isLoading || discreetMode) && "discreet-mode-blur"
+            )}>
               {formatCurrency(totalAVencer)}
             </div>
-            <p className="text-xs text-muted-foreground">{allAVencer.length} contas</p>
+            <p className={cn(
+              "text-xs text-muted-foreground transition-all duration-300",
+              isLoading && "blur-sm opacity-50"
+            )}>
+              {allAVencer.length} contas
+            </p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
               Pagas este mês
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-primary">
+            <div className={cn(
+              "text-2xl sm:text-3xl font-bold text-primary transition-opacity duration-300",
+              (isLoading || discreetMode) && "discreet-mode-blur"
+            )}>
               {allPagas.length}
             </div>
-            <p className="text-xs text-muted-foreground">contas quitadas</p>
+            <p className={cn(
+              "text-xs text-muted-foreground transition-all duration-300",
+              isLoading && "blur-sm opacity-50"
+            )}>
+              contas quitadas
+            </p>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
               Atrasadas
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-destructive">
+            <div className={cn(
+              "text-xl sm:text-2xl font-bold text-destructive transition-opacity duration-300",
+              (isLoading || discreetMode) && "discreet-mode-blur"
+            )}>
               {formatCurrency(totalAtrasadas)}
             </div>
-            <p className="text-xs text-muted-foreground">{allAtrasadas.length} contas</p>
+            <p className={cn(
+              "text-xs text-muted-foreground transition-all duration-300",
+              isLoading && "blur-sm opacity-50"
+            )}>
+              {allAtrasadas.length} contas
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -581,33 +627,33 @@ export default function ContasPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4 grid w-full grid-cols-3 bg-muted/30 p-1 h-auto">
+            <TabsList className="mb-4 grid w-full grid-cols-3 bg-muted/30 p-2 h-auto rounded-2xl border border-white/5 gap-2">
               <TabsTrigger
                 value="vencer"
-                className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background"
+                className="relative gap-1 sm:gap-2 text-[10px] sm:text-xs py-3 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:scale-[1.02] data-[state=active]:z-10 transition-all duration-300 hover:bg-background/40 rounded-xl"
               >
                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">A Vencer</span>
                 <span className="sm:hidden">Ven.</span>
-                ({contasAVencer.length})
+                <span className="font-bold opacity-70">({contasAVencer.length})</span>
               </TabsTrigger>
               <TabsTrigger
                 value="pagas"
-                className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background"
+                className="relative gap-1 sm:gap-2 text-[10px] sm:text-xs py-3 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:scale-[1.02] data-[state=active]:z-10 transition-all duration-300 hover:bg-background/40 rounded-xl"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Pagas</span>
                 <span className="sm:hidden">Pag.</span>
-                ({contasPagas.length})
+                <span className="font-bold opacity-70">({contasPagas.length})</span>
               </TabsTrigger>
               <TabsTrigger
                 value="atrasadas"
-                className="gap-1 sm:gap-2 text-[10px] sm:text-xs py-2 data-[state=active]:bg-background"
+                className="relative gap-1 sm:gap-2 text-[10px] sm:text-xs py-3 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:scale-[1.02] data-[state=active]:z-10 transition-all duration-300 hover:bg-background/40 rounded-xl"
               >
                 <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Atrasadas</span>
                 <span className="sm:hidden">Atr.</span>
-                ({contasAtrasadas.length})
+                <span className="font-bold opacity-70">({contasAtrasadas.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -643,6 +689,7 @@ export default function ContasPage() {
         onConfirm={handlePayBill}
         itemName={payDialog.item?.nome}
         loading={isPaying}
+        hasDate={!!payDialog.item?.rawDueDate}
       />
 
       {/* Tutorial Hint Overlay */}

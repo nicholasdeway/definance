@@ -11,16 +11,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Switch } from "@/components/ui/switch"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Plus, ArrowDownLeft, Search, MoreHorizontal, Landmark } from "lucide-react"
+import { Plus, ArrowDownLeft, Search, MoreHorizontal, Landmark, Download } from "lucide-react"
+import { useSettings } from "@/lib/settings-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { SyncBadge } from "@/components/dashboard/sync-badge"
 import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
-import { Download } from "lucide-react"
 
 interface Receita {
   id: string
@@ -54,23 +55,21 @@ export interface OnboardingProgressIncome {
   DiasRecebimento?: string
 }
 
-export interface OnboardingProgress {
-  incomes?: OnboardingProgressIncome[]
-  Incomes?: OnboardingProgressIncome[]
-  monthlyIncome?: string
-  MonthlyIncome?: string
-}
-
 const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
 
 export default function ReceitasPage() {
+  const { discreetMode } = useSettings()
+  
   const [receitas, setReceitas] = useState<Receita[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [filterType, setFilterType] = useState<"all" | "recurring" | "extra">("all")
   const [period, setPeriod] = useState<PeriodFilterState>({
     type: "monthly",
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear()
   })
+
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
 
   useEffect(() => {
     const fetchIncomes = async () => {
@@ -98,7 +97,6 @@ export default function ReceitasPage() {
           }
         }
 
-        // 1. Busca dados do backend (Incomes reais) com filtro dinâmico
         const incomesData = await apiClient<IncomeApiResponse[]>(`/api/incomes?${queryParams}`) || []
         
         const mappedIncomes = incomesData.map((inc: IncomeApiResponse) => ({
@@ -111,52 +109,38 @@ export default function ReceitasPage() {
           isSynced: false
         }))
 
-        // 2. Tenta buscar rendas base do Onboarding
-        const progressData = await apiClient<OnboardingProgress>("/api/onboarding/progress")
+        const progressData = await apiClient<any>("/api/onboarding/progress")
         if (progressData) {
+          const isCompleted = progressData.hasCompletedOnboarding || progressData.HasCompletedOnboarding
           const profileIncomes: OnboardingProgressIncome[] = progressData.incomes || progressData.Incomes || []
           
-          if (profileIncomes.length > 0) {
-            // Mapeia cada renda do perfil para um formato compatível com a lista de receitas
-            const syncedIncomes = profileIncomes.map((inc: OnboardingProgressIncome, index: number) => {
-               const incomeTipo = (inc.tipo || inc.Tipo || "").toLowerCase()
-               const incomeValor = inc.valor || inc.Valor || 0
-               
-               // Busca informações ricas das constantes
-               const typeInfo = incomeTypes.find(t => t.value === incomeTipo)
-               
-               const freqValue = (inc.frequencia || inc.Frequencia || "").toLowerCase()
-               const freqInfo = incomeFrequencies.find(f => f.value === freqValue)
+          if (profileIncomes.length > 0 && !isCompleted) {
+            const syncedIncomes = profileIncomes
+              .filter(inc => {
+                const tipo = (inc.tipo || inc.Tipo || "").toLowerCase()
+                return !mappedIncomes.some(m => m.tipo.toLowerCase() === tipo)
+              })
+              .map((inc: OnboardingProgressIncome, index: number) => {
+                const incomeTipo = (inc.tipo || inc.Tipo || "").toLowerCase()
+                const incomeValor = inc.valor || inc.Valor || 0
+                const typeInfo = incomeTypes.find(t => t.value === incomeTipo)
+                const freqValue = (inc.frequencia || inc.Frequencia || "").toLowerCase()
+                const freqInfo = incomeFrequencies.find(f => f.value === freqValue)
 
-               return {
+                return {
                   id: `synced-${incomeTipo}-${index}`,
                   nome: typeInfo ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})` : `Fonte: ${incomeTipo.toUpperCase()}`,
-                  valor: incomeValor, // Removido / 100: O banco já armazena o valor no formato padrão (ex: 3100 para 3.1k)
+                  valor: incomeValor,
                   tipo: typeInfo?.label || incomeTipo.toUpperCase(),
                   frequencia: freqInfo?.label || "Própria",
                   diasRecebimento: inc.diasRecebimento || inc.DiasRecebimento || "",
                   data: new Date(period.year, period.month - 1, 1).toLocaleDateString("pt-BR"),
                   recorrente: true,
                   isSynced: true
-               }
-            })
+                }
+              })
 
-            // Adiciona as rendas sincronizadas no topo da lista
             mappedIncomes.unshift(...syncedIncomes)
-          } else {
-            // Apenas mostra legado se não houver o novo array 'incomes'
-            const legacyIncome = progressData.monthlyIncome || progressData.MonthlyIncome
-            if (legacyIncome) {
-                mappedIncomes.unshift({
-                    id: "synced-salary-legacy",
-                    nome: "Renda Configurada",
-                    valor: parseInt(legacyIncome),
-                    tipo: "Geral",
-                    data: new Date(period.year, period.month - 1, 1).toLocaleDateString("pt-BR"),
-                    recorrente: true,
-                    isSynced: true
-                })
-            }
           }
         }
         
@@ -170,7 +154,17 @@ export default function ReceitasPage() {
     
     fetchIncomes()
   }, [period])
+
+  // Abrir modal automaticamente se vier do header com ?action=new
+  useEffect(() => {
+    if (searchParams?.get('action') === 'new') {
+      openAddDialog()
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   const [isOpen, setIsOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [search, setSearch] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Receita | null }>({
     open: false,
@@ -193,22 +187,24 @@ export default function ReceitasPage() {
     recorrente: false,
   })
 
-  const filteredReceitas = receitas.filter(r =>
-    r.nome.toLowerCase().includes(search.toLowerCase()) ||
-    r.tipo.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredReceitas = receitas.filter(r => {
+    const matchesSearch = r.nome.toLowerCase().includes(search.toLowerCase()) ||
+                         r.tipo.toLowerCase().includes(search.toLowerCase());
+    
+    if (filterType === "recurring") return matchesSearch && r.recorrente;
+    if (filterType === "extra") return matchesSearch && !r.recorrente;
+    return matchesSearch;
+  })
 
   const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0)
   const receitasRecorrentes = receitas.filter(r => r.recorrente).reduce((sum, r) => sum + r.valor, 0)
   const receitasExtras = receitas.filter(r => !r.recorrente).reduce((sum, r) => sum + r.valor, 0)
 
   const handleSaveReceita = async () => {
-    if (!newReceita.nome || !newReceita.valor) return
+    if (!newReceita.nome || !newReceita.valor || isSaving) return
     
-    // O parseCurrencyInput já me retorna o valor decimal em Reais puro (ex: 2500.00)
+    setIsSaving(true)
     const valorReal = parseCurrencyInput(newReceita.valor)
-    
-    // Converte a data do formato input YYYY-MM-DD para ISO ou usa a data de hoje
     const dateParsed = newReceita.data ? new Date(newReceita.data).toISOString() : new Date().toISOString()
     
     try {
@@ -246,25 +242,19 @@ export default function ReceitasPage() {
                 setReceitas([savedItem, ...receitas]);
             }
 
-            setNewReceita({
-              nome: "",
-              valor: "",
-              tipo: "",
-              outroTipo: "",
-              data: "",
-              recorrente: false,
-            })
+            setNewReceita({ nome: "", valor: "", tipo: "", outroTipo: "", data: "", recorrente: false })
             setIsOpen(false)
         }
-    } catch (error) {
-        console.error("Erro ao salvar a renda:", error)
+    } catch (error: any) {
+        toast.error(error.message || "Erro ao salvar a renda");
+    } finally {
+        setIsSaving(false)
     }
   }
 
   const openEditDialog = (receita: Receita) => {
     const parts = receita.data.split("/");
     const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
-    
     const isCustomType = receita.tipo && !tiposReceita.includes(receita.tipo)
     
     setNewReceita({
@@ -303,7 +293,6 @@ export default function ReceitasPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header Section - Responsivo */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-4">
           <div>
@@ -314,7 +303,7 @@ export default function ReceitasPage() {
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-primary text-primary-foreground hover:bg-primary/70 w-full sm:w-auto" 
+                className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto shadow-sm active:scale-95 transition-all" 
                 onClick={openAddDialog}
                 size="sm"
               >
@@ -322,7 +311,7 @@ export default function ReceitasPage() {
                 Nova Receita
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto border-primary/20">
               <DialogHeader>
                 <DialogTitle className="text-foreground text-lg sm:text-xl">{newReceita.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm">
@@ -337,7 +326,7 @@ export default function ReceitasPage() {
                   placeholder="Ex: Salário"
                   value={newReceita.nome}
                   onChange={(e) => setNewReceita({ ...newReceita, nome: e.target.value })}
-                  className="text-sm sm:text-base"
+                  className="text-sm sm:text-base focus-visible:ring-primary"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -356,7 +345,7 @@ export default function ReceitasPage() {
                     type="date"
                     value={newReceita.data}
                     onChange={(e) => setNewReceita({ ...newReceita, data: e.target.value })}
-                    className="text-sm sm:text-base"
+                    className="text-sm sm:text-base focus-visible:ring-primary"
                   />
                 </div>
               </div>
@@ -367,7 +356,7 @@ export default function ReceitasPage() {
                     value={newReceita.tipo}
                     onValueChange={(value) => setNewReceita({ ...newReceita, tipo: value, outroTipo: value === "Outros" ? newReceita.outroTipo : "" })}
                   >
-                    <SelectTrigger className="text-sm sm:text-base">
+                    <SelectTrigger className="text-sm sm:text-base focus:ring-primary">
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -386,7 +375,7 @@ export default function ReceitasPage() {
                       placeholder="Ex: Freelance"
                       value={newReceita.outroTipo || ""}
                       onChange={(e) => setNewReceita({ ...newReceita, outroTipo: e.target.value })}
-                      className="text-sm sm:text-base"
+                      className="text-sm sm:text-base focus-visible:ring-primary"
                     />
                   </div>
                 )}
@@ -404,61 +393,111 @@ export default function ReceitasPage() {
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
-              <Button className="bg-primary text-primary-foreground w-full sm:w-auto" onClick={handleSaveReceita}>
-                {newReceita.id ? "Salvar Alterações" : "Salvar"}
+              <Button 
+                className="bg-primary text-primary-foreground w-full sm:w-auto hover:bg-primary/90" 
+                onClick={handleSaveReceita}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    Salvando...
+                  </>
+                ) : (
+                  newReceita.id ? "Salvar Alterações" : "Salvar"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <PeriodFilter 
+            value={period}
+            onChange={setPeriod}
+          />
+          <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors">
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <PeriodFilter 
-          value={period}
-          onChange={setPeriod}
-        />
-        <Button variant="outline" size="sm" className="h-9 gap-2 hidden sm:flex">
-          <Download className="h-4 w-4" />
-          Exportar
-        </Button>
-      </div>
-    </div>
-
-      {/* Cards de Resumo - Grid responsivo */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="border-border/50">
+        <Card 
+          className={cn(
+            "border-border/50 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden",
+            filterType === "all" ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
+          )}
+          onClick={() => setFilterType("all")}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Total de Receitas</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors flex items-center justify-between">
+              Total de Receitas
+              {filterType === "all" && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-primary">
+            <div className={cn(
+              "text-xl sm:text-2xl font-bold text-primary transition-opacity duration-300",
+              (isLoading || discreetMode) && "discreet-mode-blur"
+            )}>
               {formatCurrency(totalReceitas)}
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+
+        <Card 
+          className={cn(
+            "border-border/50 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden",
+            filterType === "recurring" ? "ring-2 ring-blue-500 bg-blue-500/5" : "hover:bg-muted/50"
+          )}
+          onClick={() => setFilterType(filterType === "recurring" ? "all" : "recurring")}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Recorrentes</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-blue-500 transition-colors flex items-center justify-between">
+              Recorrentes
+              {filterType === "recurring" && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-card-foreground">
+            <div className={cn(
+              "text-xl sm:text-2xl font-bold text-card-foreground group-hover:text-blue-500 transition-all duration-300",
+              (isLoading || discreetMode) && "blur-md opacity-50 select-none pointer-events-none"
+            )}>
               {formatCurrency(receitasRecorrentes)}
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+
+        <Card 
+          className={cn(
+            "border-border/50 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden",
+            filterType === "extra" ? "ring-2 ring-orange-500 bg-orange-500/5" : "hover:bg-muted/50"
+          )}
+          onClick={() => setFilterType(filterType === "extra" ? "all" : "extra")}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Extras</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-orange-500 transition-colors flex items-center justify-between">
+              Extras
+              {filterType === "extra" && <div className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-card-foreground">
+            <div className={cn(
+              "text-xl sm:text-2xl font-bold text-card-foreground group-hover:text-orange-500 transition-all duration-300",
+              (isLoading || discreetMode) && "blur-md opacity-50 select-none pointer-events-none"
+            )}>
               {formatCurrency(receitasExtras)}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Receitas */}
       <Card className="border-border/50">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -469,7 +508,7 @@ export default function ReceitasPage() {
                 placeholder="Buscar receitas..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 sm:pl-9 sm:w-[250px] text-sm sm:text-base"
+                className="w-full pl-8 sm:pl-9 sm:w-[250px] text-sm sm:text-base focus-visible:ring-primary"
               />
             </div>
           </div>
@@ -497,7 +536,12 @@ export default function ReceitasPage() {
                   </div>
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <p className="font-medium text-card-foreground text-sm sm:text-base break-words">{r.nome}</p>
+                        <p className={cn(
+                          "font-medium text-card-foreground text-sm sm:text-base break-words transition-opacity duration-300",
+                          discreetMode && "discreet-mode-blur"
+                        )}>
+                          {r.nome}
+                        </p>
                         {r.isSynced && <SyncBadge />}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground flex flex-wrap items-center gap-1">
@@ -530,7 +574,10 @@ export default function ReceitasPage() {
                   )}>
                     {r.recorrente ? "Recorrente" : "Única"}
                   </Badge>
-                  <span className="font-semibold text-primary text-sm sm:text-base whitespace-nowrap">
+                  <span className={cn(
+                    "font-semibold text-primary text-sm sm:text-base whitespace-nowrap transition-opacity duration-300",
+                    discreetMode && "discreet-mode-blur"
+                  )}>
                     + {formatCurrency(r.valor)}
                   </span>
                   <DropdownMenu>
@@ -563,14 +610,14 @@ export default function ReceitasPage() {
                   </DropdownMenu>
                 </div>
               </div>
-            ))}
-            
-            {!isLoading && filteredReceitas.length === 0 && (
-                <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-xl">
-                    Nenhuma entrada encontrada.
-                </div>
-            )}
-          </div>
+               ))}
+               
+               {!isLoading && filteredReceitas.length === 0 && (
+                   <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-xl">
+                       Nenhuma entrada encontrada.
+                   </div>
+               )}
+             </div>
           )}
         </CardContent>
       </Card>
