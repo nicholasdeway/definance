@@ -144,7 +144,7 @@ export const Step3MonthlyIncome = () => {
                              onClick={() => updateIncome(typeInfo.value, "frequencia", freq.value)}
                              className={cn(
                                 "text-center text-[10px] p-2 leading-tight rounded-md border font-medium transition-all cursor-pointer",
-                                isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-border/60 hover:bg-muted"
+                                isSelected ? "bg-primary/70 text-primary-foreground border-primary" : "bg-muted/30 border-border/60 hover:bg-muted"
                              )}
                           >
                              {freq.label}
@@ -154,33 +154,63 @@ export const Step3MonthlyIncome = () => {
                  </div>
                </div>
 
-               {/* Bloco 3: Dias (Apenas para mensais e quinzenais) */}
-               {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
-                 <div className="flex bg-primary/5 border border-primary/10 rounded-lg p-3 items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                    <CalendarDays className="h-5 w-5 text-primary shrink-0 flex-none" />
-                    <div className="flex-1 space-y-1">
-                       <FieldLabel 
-                         label={inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Que dia cai o salário?" : "Quais os dois dias? (Adiant./Pag.)"} 
-                         required 
-                         isEmpty={!inc.diasRecebimento || inc.diasRecebimento.trim() === ""} 
-                         wasAttempted={wasAttempted} 
-                       />
-                       <Input
-                         type="text"
-                         placeholder={inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Ex: dia 5, ou 5º dia útil..." : "Ex: dia 05 e dia 20"}
-                         value={inc.diasRecebimento || ""}
-                         onChange={(e) => updateIncome(typeInfo.value, "diasRecebimento", e.target.value)}
-                         className={cn(
-                           "h-8 text-xs bg-background/50 focus:bg-background",
-                           wasAttempted && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "") && "border-destructive/50"
-                         )}
-                       />
-                       <p className="text-[9px] text-muted-foreground/80 leading-tight">
-                         O Definance vai lançar as entradas todo mês baseado {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "neste dia" : "nestes dias"}.
-                       </p>
-                    </div>
-                 </div>
-               )}
+                {/* Bloco 3: Dias (Apenas para mensais e quinzenais) */}
+                {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
+                  <div className="flex bg-primary/5 border border-primary/10 rounded-lg p-3 items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                     <CalendarDays className="h-5 w-5 text-primary shrink-0 flex-none" />
+                     <div className="flex-1 space-y-3">
+                        <FieldLabel 
+                          label={inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Que dia cai o salário?" : "Quais os dois dias de recebimento?"} 
+                          required 
+                          isEmpty={!inc.diasRecebimento || inc.diasRecebimento.trim() === ""} 
+                          wasAttempted={wasAttempted} 
+                        />
+                        
+                        {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
+                          <Input
+                            type="date"
+                            value={inc.diasRecebimento || ""}
+                            onChange={(e) => updateIncome(typeInfo.value, "diasRecebimento", e.target.value)}
+                            className={cn(
+                              "h-8 text-xs bg-background/50 focus:bg-background",
+                              wasAttempted && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "") && "border-destructive/50"
+                            )}
+                          />
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                             <div className="space-y-1">
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground/70">1ª Quinzena</span>
+                                <Input
+                                  type="date"
+                                  value={inc.diasRecebimento?.split(',')[0] || ""}
+                                  onChange={(e) => {
+                                    const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                    updateIncome(typeInfo.value, "diasRecebimento", `${e.target.value},${dates[1] || ""}`)
+                                  }}
+                                  className="h-8 text-xs bg-background/50"
+                                />
+                             </div>
+                             <div className="space-y-1">
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground/70">2ª Quinzena</span>
+                                <Input
+                                  type="date"
+                                  value={inc.diasRecebimento?.split(',')[1] || ""}
+                                  onChange={(e) => {
+                                    const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                    updateIncome(typeInfo.value, "diasRecebimento", `${dates[0] || ""},${e.target.value}`)
+                                  }}
+                                  className="h-8 text-xs bg-background/50"
+                                />
+                             </div>
+                          </div>
+                        )}
+
+                        <p className="text-[9px] text-muted-foreground/80 leading-tight">
+                          O Definance vai lançar as entradas todo mês baseado {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "neste dia" : "nestes dias"}.
+                        </p>
+                     </div>
+                  </div>
+                )}
             </div>
           </div>
         )

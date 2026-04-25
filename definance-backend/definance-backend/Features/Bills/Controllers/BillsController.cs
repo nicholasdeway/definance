@@ -87,12 +87,12 @@ namespace definance_backend.Features.Bills.Controllers
         }
 
         [HttpPut("{id:guid}/pay")]
-        public async Task<IActionResult> PayBill(Guid id)
+        public async Task<IActionResult> PayBill(Guid id, [FromBody] PayBillDto dto)
         {
             try
             {
                 var userId = GetUserId();
-                var (bill, expense) = await _billService.PayBillAsync(userId, id);
+                var (bill, expense) = await _billService.PayBillAsync(userId, id, dto?.PaymentDate);
                 return Ok(new { bill, expense });
             }
             catch (KeyNotFoundException ex)

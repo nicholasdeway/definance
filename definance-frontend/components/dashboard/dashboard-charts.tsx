@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { useSettings } from "@/lib/settings-context"
+import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
 const pieData = [
   { name: "Moradia", value: 1800, color: "var(--chart-1)" },
@@ -19,6 +22,10 @@ const lineData = [
 ]
 
 export function DashboardCharts() {
+  const { discreetMode } = useSettings()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+  const cursorFill = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
@@ -34,7 +41,10 @@ export function DashboardCharts() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center gap-4 md:flex-row">
-          <div className="relative h-48 w-48">
+          <div className={cn(
+            "relative h-48 w-48 transition-all duration-300",
+            discreetMode && "discreet-mode-blur"
+          )}>
             {mounted && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
@@ -51,6 +61,14 @@ export function DashboardCharts() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Valor"]}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -70,7 +88,10 @@ export function DashboardCharts() {
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="text-muted-foreground">{item.name}</span>
-                <span className="ml-auto font-medium text-card-foreground">
+                <span className={cn(
+                  "ml-auto font-medium text-card-foreground transition-opacity duration-300",
+                  discreetMode && "discreet-mode-blur"
+                )}>
                   {((item.value / total) * 100).toFixed(0)}%
                 </span>
               </div>
@@ -80,7 +101,10 @@ export function DashboardCharts() {
 
         <div className="mt-6">
           <h4 className="mb-4 text-sm font-medium text-card-foreground">Evolução Mensal</h4>
-          <div className="h-48">
+          <div className={cn(
+            "h-48 transition-all duration-300",
+            discreetMode && "discreet-mode-blur"
+          )}>
             {mounted && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={lineData}>
@@ -96,6 +120,7 @@ export function DashboardCharts() {
                     tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
+                    cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}
                     contentStyle={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",

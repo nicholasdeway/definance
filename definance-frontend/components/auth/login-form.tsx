@@ -114,7 +114,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
           className="h-12 w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-base rounded-xl shadow-lg shadow-emerald-900/20 cursor-pointer" 
           disabled={isLoading}
         >
-          {isLoading ? <Spinner className="h-4 w-4" /> : "Entrar"}
+          {isLoading ? <Spinner className="h-4 w-4" /> : "Acessar Painel ➔"}
         </Button>
       </form>
 

@@ -81,18 +81,7 @@ namespace definance_backend.Features.Goals.Repositories
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-            await using var transaction = await conn.BeginTransactionAsync();
-            try
-            {
-                await conn.ExecuteAsync(sql, goal, transaction);
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            await conn.ExecuteAsync(sql, goal);
         }
 
         public async Task UpdateAsync(Goal goal)
@@ -114,18 +103,7 @@ namespace definance_backend.Features.Goals.Repositories
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-            await using var transaction = await conn.BeginTransactionAsync();
-            try
-            {
-                await conn.ExecuteAsync(sql, goal, transaction);
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            await conn.ExecuteAsync(sql, goal);
         }
 
         public async Task DeleteAsync(Guid id, Guid userId)
