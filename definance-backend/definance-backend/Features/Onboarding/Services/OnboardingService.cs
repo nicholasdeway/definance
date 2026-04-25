@@ -7,17 +7,22 @@ using definance_backend.Features.Bills.Repositories;
 using definance_backend.Domain.Entities;
 using System.Collections.Generic;
 
+using definance_backend.Features.Incomes.Repositories;
+using System.Linq;
+
 namespace definance_backend.Features.Onboarding.Services
 {
     public class OnboardingService : IOnboardingService
     {
         private readonly IUserRepository _userRepository;
         private readonly IBillRepository _billRepository;
+        private readonly IIncomeRepository _incomeRepository;
 
-        public OnboardingService(IUserRepository userRepository, IBillRepository billRepository)
+        public OnboardingService(IUserRepository userRepository, IBillRepository billRepository, IIncomeRepository incomeRepository)
         {
             _userRepository = userRepository;
             _billRepository = billRepository;
+            _incomeRepository = incomeRepository;
         }
 
         public async Task CompleteOnboardingAsync(Guid userId, OnboardingSubmissionDto dto)
@@ -186,6 +191,56 @@ namespace definance_backend.Features.Onboarding.Services
                     IsRecurring = d.Parcelado,
                     Description = d.Parcelado ? "Dívida Parcelada" : "Dívida única/avulsa"
                 });
+            }
+
+            // 5. Processar Rendas (Materialização)
+            foreach (var inc in dto.Incomes)
+            {
+                if (inc.Valor <= 0) continue;
+
+                var dates = inc.DiasRecebimento.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                
+                // Se for quinzenal e tivermos duas datas, dividimos o valor
+                if (inc.Frequencia.ToLower() == "quinzenal" && dates.Length > 0)
+                {
+                    decimal halfAmount = inc.Valor / (dates.Length > 1 ? 2 : 1);
+                    foreach (var dateStr in dates)
+                    {
+                        if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                        {
+                            await _incomeRepository.CreateAsync(new Income
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Name = inc.Tipo,
+                                Amount = halfAmount,
+                                Type = inc.Tipo,
+                                Date = dt.ToUniversalTime(),
+                                IsRecurring = true
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // Caso padrão (Mensal ou única data)
+                    DateTime? incomeDate = null;
+                    if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
+                    {
+                        incomeDate = dt.ToUniversalTime();
+                    }
+
+                    await _incomeRepository.CreateAsync(new Income
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = inc.Tipo,
+                        Amount = inc.Valor,
+                        Type = inc.Tipo,
+                        Date = incomeDate ?? DateTime.UtcNow,
+                        IsRecurring = true
+                    });
+                }
             }
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

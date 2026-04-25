@@ -4,7 +4,7 @@ import { useState } from "react"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { Bell, Plus, AlertTriangle } from "lucide-react"
+import { Bell, Plus, AlertTriangle, TrendingUp, TrendingDown, CreditCard, Receipt } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useBillsNotifications } from "@/hooks/use-bills-notifications"
+import { useSettings } from "@/lib/settings-context"
+import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 
 export function DashboardHeader() {
   const { totalCount, overdueCount, setupCount, isLoading } = useBillsNotifications()
+  const { discreetMode, setDiscreetMode } = useSettings()
   const [open, setOpen] = useState(false)
 
   return (
@@ -26,18 +29,58 @@ export function DashboardHeader() {
       <div className="flex flex-1 items-center justify-end gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/70 cursor-pointer">
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm active:scale-95 transition-all">
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Nova Transação</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Nova Receita</DropdownMenuItem>
-            <DropdownMenuItem>Nova Despesa</DropdownMenuItem>
-            <DropdownMenuItem>Nova Conta</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-52 p-1.5">
+            <Link href="/dashboard/entradas?action=new">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </div>
+                <span>Nova Receita</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/dashboard/saidas?action=new">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-destructive/10 text-destructive">
+                  <TrendingDown className="h-3.5 w-3.5" />
+                </div>
+                <span>Nova Despesa</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/dashboard/contas?action=new">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/10 text-blue-500">
+                  <CreditCard className="h-3.5 w-3.5" />
+                </div>
+                <span>Nova Conta</span>
+              </DropdownMenuItem>
+            </Link>
+            <div className="my-1 border-t border-border/50" />
+            <Link href="/dashboard/gastos-diarios?action=new">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
+                  <Receipt className="h-3.5 w-3.5" />
+                </div>
+                <span>Gasto Diário</span>
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
         
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 cursor-pointer transition-all hover:bg-muted"
+          onClick={() => setDiscreetMode(!discreetMode)}
+          title={discreetMode ? "Mostrar valores" : "Ocultar valores"}
+        >
+          {discreetMode ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+        </Button>
+
         <ThemeToggle />
         
         <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -77,7 +120,7 @@ export function DashboardHeader() {
                       asChild 
                       className="p-0 border-none focus:bg-destructive/10 cursor-pointer"
                     >
-                      <Link href="/dashboard/contas" className="flex items-center gap-2.5 px-4 py-2.5">
+                      <Link href="/dashboard/contas?tab=atrasadas" className="flex items-center gap-2.5 px-4 py-2.5">
                         <div className="h-8 w-8 shrink-0 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive">
                           <AlertTriangle className="h-4 w-4" />
                         </div>
@@ -97,7 +140,7 @@ export function DashboardHeader() {
                       asChild 
                       className="p-0 border-none focus:bg-primary/10 cursor-pointer"
                     >
-                      <Link href="/dashboard/contas" className="flex items-center gap-2.5 px-4 py-2.5">
+                      <Link href="/dashboard/contas?tutorial=true" className="flex items-center gap-2.5 px-4 py-2.5">
                         <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                           <Bell className="h-4 w-4" />
                         </div>

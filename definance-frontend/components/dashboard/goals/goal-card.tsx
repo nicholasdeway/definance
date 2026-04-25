@@ -1,5 +1,3 @@
-"use client"
-
 import { Goal } from "@/lib/goals"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,6 +15,7 @@ import { formatCurrency } from "@/lib/currency"
 import { format, parseISO, differenceInDays, isBefore, isAfter } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { LucideIcon, Plane, Car, Home, GraduationCap, Shield, Star } from "lucide-react"
+import { useSettings } from "@/lib/settings-context"
 
 interface GoalCardProps {
   meta: Goal
@@ -73,6 +72,8 @@ function diasRestantes(fim: string): number {
 }
 
 export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
+  const { discreetMode } = useSettings()
+  
   const cat        = getCat(meta.category)
   const Icon       = cat.icon
   const progresso  = meta.targetAmount > 0 ? (meta.currentAmount / meta.targetAmount) * 100 : 0
@@ -136,27 +137,20 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
               {concluida ? "Concluída ✓" : atrasada ? "Atenção" : `${diasLeft}d restantes`}
             </Badge>
           </div>
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(progresso, 100)}%` }}
-            />
-          </div>
+          <Progress value={progresso} className="h-2" />
           <p className="mt-0.5 text-[10px] text-muted-foreground">Progresso financeiro</p>
         </div>
 
         {/* Progresso temporal */}
         {!concluida && (
           <div>
-            <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  atrasada ? "bg-orange-400/60" : "bg-muted-foreground/40"
-                )}
-                style={{ width: `${Math.min(tempoPct, 100)}%` }}
-              />
-            </div>
+            <Progress 
+              value={tempoPct} 
+              className={cn(
+                "h-1.5",
+                atrasada ? "[&>div]:bg-orange-400/60" : "[&>div]:bg-muted-foreground/40"
+              )} 
+            />
             <div className="mt-0.5 flex justify-between text-[10px] text-muted-foreground">
               <span>{fmtShort(meta.startDate)}</span>
               <span className={cn(atrasada && "text-orange-400")}>{tempoPct}% do tempo</span>
@@ -169,11 +163,19 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
         <div className="flex justify-between text-sm pt-1 border-t border-border/30">
           <div>
             <p className="text-muted-foreground">Acumulado</p>
-            <p className="font-semibold text-primary">{formatCurrency(meta.currentAmount)}</p>
+            <p className={cn(
+              "font-semibold text-primary transition-all duration-300",
+              discreetMode && "discreet-mode-blur"
+            )}>
+              {formatCurrency(meta.currentAmount)}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-muted-foreground">{concluida ? "Alvo" : "Falta"}</p>
-            <p className="font-semibold text-card-foreground">
+            <p className={cn(
+              "font-semibold text-card-foreground transition-all duration-300",
+              discreetMode && "discreet-mode-blur"
+            )}>
               {concluida ? formatCurrency(meta.targetAmount) : formatCurrency(falta)}
             </p>
           </div>
@@ -184,7 +186,10 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
           const mesesRestantes = meta.monthlyReserve > 0 ? Math.ceil(falta / meta.monthlyReserve) : null
           return (
             <div className="flex items-center justify-between rounded-md bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-              <span>
+              <span className={cn(
+                "transition-all duration-300",
+                discreetMode && "discreet-mode-blur"
+              )}>
                 <span className="font-medium text-foreground">{formatCurrency(meta.monthlyReserve)}/mês</span>
                 {" • todo dia "}
                 <span className="font-medium text-foreground">{meta.reserveDay}</span>

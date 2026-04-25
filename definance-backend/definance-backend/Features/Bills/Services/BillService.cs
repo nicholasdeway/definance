@@ -90,7 +90,7 @@ namespace definance_backend.Features.Bills.Services
             return MapToDto(bill);
         }
 
-        public async Task<(BillDto Bill, ExpenseDto Expense)> PayBillAsync(Guid userId, Guid billId)
+        public async Task<(BillDto Bill, ExpenseDto Expense)> PayBillAsync(Guid userId, Guid billId, DateTime? paymentDate = null)
         {
             using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
@@ -101,6 +101,13 @@ namespace definance_backend.Features.Bills.Services
 
             if (bill.UserId != userId)
                 throw new UnauthorizedAccessException("Esta conta não pertence a este usuário.");
+
+            // Se uma data foi informada agora (porque estava pendente), atualizamos a conta
+            if (paymentDate.HasValue)
+            {
+                bill.DueDate = paymentDate.Value;
+                bill.DueDay = paymentDate.Value.Day;
+            }
 
             // 1. Atualiza status da conta
             bill.Status = "Pago";
@@ -167,7 +174,7 @@ namespace definance_backend.Features.Bills.Services
                 Name        = bill.Name,
                 Amount      = bill.Amount,
                 Category    = bill.Category,
-                Date        = DateTime.UtcNow,
+                Date        = paymentDate ?? DateTime.UtcNow,
                 ExpenseType = bill.BillType,
                 Status      = "Pago",
                 BillId      = bill.Id,

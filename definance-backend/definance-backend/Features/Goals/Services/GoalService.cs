@@ -2,6 +2,7 @@ using definance_backend.Domain.Entities;
 using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Goals.DTOs;
 using definance_backend.Features.Goals.Repositories;
+using System.Transactions;
 
 namespace definance_backend.Features.Goals.Services
 {
@@ -38,6 +39,7 @@ namespace definance_backend.Features.Goals.Services
 
         public async Task<GoalDto> CreateGoalAsync(Guid userId, CreateUpdateGoalDto dto)
         {
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
             var goalId = Guid.NewGuid();
 
             // Criamos a meta primeiro para satisfazer a FK em 'bills'
@@ -102,11 +104,13 @@ namespace definance_backend.Features.Goals.Services
                 await _goalRepository.UpdateAsync(goal);
             }
 
+            transaction.Complete();
             return MapToDto(goal);
         }
 
         public async Task<GoalDto> UpdateGoalAsync(Guid userId, Guid goalId, CreateUpdateGoalDto dto)
         {
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
             var goal = await _goalRepository.GetByIdAsync(goalId);
 
             if (goal == null)
@@ -199,11 +203,13 @@ namespace definance_backend.Features.Goals.Services
             }
 
             await _goalRepository.UpdateAsync(goal);
+            transaction.Complete();
             return MapToDto(goal);
         }
 
         public async Task<GoalDto> DepositAsync(Guid userId, Guid goalId, DepositGoalDto dto)
         {
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
             var goal = await _goalRepository.GetByIdAsync(goalId);
 
             if (goal == null)
@@ -232,6 +238,7 @@ namespace definance_backend.Features.Goals.Services
 
             goal.UpdatedAt = DateTime.UtcNow;
             await _goalRepository.UpdateAsync(goal);
+            transaction.Complete();
             return MapToDto(goal);
         }
 

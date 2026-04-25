@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-provider'
+import { SettingsProvider } from '@/lib/settings-context'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
@@ -49,11 +50,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <Suspense fallback={null}>
-              {children}
-            </Suspense>
-            <Toaster />
-            <SonnerToaster position="top-right" />
+            <SettingsProvider>
+              <Suspense fallback={null}>
+                {children}
+              </Suspense>
+              <Toaster />
+              <SonnerToaster position="top-right" />
+            </SettingsProvider>
           </AuthProvider>
         </ThemeProvider>
         <Analytics />

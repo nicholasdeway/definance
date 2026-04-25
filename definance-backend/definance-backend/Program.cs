@@ -29,6 +29,8 @@ using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Bills.Services;
 using definance_backend.Features.Goals.Repositories;
 using definance_backend.Features.Goals.Services;
+using definance_backend.Features.Analysis.Repositories;
+using definance_backend.Features.Analysis.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +117,10 @@ builder.Services.AddScoped<IBillService, BillService>();
 // GOALS (Metas)
 builder.Services.AddScoped<IGoalRepository, GoalRepository>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+
+// ANALYSIS
+builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
+builder.Services.AddScoped<IAnalysisService, AnalysisService>();
 
 // GLOBAL EXCEPTION HANDLER
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

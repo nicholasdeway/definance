@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowUpRight, Send, Trash2 } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency } from "@/lib/currency"
+import { useSettings } from "@/lib/settings-context"
+import { cn } from "@/lib/utils"
 
 interface Gasto {
   id: number
@@ -27,6 +29,8 @@ const gastosIniciais: Gasto[] = [
 ]
 
 export default function GastosDiariosPage() {
+  const { discreetMode } = useSettings()
+
   const [gastos, setGastos] = useState<Gasto[]>(gastosIniciais)
   const [inputValue, setInputValue] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Gasto | null }>({
@@ -118,10 +122,15 @@ export default function GastosDiariosPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Gastos de Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Gastos de Hoje
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">
+            <div className={cn(
+              "text-2xl font-bold text-card-foreground transition-opacity duration-300",
+              discreetMode && "discreet-mode-blur"
+            )}>
               {formatCurrency(totalHoje)}
             </div>
             <p className="text-xs text-muted-foreground">{gastosHoje.length} lançamentos</p>
@@ -129,10 +138,15 @@ export default function GastosDiariosPage() {
         </Card>
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Gastos de Ontem</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Gastos de Ontem
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">
+            <div className={cn(
+              "text-2xl font-bold text-card-foreground transition-opacity duration-300",
+              discreetMode && "discreet-mode-blur"
+            )}>
               {formatCurrency(totalOntem)}
             </div>
             <p className="text-xs text-muted-foreground">{gastosOntem.length} lançamentos</p>
@@ -162,7 +176,10 @@ export default function GastosDiariosPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-card-foreground">
+                    <span className={cn(
+                      "font-semibold text-card-foreground transition-opacity duration-300",
+                      discreetMode && "discreet-mode-blur"
+                    )}>
                       {formatCurrency(g.valor)}
                     </span>
                     <Button
@@ -203,7 +220,10 @@ export default function GastosDiariosPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-card-foreground">
+                    <span className={cn(
+                      "font-semibold text-card-foreground transition-opacity duration-300",
+                      discreetMode && "discreet-mode-blur"
+                    )}>
                       {formatCurrency(g.valor)}
                     </span>
                     <Button

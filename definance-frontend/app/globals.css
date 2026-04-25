@@ -146,6 +146,16 @@
   }
 }
 
+.discreet-mode-blur {
+  filter: blur(12px) !important;
+  opacity: 0.5 !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: filter, opacity;
+}
+
 @keyframes shimmer-text {
   0% {
     background-position: -200% center;

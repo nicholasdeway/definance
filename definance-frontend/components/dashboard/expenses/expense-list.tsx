@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ArrowUpRight, Search, MoreHorizontal, Link2 } from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
+import { useSettings } from "@/lib/settings-context"
+import { cn } from "@/lib/utils"
 
 export interface Despesa {
   id: string
@@ -26,6 +28,7 @@ interface ExpenseListProps {
   despesas: Despesa[]
   search: string
   onSearchChange: (value: string) => void
+  statusFilter: "all" | "paid" | "pending"
   onEdit: (despesa: Despesa) => void
   onMarkAsPaid: (despesa: Despesa) => void
   onDelete: (despesa: Despesa) => void
@@ -36,15 +39,22 @@ export function ExpenseList({
   despesas,
   search,
   onSearchChange,
+  statusFilter,
   onEdit,
   onMarkAsPaid,
   onDelete,
   isLoading,
 }: ExpenseListProps) {
+  const { discreetMode } = useSettings()
   const filtered = despesas.filter(
-    (d) =>
-      d.nome.toLowerCase().includes(search.toLowerCase()) ||
-      d.categoria.toLowerCase().includes(search.toLowerCase())
+    (d) => {
+      const matchesSearch = d.nome.toLowerCase().includes(search.toLowerCase()) ||
+                           d.categoria.toLowerCase().includes(search.toLowerCase())
+      
+      if (statusFilter === "paid") return matchesSearch && d.status === "Pago"
+      if (statusFilter === "pending") return matchesSearch && d.status === "Pendente"
+      return matchesSearch
+    }
   )
 
   return (
@@ -91,7 +101,10 @@ export function ExpenseList({
                   </div>
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="font-medium text-card-foreground text-sm sm:text-base truncate">
+                      <p className={cn(
+                        "font-medium text-card-foreground text-sm sm:text-base truncate transition-opacity duration-300",
+                        discreetMode && "discreet-mode-blur"
+                      )}>
                         {d.nome}
                       </p>
                       {/* Badge especial quando a despesa veio de Minhas Contas */}
@@ -130,7 +143,10 @@ export function ExpenseList({
                     </Badge>
                   </div>
 
-                  <span className="font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap">
+                  <span className={cn(
+                    "font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap transition-opacity duration-300",
+                    discreetMode && "discreet-mode-blur"
+                  )}>
                     {formatCurrency(d.valor)}
                   </span>
 

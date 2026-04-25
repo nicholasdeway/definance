@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { useBillsNotifications } from "@/hooks/use-bills-notifications"
 
 interface BillsAlertProps {
-  onAction?: () => void
+  onAction?: (type: "overdue" | "setup") => void
   className?: string
   showOnly?: "overdue" | "setup"
 }
@@ -46,7 +46,7 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
               <Button 
                 variant="destructive"
                 size="sm"
-                onClick={onAction}
+                onClick={() => onAction?.("overdue")}
                 className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform"
                 asChild={!onAction}
               >
@@ -55,7 +55,7 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                     Ver <ArrowRight className="h-3 w-3" />
                   </Link>
                 ) : (
-                  <span className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="flex items-center gap-1 whitespace-nowrap cursor-pointer">
                     Ver <ArrowRight className="h-3 w-3" />
                   </span>
                 )}
@@ -84,8 +84,8 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
               <Button 
                 variant="default"
                 size="sm"
-                onClick={onAction}
-                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary text-primary-foreground hover:bg-primary/80"
+                onClick={() => onAction?.("setup")}
+                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
                 asChild={!onAction}
               >
                 {!onAction ? (
@@ -93,7 +93,7 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                   Resolver <ArrowRight className="h-3 w-3" />
                 </Link>
                 ) : (
-                  <span className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="flex items-center gap-1 whitespace-nowrap cursor-pointer">
                     Resolver <ArrowRight className="h-3 w-3" />
                   </span>
                 )}

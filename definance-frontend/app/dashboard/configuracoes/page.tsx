@@ -9,26 +9,25 @@ import { Separator } from "@/components/ui/separator"
 import { 
   Palette, 
   Bell, 
-  Shield, 
   Database, 
   Monitor, 
   Moon, 
   Sun, 
   Download,
   Trash2,
-  Lock,
-  Smartphone,
-  Clock
 } from "lucide-react"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useSettings } from "@/lib/settings-context"
 
 export default function ConfiguracoesPage() {
   const [isActionLoading, setIsActionLoading] = useState(false)
   
+  // Estados Globais
+  const { discreetMode, setDiscreetMode } = useSettings()
+  
   // Estados para Mockup
   const [theme, setTheme] = useState("dark")
-  const [discreetMode, setDiscreetMode] = useState(false)
   
   const [notifs, setNotifs] = useState({
     expenses: true,

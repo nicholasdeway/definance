@@ -6,7 +6,7 @@ import { Plus, Download } from "lucide-react"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import { ExpensesSummaryCards } from "@/components/dashboard/expenses/expenses-summary-cards"
+import { ExpensesSummaryCards, type ExpenseFilterType } from "@/components/dashboard/expenses/expenses-summary-cards"
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expense-list"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
@@ -45,6 +45,7 @@ export default function DespesasPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [form, setForm] = useState<ExpenseFormState>(emptyForm)
+  const [filterType, setFilterType] = useState<ExpenseFilterType>("all")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Despesa | null }>({
     open: false,
     item: null,
@@ -249,6 +250,9 @@ export default function DespesasPage() {
         total={totalDespesas}
         pagas={despesasPagas}
         pendentes={despesasPendentes}
+        selectedFilter={filterType}
+        onFilterChange={setFilterType}
+        isLoading={isLoading}
       />
 
       {/* Lista de Despesas */}
@@ -256,6 +260,7 @@ export default function DespesasPage() {
         despesas={despesas}
         search={search}
         onSearchChange={setSearch}
+        statusFilter={filterType}
         onEdit={openEditDialog}
         onMarkAsPaid={handleMarkAsPaid}
         onDelete={(d) => setDeleteDialog({ open: true, item: d })}
