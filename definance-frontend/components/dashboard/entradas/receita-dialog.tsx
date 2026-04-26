@@ -32,19 +32,27 @@ export const ReceitaDialog = ({
     tipo: "Outros",
     outroTipo: "",
     data: new Date().toISOString().split('T')[0],
-    recorrente: true
+    recorrente: false
   })
+
+  const categoriasPadrao = ["CLT", "PJ", "Autônomo", "Freelancer", "Mesada / Auxílio", "Investimentos", "Aluguel", "Fixa", "Variável", "Extra", "Investimento"]
 
   useEffect(() => {
     if (initialData) {
+      const isCustomType = initialData.tipo && !categoriasPadrao.includes(initialData.tipo) && initialData.tipo !== "Outros"
+      
       setFormData({
         id: initialData.id || "",
         nome: initialData.nome || "",
         valor: initialData.valor?.toString() || "",
-        tipo: initialData.tipo || "Outros",
-        outroTipo: initialData.tipo === "Outros" ? "" : "",
-        data: initialData.data || new Date().toISOString().split('T')[0],
-        recorrente: initialData.recorrente ?? true
+        tipo: isCustomType ? "Outros" : (initialData.tipo || "Outros"),
+        outroTipo: isCustomType ? initialData.tipo : "",
+        data: initialData.data ? (() => {
+          const parts = initialData.data.split("/")
+          if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`
+          return initialData.data
+        })() : new Date().toISOString().split('T')[0],
+        recorrente: initialData.recorrente ?? false
       })
     } else {
       setFormData({
@@ -54,14 +62,19 @@ export const ReceitaDialog = ({
         tipo: "Outros",
         outroTipo: "",
         data: new Date().toISOString().split('T')[0],
-        recorrente: true
+        recorrente: false
       })
     }
   }, [initialData, open])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    // Envia o outroTipo se for "Outros", caso contrário envia o tipo selecionado
+    const dataToSave = {
+      ...formData,
+      tipo: formData.tipo === "Outros" ? (formData.outroTipo || "Outros") : formData.tipo
+    }
+    onSave(dataToSave)
   }
 
   return (
@@ -109,8 +122,15 @@ export const ReceitaDialog = ({
                 <SelectContent>
                   <SelectItem value="CLT">CLT</SelectItem>
                   <SelectItem value="PJ">PJ</SelectItem>
+                  <SelectItem value="Autônomo">Autônomo</SelectItem>
+                  <SelectItem value="Freelancer">Freelancer</SelectItem>
+                  <SelectItem value="Mesada / Auxílio">Mesada / Auxílio</SelectItem>
                   <SelectItem value="Investimentos">Investimentos</SelectItem>
                   <SelectItem value="Aluguel">Aluguel</SelectItem>
+                  <SelectItem value="Fixa">Fixa</SelectItem>
+                  <SelectItem value="Variável">Variável</SelectItem>
+                  <SelectItem value="Extra">Extra</SelectItem>
+                  <SelectItem value="Investimento">Investimento</SelectItem>
                   <SelectItem value="Outros">Outros</SelectItem>
                 </SelectContent>
               </Select>

@@ -34,11 +34,6 @@ namespace definance_backend.Features.Incomes.Services
 
         public async Task<IncomeDto> CreateIncomeAsync(Guid userId, CreateUpdateIncomeDto dto)
         {
-            // Validação de tipo permitido
-            var allowedTypes = new[] { "Fixa", "Variável", "Extra", "Investimento", "Investimentos", "CLT", "PJ", "Autônomo", "Freelancer", "Mesada / Auxílio", "Aluguel", "Outros" };
-            if (!allowedTypes.Contains(dto.Type))
-                throw new InvalidOperationException($"Tipo de renda inválido. Tipos permitidos: {string.Join(", ", allowedTypes)}");
-
             var income = new Income
             {
                 Id = Guid.NewGuid(),
@@ -63,11 +58,6 @@ namespace definance_backend.Features.Incomes.Services
 
             if (income.UserId != userId)
                 throw new UnauthorizedAccessException("Esta renda não pertence a este usuário.");
-
-            // Validação de tipo permitido
-            var allowedTypes = new[] { "Fixa", "Variável", "Extra", "Investimento", "Investimentos", "CLT", "PJ", "Autônomo", "Freelancer", "Mesada / Auxílio", "Aluguel", "Outros" };
-            if (!allowedTypes.Contains(dto.Type))
-                throw new InvalidOperationException($"Tipo de renda inválido. Tipos permitidos: {string.Join(", ", allowedTypes)}");
 
             income.Name = dto.Name;
             income.Amount = dto.Amount;

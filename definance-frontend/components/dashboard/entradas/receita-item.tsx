@@ -7,9 +7,15 @@ import {
   Trash2, 
   Edit, 
   Briefcase,
-  Zap,
   Star,
-  Plus
+  Plus,
+  Building2,
+  User,
+  Laptop,
+  GraduationCap,
+  TrendingUp,
+  Home,
+  Landmark
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -42,19 +48,31 @@ export const ReceitaItem = ({
   onEdit,
   onDelete
 }: ReceitaItemProps) => {
-  const getIcon = (tipo: string) => {
+  const getIcon = (tipo: string, isSynced?: boolean) => {
     const t = tipo.toLowerCase()
     if (t.includes('clt')) return <Briefcase className="h-5 w-5 text-blue-500" />
-    if (t.includes('pj')) return <Zap className="h-5 w-5 text-yellow-500" />
+    if (t.includes('pj')) return <Building2 className="h-5 w-5 text-yellow-500" />
+    if (t.includes("autonomo") || t.includes("autônomo")) return <User className="h-5 w-5 text-orange-500" />
+    if (t.includes("freelancer") || t.includes("freelance")) return <Laptop className="h-5 w-5 text-indigo-500" />
+    if (t.includes("mesada")) return <GraduationCap className="h-5 w-5 text-pink-500" />
+    if (t.includes("investimento")) return <TrendingUp className="h-5 w-5 text-emerald-500" />
+    if (t.includes("aluguel")) return <Home className="h-5 w-5 text-amber-600" />
     if (t.includes('extra') || t.includes('bônus')) return <Star className="h-5 w-5 text-purple-500" />
+    
+    if (isSynced) return <Landmark className="h-5 w-5 text-primary" />
     return <Plus className="h-5 w-5 text-emerald-500" />
   }
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors bg-card/50">
+    <div className={cn(
+      "flex items-center justify-between p-4 rounded-xl border transition-all bg-card/50",
+      receita.isSynced 
+        ? "border-primary/30 border-dashed border-2 shadow-[0_0_15px_rgba(34,197,94,0.02)]" 
+        : "border-border/50 hover:bg-muted/30"
+    )}>
       <div className="flex items-center gap-4">
         <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm">
-          {getIcon(receita.tipo)}
+          {getIcon(receita.tipo, receita.isSynced)}
         </div>
         <div>
           <div className="flex items-center gap-2">

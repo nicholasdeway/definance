@@ -16,7 +16,7 @@ import { useSettings } from "@/lib/settings-context"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
-import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
+import { BillFormDialog, type BillFormState, categoriasContas } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { useSearchParams } from "next/navigation"
@@ -227,12 +227,14 @@ export default function ContasPage() {
 
   const openEditDialog = (conta: ContaItem) => {
     const inputDate = conta.rawDueDate ? conta.rawDueDate.split('T')[0] : ""
+    const isCustomCategory = conta.categoria && !categoriasContas.includes(conta.categoria) && conta.categoria !== "Outros"
 
     setForm({
       id: conta.id,
       nome: conta.nome,
       valor: formatCurrency(conta.valor),
-      categoria: conta.categoria,
+      categoria: isCustomCategory ? "Outros" : (conta.categoria || "Outros"),
+      outroCategoria: isCustomCategory ? conta.categoria : "",
       tipo: conta.tipo,
       dueDate: inputDate,
       isRecorrente: conta.isRecorrente,
@@ -263,7 +265,7 @@ export default function ContasPage() {
       const payload = {
         name: form.nome,
         amount,
-        category: form.categoria || "Outros",
+        category: form.categoria === "Outros" ? (form.outroCategoria || "Outros") : (form.categoria || "Outros"),
         billType: form.tipo,
         dueDate,
         dueDay,
