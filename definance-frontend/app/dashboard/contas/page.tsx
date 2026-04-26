@@ -1,67 +1,29 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from "next/link"
 import { 
-  CreditCard, 
   AlertTriangle, 
   CheckCircle2, 
   Clock, 
-  MoreHorizontal, 
   Plus, 
-  Pin, 
-  Shuffle,
-  Home,
-  Zap,
-  Droplets,
-  Globe,
-  Smartphone,
-  Clapperboard,
-  Dumbbell,
-  Bus,
-  Utensils,
-  HeartPulse,
-  BookOpen,
-  CarFront,
-  ShieldCheck,
-  TrendingUp,
-  Wallet2
+  Download,
+  MoreHorizontal
 } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
-import { cn, capitalize } from "@/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
-import { Download } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
-
-interface ContaItem {
-  id: string
-  nome: string
-  valor: number
-  categoria: string
-  vencimento: string
-  rawDueDate: string | null
-  status: "vencer" | "paga" | "atrasada"
-  dias: number
-  tipo: "Fixa" | "Variável"
-  isRecorrente: boolean
-  isSynced?: boolean
-}
+import { BillsStats } from "@/components/dashboard/bills/bills-stats"
+import { BillItem, type ContaItem } from "@/components/dashboard/bills/bill-item"
+import { BillTypeFilter } from "@/components/dashboard/bills/bill-type-filter"
 
 type TypeFilter = "Todas" | "Fixa" | "Variável"
 
@@ -374,32 +336,6 @@ export default function ContasPage() {
     }
   }
 
-  const getBillIcon = (categoria: string, nome: string, status: string) => {
-    const c = categoria.toLowerCase()
-    const n = nome.toLowerCase()
-    const iconColor = status === "paga" ? "text-primary" : status === "atrasada" ? "text-destructive" : "text-yellow-500"
-    const iconClass = `h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`
-
-    // Prioridade por nome
-    if (n.includes("ipva")) return <CarFront className={iconClass} />
-    if (n.includes("seguro")) return <ShieldCheck className={iconClass} />
-    if (n.includes("parcela") || n.includes("empréstimo") || n.includes("empréstimo")) return <CreditCard className={iconClass} />
-    
-    // Categorias
-    if (c.includes("aluguel") || c.includes("moradia")) return <Home className={iconClass} />
-    if (c.includes("luz") || c.includes("energia")) return <Zap className={iconClass} />
-    if (c.includes("agua") || c.includes("água")) return <Droplets className={iconClass} />
-    if (c.includes("internet")) return <Globe className={iconClass} />
-    if (c.includes("celular") || c.includes("telefone")) return <Smartphone className={iconClass} />
-    if (c.includes("streaming") || c.includes("netflix") || c.includes("spotify")) return <Clapperboard className={iconClass} />
-    if (c.includes("academia")) return <Dumbbell className={iconClass} />
-    if (c.includes("transporte")) return <Bus className={iconClass} />
-    if (c.includes("alimentação") || c.includes("alimentacao")) return <Utensils className={iconClass} />
-    if (c.includes("saúde") || c.includes("saude")) return <HeartPulse className={iconClass} />
-    if (c.includes("educação") || c.includes("educacao")) return <BookOpen className={iconClass} />
-    
-    return <CreditCard className={iconClass} />
-  }
 
   const handleAlertAction = (type: "overdue" | "setup") => {
     if (type === "overdue") {
@@ -412,49 +348,6 @@ export default function ContasPage() {
       setHasTriggeredTutorial(true)
     }
   }
-
-  const getStatusIcon = (status: ContaItem["status"]) => {
-    switch (status) {
-      case "vencer":   return <Clock       className="h-3.5 w-3.5 text-yellow-500" />
-      case "paga":     return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-      case "atrasada": return <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-    }
-  }
-
-  const getStatusBadge = (status: ContaItem["status"], dias: number, hasDate: boolean) => {
-    switch (status) {
-      case "vencer":
-        if (!hasDate) {
-          return (
-            <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs whitespace-nowrap animate-pulse">
-              Data pendente
-            </Badge>
-          )
-        }
-        return (
-          <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs whitespace-nowrap">
-            {dias === 0 ? "Vence hoje" : `Vence em ${dias}d`}
-          </Badge>
-        )
-      case "paga":
-        return <Badge className="bg-primary/10 text-primary border-primary/20 text-xs whitespace-nowrap">Paga</Badge>
-      case "atrasada":
-        return <Badge variant="destructive" className="text-xs whitespace-nowrap">{Math.abs(dias)}d atrasada</Badge>
-    }
-  }
-
-  const getTipoBadge = (tipo: ContaItem["tipo"]) => (
-    <Badge
-      variant="outline"
-      className={`text-[10px] whitespace-nowrap px-1.5 py-0 ${
-        tipo === "Fixa"
-          ? "border-primary/30 text-primary bg-primary/5"
-          : "border-muted-foreground/30 text-muted-foreground"
-      }`}
-    >
-      {tipo === "Fixa" ? "📌 Fixa" : "🔀 Variável"}
-    </Badge>
-  )
 
   const renderContas = (lista: ContaItem[]) => {
     if (isLoading) {
@@ -479,98 +372,16 @@ export default function ContasPage() {
     return (
       <div className="space-y-2 sm:space-y-3">
         {lista.map((conta) => (
-          <div
+          <BillItem 
             key={conta.id}
-            id={`bill-${conta.id}`}
-            className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border/50 p-3 sm:p-4 transition-colors hover:bg-muted/50 gap-3 sm:gap-4 ${
-              showTutorial && conta.id === firstPendingBillId 
-                ? "z-[110] relative bg-background ring-4 ring-primary ring-offset-4 ring-offset-background shadow-[0_0_0_9999px_rgba(0,0,0,0.8)]" 
-                : ""
-            }`}
-          >
-            {/* Ícone + Info */}
-            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-              <div
-                className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full flex-shrink-0 ${
-                  conta.status === "paga"
-                    ? "bg-primary/10"
-                    : conta.status === "atrasada"
-                    ? "bg-destructive/10"
-                    : "bg-yellow-500/10"
-                }`}
-              >
-                {getBillIcon(conta.categoria, conta.nome, conta.status)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <p className={cn(
-                    "font-medium text-card-foreground text-sm sm:text-base break-words transition-opacity duration-300",
-                    discreetMode && "discreet-mode-blur"
-                  )}>
-                    {conta.nome}
-                  </p>
-                  {getStatusIcon(conta.status)}
-                  {getTipoBadge(conta.tipo)}
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Vencimento: {conta.vencimento}
-                  {conta.categoria && ` • ${capitalize(conta.categoria)}`}
-                </p>
-              </div>
-            </div>
-
-            {/* Badge + Valor + Ações */}
-            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0">
-              {getStatusBadge(conta.status, conta.dias, !!conta.rawDueDate)}
-              <span className={cn(
-                "font-semibold text-card-foreground text-sm sm:text-base whitespace-nowrap transition-opacity duration-300",
-                discreetMode && "discreet-mode-blur"
-              )}>
-                {formatCurrency(conta.valor)}
-              </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
-                    <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                  {conta.status !== "paga" && (
-                    <DropdownMenuItem
-                      className="cursor-pointer text-sm text-primary font-medium"
-                      onClick={() => setPayDialog({ open: true, item: conta })}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Marcar como paga
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    className="cursor-pointer text-sm"
-                    onClick={() => openEditDialog(conta)}
-                  >
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive font-medium cursor-pointer text-sm"
-                    onClick={() => setDeleteDialog({ open: true, item: conta })}
-                  >
-                    Excluir
-                  </DropdownMenuItem>
-                  {conta.isSynced && (
-                    <>
-                      <div className="h-px bg-muted my-1" />
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer text-sm">
-                          <TrendingUp className="h-4 w-4" />
-                          Ajustar no Perfil
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+            conta={conta}
+            discreetMode={discreetMode}
+            showTutorial={showTutorial}
+            isFirstPending={conta.id === firstPendingBillId}
+            onEdit={openEditDialog}
+            onDelete={(item) => setDeleteDialog({ open: true, item })}
+            onPay={(item) => setPayDialog({ open: true, item })}
+          />
         ))}
       </div>
     )
@@ -618,101 +429,24 @@ export default function ContasPage() {
 
       <BillsAlert onAction={handleAlertAction} />
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              A Vencer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-xl sm:text-2xl font-bold text-yellow-500 transition-opacity duration-300",
-              (isLoading || discreetMode) && "discreet-mode-blur"
-            )}>
-              {formatCurrency(totalAVencer)}
-            </div>
-            <p className={cn(
-              "text-xs text-muted-foreground transition-all duration-300",
-              isLoading && "blur-sm opacity-50"
-            )}>
-              {allAVencer.length} contas
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Pagas este mês
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-2xl sm:text-3xl font-bold text-primary transition-opacity duration-300",
-              (isLoading || discreetMode) && "discreet-mode-blur"
-            )}>
-              {allPagas.length}
-            </div>
-            <p className={cn(
-              "text-xs text-muted-foreground transition-all duration-300",
-              isLoading && "blur-sm opacity-50"
-            )}>
-              contas quitadas
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Atrasadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-xl sm:text-2xl font-bold text-destructive transition-opacity duration-300",
-              (isLoading || discreetMode) && "discreet-mode-blur"
-            )}>
-              {formatCurrency(totalAtrasadas)}
-            </div>
-            <p className={cn(
-              "text-xs text-muted-foreground transition-all duration-300",
-              isLoading && "blur-sm opacity-50"
-            )}>
-              {allAtrasadas.length} contas
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <BillsStats 
+        totalAVencer={totalAVencer}
+        allAVencerCount={allAVencer.length}
+        allPagasCount={allPagas.length}
+        totalAtrasadas={totalAtrasadas}
+        allAtrasadasCount={allAtrasadas.length}
+        isLoading={isLoading}
+        discreetMode={discreetMode}
+      />
 
       {/* Lista com Tabs + Filtro de Tipo */}
       <Card className="border-border/50 shadow-sm">
         <CardContent className="pt-4">
-
-          {/* Filtro Fixas / Variáveis */}
-          <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-            <span className="text-xs text-muted-foreground mr-1 font-medium">Tipo:</span>
-            {(["Todas", "Fixa", "Variável"] as TypeFilter[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setTypeFilter(f)}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                  typeFilter === f
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {f === "Fixa" && <Pin className="h-3 w-3" />}
-                {f === "Variável" && <Shuffle className="h-3 w-3" />}
-                {f}
-              </button>
-            ))}
-            {typeFilter !== "Todas" && (
-              <span className="text-xs text-muted-foreground ml-1">
-                ({filtered.length} conta{filtered.length !== 1 ? "s" : ""})
-              </span>
-            )}
-          </div>
+          <BillTypeFilter 
+            currentFilter={typeFilter}
+            onFilterChange={setTypeFilter}
+            filteredCount={filtered.length}
+          />
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4 grid w-full grid-cols-3 bg-muted/30 p-2 h-auto rounded-2xl border border-white/5 gap-2">
