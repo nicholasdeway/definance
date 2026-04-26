@@ -117,6 +117,7 @@ export const ONBOARDING_ERRORS = {
     zeroValue: (tipo: string) => `O valor da renda de ${tipo} deve ser maior que zero`,
     missingFreq: (tipo: string) => `Selecione de quanto em quanto tempo você recebe na renda de ${tipo}`,
     missingDays: (tipo: string) => `Informe os dias de recebimento para a renda de ${tipo}`,
+    missingWeeklyDay: (tipo: string) => `Selecione o dia da semana para a renda de ${tipo}`,
   },
   expenses: {
     empty: (label: string) => `Informe um valor válido para ${label}`,

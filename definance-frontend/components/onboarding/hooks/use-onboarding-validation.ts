@@ -36,26 +36,30 @@ export const useOnboardingValidation = () => {
 
       case 3:
         if (incomes.length === 0 && selectedIncomeTypes.length > 0) {
-           // Array vazio, mas ele selecionou fontes
-           selectedIncomeTypes.forEach(t => errors.push(ONBOARDING_ERRORS.income.missingValue(t)))
+          // Array vazio, mas ele selecionou fontes
+          selectedIncomeTypes.forEach(t => errors.push(ONBOARDING_ERRORS.income.missingValue(t)))
         } else {
-           for (const t of selectedIncomeTypes) {
-             const inc = incomes.find(i => i.tipo === t)
-             if (!inc) {
-                errors.push(ONBOARDING_ERRORS.income.missingValue(t))
-                continue
-             }
-             if (!inc.valor || inc.valor === 0) {
-                errors.push(ONBOARDING_ERRORS.income.zeroValue(t))
-             }
-             if (!inc.frequencia) {
-                errors.push(ONBOARDING_ERRORS.income.missingFreq(t))
-             } else if (inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) {
-                if (!inc.diasRecebimento || inc.diasRecebimento.trim().length === 0) {
-                    errors.push(ONBOARDING_ERRORS.income.missingDays(t))
-                }
-             }
-           }
+          for (const t of selectedIncomeTypes) {
+            const inc = incomes.find(i => i.tipo === t)
+            if (!inc) {
+              errors.push(ONBOARDING_ERRORS.income.missingValue(t))
+              continue
+            }
+            if (!inc.valor || inc.valor === 0) {
+              errors.push(ONBOARDING_ERRORS.income.zeroValue(t))
+            }
+            if (!inc.frequencia) {
+              errors.push(ONBOARDING_ERRORS.income.missingFreq(t))
+            } else if (inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) {
+              if (!inc.diasRecebimento || inc.diasRecebimento.trim().length === 0) {
+                errors.push(ONBOARDING_ERRORS.income.missingDays(t))
+              }
+            } else if (inc.frequencia === IncomeFrequency.SEMANAL) {
+              if (!inc.diaSemana || inc.diaSemana.trim().length === 0) {
+                errors.push(ONBOARDING_ERRORS.income.missingWeeklyDay(t))
+              }
+            }
+          }
         }
         break
 
@@ -159,7 +163,6 @@ export const useOnboardingValidation = () => {
   ])
 
   const validateStep = useCallback((step: number): boolean => {
-    // Retirado validação genérica de 999.000.000 pois agora temos renda particionada (poderia ser re-inserida futuramente no componente)
 
     const errors = getStepErrors(step)
     setStepErrors(errors)

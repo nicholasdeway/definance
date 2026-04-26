@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Star } from "lucide-react"
+import { Plus, Star, Loader2 } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { goalsApi, Goal, CreateUpdateGoalDto } from "@/lib/goals"
 import { useToast } from "@/components/ui/use-toast"
-import { Spinner } from "@/components/ui/spinner"
 
 // Novos componentes
 import { GoalCard } from "@/components/dashboard/goals/goal-card"
@@ -119,20 +118,6 @@ export default function MetasPage() {
   }
 
   // Render
-  if (loading) {
-    return (
-      <div className="w-full min-h-[70vh] flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
-        <div className="relative flex items-center justify-center">
-          <Spinner className="h-10 w-10 text-primary" />
-          <div className="absolute h-10 w-10 border-4 border-primary/20 rounded-full"></div>
-        </div>
-        <p className="text-sm font-medium text-muted-foreground animate-pulse">
-          Carregando seus objetivos...
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -154,40 +139,51 @@ export default function MetasPage() {
         </div>
       </div>
 
-      {/* Progresso Geral */}
-      <GoalsSummary 
-        totalAcumulado={totalAcumulado} 
-        totalAlvo={totalAlvo} 
-        progressoGeral={progressoGeral} 
-      />
-
-      {/* Grid de metas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {metas.map((meta) => (
-          <GoalCard 
-            key={meta.id} 
-            meta={meta} 
-            onEdit={(m) => setModalForm({ open: true, meta: m })}
-            onDelete={(m) => setDeleteDialog({ open: true, item: m })}
-            onDeposit={(m) => setModalDeposito({ open: true, meta: m })}
-          />
-        ))}
-
-        {metas.length === 0 && !loading && (
-          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-              <Star className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-lg font-medium">Nenhuma meta ainda</p>
-              <p className="text-muted-foreground max-w-xs">Comece a planejar seus sonhos criando sua primeira meta financeira.</p>
-            </div>
-            <Button variant="outline" onClick={() => setModalForm({ open: true, meta: null })}>
-              Criar minha primeira meta
-            </Button>
+      {loading ? (
+        <div className="flex h-[400px] items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Processando dados...</p>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          {/* Progresso Geral */}
+          <GoalsSummary 
+            totalAcumulado={totalAcumulado} 
+            totalAlvo={totalAlvo} 
+            progressoGeral={progressoGeral} 
+          />
+
+          {/* Grid de metas */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {metas.map((meta) => (
+              <GoalCard 
+                key={meta.id} 
+                meta={meta} 
+                onEdit={(m) => setModalForm({ open: true, meta: m })}
+                onDelete={(m) => setDeleteDialog({ open: true, item: m })}
+                onDeposit={(m) => setModalDeposito({ open: true, meta: m })}
+              />
+            ))}
+
+            {metas.length === 0 && (
+              <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                  <Star className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-lg font-medium">Nenhuma meta ainda</p>
+                  <p className="text-muted-foreground max-w-xs">Comece a planejar seus sonhos criando sua primeira meta financeira.</p>
+                </div>
+                <Button variant="outline" onClick={() => setModalForm({ open: true, meta: null })}>
+                  Criar minha primeira meta
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Modais Extraídos */}
       <GoalFormDialog 

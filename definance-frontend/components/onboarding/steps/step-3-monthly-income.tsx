@@ -8,7 +8,7 @@ import { FieldLabel } from "../components/field-label"
 import { incomeTypes, incomeFrequencies } from "../constants"
 import { IncomeDetail, IncomeFrequency } from "../types"
 import { CurrencyInput } from "@/components/ui/currency-input"
-import { parseCurrencyInput } from "@/lib/currency"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { format, parseISO, isValid } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -16,6 +16,13 @@ import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatDateBR, generateId } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const Step3MonthlyIncome = () => {
   const safeParseISO = (dateStr: string | undefined | null) => {
@@ -98,7 +105,8 @@ export const Step3MonthlyIncome = () => {
           !inc.valor || 
           inc.valor === 0 || 
           !inc.frequencia || 
-          ((inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (!inc.diasRecebimento || inc.diasRecebimento.trim() === ""))
+          ((inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "")) ||
+          (inc.frequencia === IncomeFrequency.SEMANAL && (!inc.diaSemana || inc.diaSemana.trim() === ""))
         )
 
         if (!typeInfo) return null
@@ -142,6 +150,16 @@ export const Step3MonthlyIncome = () => {
                      wasAttempted && (!inc.valor || inc.valor === 0) && "border-destructive/50"
                    )}
                  />
+
+                 {/* Resumo Mensal Estimado */}
+                 {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && inc.frequencia !== IncomeFrequency.VARIAVEL && (
+                   <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/10 w-fit animate-in fade-in slide-in-from-left-2">
+                     <span className="text-[10px] font-bold text-primary uppercase">Total Mensal:</span>
+                     <span className="text-xs font-black text-primary">
+                       {formatCurrency(inc.frequencia === IncomeFrequency.SEMANAL ? inc.valor * 4 : inc.valor * 2)}
+                     </span>
+                   </div>
+                 )}
                </div>
 
                {/* Bloco 2: Frequencia */}
@@ -173,18 +191,42 @@ export const Step3MonthlyIncome = () => {
                </div>
 
                 {/* Bloco 3: Dias (Apenas para mensais e quinzenais) */}
-                {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
+                {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
                   <div className="flex bg-primary/5 border border-primary/10 rounded-lg p-3 items-start gap-3 animate-in fade-in slide-in-from-top-2">
                      <CalendarDays className="h-5 w-5 text-primary shrink-0 flex-none" />
                      <div className="flex-1 space-y-3">
                         <FieldLabel 
-                          label={inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Que dia cai o salário?" : "Quais os dois dias de recebimento?"} 
+                          label={
+                            inc.frequencia === IncomeFrequency.FIXO_MENSAL ? "Que dia cai o salário?" : 
+                            inc.frequencia === IncomeFrequency.QUINZENAL ? "Quais os dois dias de recebimento?" :
+                            "Qual o dia do recebimento na semana?"
+                          } 
                           required 
-                          isEmpty={!inc.diasRecebimento || inc.diasRecebimento.trim() === ""} 
+                          isEmpty={
+                            inc.frequencia === IncomeFrequency.SEMANAL ? !inc.diaSemana : (!inc.diasRecebimento || inc.diasRecebimento.trim() === "")
+                          } 
                           wasAttempted={wasAttempted} 
                         />
                         
-                        {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
+                        {inc.frequencia === IncomeFrequency.SEMANAL ? (
+                           <Select
+                             value={inc.diaSemana || ""}
+                             onValueChange={(value) => updateIncome(typeInfo.value, "diaSemana", value)}
+                           >
+                             <SelectTrigger className="w-full h-9 bg-background/50 border-primary/20 text-xs">
+                               <SelectValue placeholder="Selecione o dia" />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="segunda">Segunda-feira</SelectItem>
+                               <SelectItem value="terca">Terça-feira</SelectItem>
+                               <SelectItem value="quarta">Quarta-feira</SelectItem>
+                               <SelectItem value="quinta">Quinta-feira</SelectItem>
+                               <SelectItem value="sexta">Sexta-feira</SelectItem>
+                               <SelectItem value="sabado">Sábado</SelectItem>
+                               <SelectItem value="domingo">Domingo</SelectItem>
+                             </SelectContent>
+                           </Select>
+                        ) : inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
                            <Popover>
                              <PopoverTrigger asChild>
                                <Button
