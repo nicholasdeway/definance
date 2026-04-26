@@ -106,15 +106,15 @@ export const useOnboardingState = (): OnboardingState => {
 
     // Limpa rendas orfãs (caso ele desmarque 'clt' por exemplo, o incomeDetails de 'clt' some)
     setIncomes(prev => prev.filter(inc => selectedIncomeTypes.includes(inc.tipo)))
-    
-    // 🔥 Sanitização Crítica: Se por algum erro de migração de etapa as motivações caíram nos tipos de renda, filtramos aqui.
+
+    // Sanitização Crítica: Se por algum erro de migração de etapa as motivações caíram nos tipos de renda, filtramos aqui.
     const validIncomeValues = ["clt", "pj", "autonomo", "freelancer", "mesada"]
     if (selectedIncomeTypes.some(t => !validIncomeValues.includes(t))) {
       setSelectedIncomeTypes(prev => prev.filter(t => validIncomeValues.includes(t)))
     }
   }, [selectedExpenses, billLoans, selectedIncomeTypes])
 
-  return {
+  return React.useMemo(() => ({
     currentStep,
     setCurrentStep,
     motivations,
@@ -144,5 +144,20 @@ export const useOnboardingState = (): OnboardingState => {
     lastSavedHashesRef,
     formTopRef,
     getStepData
-  }
+  }), [
+    currentStep,
+    motivations,
+    selectedIncomeTypes,
+    incomes,
+    selectedExpenses,
+    customExpenses,
+    billLoans,
+    vehicles,
+    debts,
+    isLoadingRecovery,
+    stepErrors,
+    wasAttempted,
+    syncStatus,
+    getStepData
+  ])
 }

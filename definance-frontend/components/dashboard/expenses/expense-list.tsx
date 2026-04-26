@@ -27,7 +27,10 @@ import {
   CarFront,
   ShieldCheck,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  ShoppingBag,
+  Palmtree,
+  Wallet
 } from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
@@ -41,7 +44,7 @@ export interface Despesa {
   data: string
   tipo: string
   status: string
-  billId?: string | null  // se preenchido, veio de Minhas Contas
+  billId?: string | null
 }
 
 interface ExpenseListProps {
@@ -81,26 +84,32 @@ export function ExpenseList({
     const c = categoria.toLowerCase()
     const n = nome.toLowerCase()
     
+    // Configuração base de ícones: [Ícone, Cor]
+    const iconClass = "h-4 w-4 sm:h-5 sm:w-5"
+    
     // Prioridade por nome (para itens sincronizados específicos)
-    if (n.includes("ipva")) return <CarFront className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (n.includes("seguro")) return <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (n.includes("parcela")) return <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (n.includes("ipva")) return <CarFront className={cn(iconClass, "text-blue-600")} />
+    if (n.includes("seguro")) return <ShieldCheck className={cn(iconClass, "text-emerald-600")} />
+    if (n.includes("parcela") || n.includes("empréstimo")) return <CreditCard className={cn(iconClass, "text-slate-600")} />
     
     // Categorias padrão
-    if (c.includes("aluguel")) return <Home className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("luz") || c.includes("energia")) return <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("agua") || c.includes("água")) return <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("internet")) return <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("celular") || c.includes("telefone")) return <Smartphone className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("streaming") || c.includes("netflix") || c.includes("spotify")) return <Clapperboard className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("academia")) return <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("transporte") || c.includes("combustível") || c.includes("combustivel")) return <Bus className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("alimentacao") || c.includes("alimentação") || n.includes("mercado")) return <Utensils className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("saude") || c.includes("saúde") || c.includes("farmacia")) return <HeartPulse className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("educacao") || c.includes("educação") || c.includes("curso")) return <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-    if (c.includes("veículo") || c.includes("carro")) return <CarFront className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    if (c.includes("aluguel") || c.includes("moradia")) return <Home className={cn(iconClass, "text-amber-600")} />
+    if (c.includes("luz") || c.includes("energia")) return <Zap className={cn(iconClass, "text-yellow-500")} />
+    if (c.includes("agua") || c.includes("água")) return <Droplets className={cn(iconClass, "text-blue-500")} />
+    if (c.includes("internet")) return <Globe className={cn(iconClass, "text-sky-500")} />
+    if (c.includes("celular") || c.includes("telefone")) return <Smartphone className={cn(iconClass, "text-slate-500")} />
+    if (c.includes("streaming") || c.includes("netflix") || c.includes("spotify")) return <Clapperboard className={cn(iconClass, "text-purple-500")} />
+    if (c.includes("academia")) return <Dumbbell className={cn(iconClass, "text-emerald-500")} />
+    if (c.includes("transporte") || c.includes("combustível") || c.includes("combustivel") || n.includes("uber")) return <Bus className={cn(iconClass, "text-orange-500")} />
+    if (c.includes("alimentacao") || c.includes("alimentação")) return <Utensils className={cn(iconClass, "text-rose-500")} />
+    if (n.includes("mercado") || n.includes("supermercado")) return <ShoppingBag className={cn(iconClass, "text-emerald-600")} />
+    if (c.includes("saude") || c.includes("saúde") || c.includes("farmacia") || n.includes("farmácia")) return <HeartPulse className={cn(iconClass, "text-red-500")} />
+    if (c.includes("educacao") || c.includes("educação") || c.includes("curso")) return <BookOpen className={cn(iconClass, "text-indigo-500")} />
+    if (c.includes("veículo") || c.includes("carro") || n.includes("oficina")) return <CarFront className={cn(iconClass, "text-blue-600")} />
+    if (c.includes("lazer") || c.includes("viagem")) return <Palmtree className={cn(iconClass, "text-cyan-500")} />
+    if (c.includes("serviços") || c.includes("assinatura")) return <Wallet className={cn(iconClass, "text-slate-500")} />
     
-    return <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+    return <ArrowUpRight className={cn(iconClass, "text-muted-foreground")} />
   }
 
   return (
@@ -142,7 +151,7 @@ export function ExpenseList({
               >
                 {/* Ícone + Info */}
                 <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-destructive/10 flex-shrink-0">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-muted/30 flex-shrink-0 border border-border/50 shadow-sm">
                     {getCategoryIcon(d.categoria, d.nome)}
                   </div>
                   <div className="min-w-0 space-y-0.5">
