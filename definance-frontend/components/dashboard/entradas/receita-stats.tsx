@@ -46,7 +46,12 @@ export const ReceitaStats = ({
           )}>
             {formatCurrency(total)}
           </div>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase mt-1">Soma de todas as entradas</p>
+          <p className={cn(
+            "text-[10px] text-muted-foreground font-medium uppercase mt-1 transition-all duration-300",
+            (isLoading || discreetMode) && "discreet-mode-blur"
+          )}>
+            Soma de todas as entradas
+          </p>
         </CardContent>
       </Card>
 
@@ -70,7 +75,12 @@ export const ReceitaStats = ({
           )}>
             {formatCurrency(recorrente)}
           </div>
-          <p className="text-[10px] text-emerald-600 font-bold uppercase mt-1">Salários e rendas fixas</p>
+          <p className={cn(
+            "text-[10px] text-emerald-600 font-bold uppercase mt-1 transition-all duration-300",
+            (isLoading || discreetMode) && "discreet-mode-blur"
+          )}>
+            Salários e rendas fixas
+          </p>
         </CardContent>
       </Card>
 
@@ -94,7 +104,12 @@ export const ReceitaStats = ({
           )}>
             {formatCurrency(extra)}
           </div>
-          <p className="text-[10px] text-purple-600 font-bold uppercase mt-1">Freelances e bônus</p>
+          <p className={cn(
+            "text-[10px] text-purple-600 font-bold uppercase mt-1 transition-all duration-300",
+            (isLoading || discreetMode) && "discreet-mode-blur"
+          )}>
+            Freelances e bônus
+          </p>
         </CardContent>
       </Card>
     </div>

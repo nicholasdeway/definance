@@ -1,9 +1,10 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useOnboarding } from "./use-onboarding"
 import { apiClient } from "@/lib/api-client"
 import { OnboardingProgress } from "../types"
 
 export const useOnboardingRecovery = () => {
+  const hasFetchedRef = useRef(false)
   const {
     setMotivations,
     setSelectedIncomeTypes,
@@ -19,6 +20,9 @@ export const useOnboardingRecovery = () => {
   } = useOnboarding()
 
   useEffect(() => {
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
     const getVal = (obj: any, key: string) => {
       if (!obj) return undefined
       return obj[key] ?? obj[key.charAt(0).toUpperCase() + key.slice(1)]

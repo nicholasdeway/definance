@@ -46,8 +46,9 @@ export interface BillFormState {
   nome: string
   valor: string
   categoria: string
-  tipo: string        // Fixa | Variável
-  dueDate: string     // date input YYYY-MM-DD
+  outroCategoria?: string
+  tipo: string
+  dueDate: string
   isRecorrente: boolean
   descricao: string
   observacoes: string
@@ -175,6 +176,18 @@ export function BillFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {form.categoria === "Outros" && (
+                <div className="mt-2 grid gap-1.5">
+                  <Label htmlFor="bill-outro-categoria" className="text-[10px] uppercase font-bold text-muted-foreground">Especifique a categoria</Label>
+                  <Input
+                    id="bill-outro-categoria"
+                    placeholder="Ex: Presente, Venda..."
+                    value={form.outroCategoria || ""}
+                    onChange={(e) => onFormChange({ ...form, outroCategoria: e.target.value })}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
               {!form.categoria && (
                 <p className="text-[10px] text-orange-500 font-medium animate-pulse mt-1">
                   💡 Dica: Vincule uma categoria para organizar melhor suas saídas!
