@@ -321,22 +321,97 @@ namespace definance_backend.Features.Onboarding.Services
                 if (inc.Valor <= 0) continue;
 
                 var dates = (inc.DiasRecebimento ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
-                
-                if (inc.Frequencia.ToLower() == "quinzenal" && dates.Length > 0)
+                var freq = inc.Frequencia.ToLower();
+
+                if (freq == "semanal")
                 {
-                    decimal halfAmount = inc.Valor / (dates.Length > 1 ? 2 : 1);
-                    foreach (var dateStr in dates)
+                    // Projeta 4 recebimentos semanais
+                    DateTime now = DateTime.UtcNow;
+                    DateTime startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                    
+                    // Usar o dia da semana selecionado se existir
+                    DayOfWeek? selectedDayOfWeek = null;
+                    if (!string.IsNullOrEmpty(inc.DiaSemana))
                     {
-                        if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                        selectedDayOfWeek = inc.DiaSemana.ToLower() switch
+                        {
+                            "segunda" => DayOfWeek.Monday,
+                            "terca" => DayOfWeek.Tuesday,
+                            "quarta" => DayOfWeek.Wednesday,
+                            "quinta" => DayOfWeek.Thursday,
+                            "sexta" => DayOfWeek.Friday,
+                            "sabado" => DayOfWeek.Saturday,
+                            "domingo" => DayOfWeek.Sunday,
+                            _ => null
+                        };
+                    }
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        DateTime baseDate = startDate.AddDays(i * 7);
+                        DateTime paymentDate = baseDate;
+
+                        // Ajustar para o dia da semana específico se selecionado
+                        if (selectedDayOfWeek.HasValue)
+                        {
+                            int daysToAdd = ((int)selectedDayOfWeek.Value - (int)baseDate.DayOfWeek + 7) % 7;
+                            paymentDate = baseDate.AddDays(daysToAdd);
+                        }
+
+                        newIncomes.Add(new Income
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            Name = $"{inc.Tipo} (Semana {i + 1})",
+                            Amount = inc.Valor,
+                            Type = inc.Tipo,
+                            Date = paymentDate,
+                            IsRecurring = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+                else if (freq == "quinzenal")
+                {
+                    // Agora consideramos o valor digitado como VALOR POR RECEBIMENTO (2x ao mês)
+                    if (dates.Length > 0)
+                    {
+                        int count = 1;
+                        foreach (var dateStr in dates)
+                        {
+                            if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                            {
+                                newIncomes.Add(new Income
+                                {
+                                    Id = Guid.NewGuid(),
+                                    UserId = userId,
+                                    Name = $"{inc.Tipo} (Quinzena {count})",
+                                    Amount = inc.Valor,
+                                    Type = inc.Tipo,
+                                    Date = dt.ToUniversalTime(),
+                                    IsRecurring = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                });
+                                count++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fallback se não houver datas: usar o dia 1 e dia 15 do mês atual
+                        DateTime now = DateTime.UtcNow;
+                        for (int i = 0; i < 2; i++)
                         {
                             newIncomes.Add(new Income
                             {
                                 Id = Guid.NewGuid(),
                                 UserId = userId,
-                                Name = inc.Tipo,
-                                Amount = halfAmount,
+                                Name = $"{inc.Tipo} (Quinzena {i + 1})",
+                                Amount = inc.Valor,
                                 Type = inc.Tipo,
-                                Date = dt.ToUniversalTime(),
+                                Date = new DateTime(now.Year, now.Month, i == 0 ? 1 : 15, 0, 0, 0, DateTimeKind.Utc),
                                 IsRecurring = true,
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
@@ -346,6 +421,7 @@ namespace definance_backend.Features.Onboarding.Services
                 }
                 else
                 {
+                    // Fixo Mensal ou Variável
                     DateTime? incomeDate = null;
                     if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
                     {

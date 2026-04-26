@@ -1,8 +1,7 @@
 "use client"
 
 import React from "react"
-import { AlertCircle, CalendarDays, Coins, Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { AlertCircle, CalendarDays, CalendarIcon, Coins, Loader2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,13 +14,19 @@ import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { useToast } from "@/components/ui/use-toast"
 import { apiClient } from "@/lib/api-client"
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { format, parseISO, isValid } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
 import { formatDateBR, generateId } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateChange?: (saving: boolean) => void }) => {
   const { 
@@ -29,6 +34,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
     incomes, 
     setIncomes,
     wasAttempted,
+    setWasAttempted,
     lastSavedHashesRef
   } = useOnboarding()
   const { persistStep } = useAutoSave()
@@ -58,6 +64,29 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
 
   const handleSave = async () => {
     if (isSaving) return;
+
+    // Validação antes de salvar
+    const hasErrors = incomes.some(inc => {
+      if (!selectedIncomeTypes.includes(inc.tipo)) return false;
+      const isMissingValue = !inc.valor || inc.valor === 0;
+      const isMissingFreq = !inc.frequencia;
+      const isMissingDays = (inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && 
+                            (!inc.diasRecebimento || inc.diasRecebimento.trim() === "");
+      const isMissingWeeklyDay = inc.frequencia === IncomeFrequency.SEMANAL && (!inc.diaSemana || inc.diaSemana.trim() === "");
+      
+      return isMissingValue || isMissingFreq || isMissingDays || isMissingWeeklyDay;
+    });
+
+    if (hasErrors) {
+      setWasAttempted(true);
+      toast({ 
+        title: "Campos pendentes", 
+        description: "Por favor, preencha todos os campos obrigatórios das suas rendas.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setIsSaving(true);
     onSavingStateChange?.(true);
     try {
@@ -67,11 +96,12 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
       const incomesWithHistory = incomes.map(income => {
         const prev = previousIncomes.find((p: any) => p.tipo === income.tipo)
         
-        // Se algo fundamental mudou (valor, frequencia, diasRecebimento)
+        // Se algo fundamental mudou (valor, frequencia, diasRecebimento, diaSemana)
         const hasChanged = prev && (
           prev.valor !== income.valor || 
           prev.frequencia !== income.frequencia || 
-          prev.diasRecebimento !== income.diasRecebimento
+          prev.diasRecebimento !== income.diasRecebimento ||
+          prev.diaSemana !== income.diaSemana
         )
 
         if (hasChanged) {
@@ -167,7 +197,8 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
             !inc.valor || 
             inc.valor === 0 || 
             !inc.frequencia || 
-            ((inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (!inc.diasRecebimento || inc.diasRecebimento.trim() === ""))
+            ((inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "")) ||
+            (inc.frequencia === IncomeFrequency.SEMANAL && (!inc.diaSemana || inc.diaSemana.trim() === ""))
           )
 
           if (!typeInfo) return null
@@ -200,8 +231,21 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                      placeholder="R$ 0,00"
                      value={inc.valor ? Math.round(Number(inc.valor) * 100).toString() : ""}
                      onChange={(value) => updateIncomeValue(typeInfo.value, value)}
-                     className="h-11 text-base font-bold bg-muted/5 focus:bg-background transition-colors"
+                     className={cn(
+                        "h-11 text-base font-bold bg-muted/5 focus:bg-background transition-colors",
+                        wasAttempted && (!inc.valor || inc.valor === 0) && "border-destructive/50"
+                     )}
                    />
+
+                   {/* Resumo Mensal Estimado */}
+                   {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && inc.frequencia !== IncomeFrequency.VARIAVEL && (
+                     <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/10 w-fit animate-in fade-in slide-in-from-left-2">
+                       <span className="text-[10px] font-bold text-primary uppercase">Total Mensal:</span>
+                       <span className="text-xs font-black text-primary">
+                         {formatCurrency(inc.frequencia === IncomeFrequency.SEMANAL ? inc.valor * 4 : inc.valor * 2)}
+                       </span>
+                     </div>
+                   )}
                  </div>
 
                  {/* Frequencia */}
@@ -230,7 +274,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                  </div>
 
                  {/* Dias de Recebimento (Definance Helper) */}
-                  {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) && (
+                  {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-400">
                        <div className="flex items-center gap-2">
                          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-none">
@@ -239,7 +283,30 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                          <Label className="text-[10px] font-black text-primary uppercase tracking-widest">Ajudante de Projeção:</Label>
                        </div>
 
-                       {inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
+                       {inc.frequencia === IncomeFrequency.SEMANAL ? (
+                          <div className="space-y-1.5">
+                            <Label className="text-[9px] uppercase font-bold text-muted-foreground/70">
+                              Qual dia da semana?
+                            </Label>
+                            <Select
+                              value={inc.diaSemana || ""}
+                              onValueChange={(value) => updateIncome(typeInfo.value, "diaSemana", value)}
+                            >
+                              <SelectTrigger className="w-full h-9 bg-background/50 border-primary/20 text-xs">
+                                <SelectValue placeholder="Selecione o dia" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="segunda">Segunda-feira</SelectItem>
+                                <SelectItem value="terca">Terça-feira</SelectItem>
+                                <SelectItem value="quarta">Quarta-feira</SelectItem>
+                                <SelectItem value="quinta">Quinta-feira</SelectItem>
+                                <SelectItem value="sexta">Sexta-feira</SelectItem>
+                                <SelectItem value="sabado">Sábado</SelectItem>
+                                <SelectItem value="domingo">Domingo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
                          <div className="space-y-1.5">
                             <Label className="text-[9px] uppercase font-bold text-muted-foreground/70">Data do Próximo Recebimento</Label>
                             <Popover>
