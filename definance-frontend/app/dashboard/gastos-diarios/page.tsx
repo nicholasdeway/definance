@@ -1,119 +1,275 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { ArrowUpRight, Send, Trash2, Download, CalendarDays } from "lucide-react"
+import { 
+  Send, 
+  Download, 
+  CalendarDays,
+  CalendarFold,
+  ListChecks
+} from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
+import { useCategories } from "@/lib/category-context"
 import { cn } from "@/lib/utils"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
+import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
+import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
 
+// Standardized Components
+import { GastoStats } from "@/components/dashboard/gastos-diarios/gasto-stats"
+import { GastoList } from "@/components/dashboard/gastos-diarios/gasto-list"
+import { GastoDialog } from "@/components/dashboard/gastos-diarios/gasto-dialog"
+
+// Standardized Utils
+import { formatGastoDate } from "@/lib/gastos-utils"
+
+// Interfaces
 interface Gasto {
-  id: number
+  id: string
   descricao: string
   valor: number
   data: string
+  dataReal: string
   hora: string
+  categoria?: string
 }
 
-const gastosIniciais: Gasto[] = [
-  { id: 1, descricao: "Café da manhã", valor: 15.00, data: "Hoje", hora: "08:30" },
-  { id: 2, descricao: "Uber para trabalho", valor: 22.50, data: "Hoje", hora: "09:15" },
-  { id: 3, descricao: "Almoço restaurante", valor: 45.00, data: "Hoje", hora: "12:30" },
-  { id: 4, descricao: "Gasolina", valor: 200.00, data: "Ontem", hora: "18:00" },
-  { id: 5, descricao: "Supermercado", valor: 85.90, data: "Ontem", hora: "19:30" },
-  { id: 6, descricao: "Farmácia", valor: 32.00, data: "Ontem", hora: "20:00" },
-]
+interface ExpenseApiResponse {
+  id: string
+  name: string
+  amount: number
+  date: string
+  category: string
+  status: string
+}
+
+interface QuickExpenseApiResponse {
+  id: string
+  name: string
+  amount: number
+  category: string
+  date: string
+  status: string
+}
 
 export default function GastosDiariosPage() {
   const { discreetMode } = useSettings()
+  const { categories: dynamicCategories } = useCategories()
 
-  const [gastos, setGastos] = useState<Gasto[]>(gastosIniciais)
+  const todasCategoriasParaFiltro = useMemo(() => {
+    return Array.from(new Set(
+      dynamicCategories
+        .filter(c => c.type === "Saída" || c.type === "Ambos")
+        .map(c => c.name.trim())
+    )).sort()
+  }, [dynamicCategories])
+
+  const [gastos, setGastos] = useState<Gasto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [inputValue, setInputValue] = useState("")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Gasto | null }>({
     open: false,
     item: null,
   })
+  const [editDialog, setEditDialog] = useState<{ open: boolean; item: Gasto | null }>({
+    open: false,
+    item: null,
+  })
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
-  const parseInput = (input: string) => {
-    // Aceita formatos: "Café 15,50" ou "Café 15.50" ou "Café 1550" (centavos)
-    const regex = /(.+?)\s+(\d+(?:[.,]\d{1,2})?)\s*(hoje|ontem)?/i
-    const match = input.match(regex)
-    if (match) {
-      const descricao = match[1].trim()
-      let valorStr = match[2].replace(",", ".")
-      // Se não tem ponto, assume que é centavos apenas se tiver mais de 2 dígitos
-      let valor = parseFloat(valorStr)
-      if (!valorStr.includes(".") && valorStr.length > 2) {
-        valor = valor / 100
+  const [search, setSearch] = useState("")
+  const [sortBy, setSortBy] = useState<SortOption>("data-recente")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [period, setPeriod] = useState<PeriodFilterState>({
+    type: "monthly",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  })
+
+  const [dayFilter, setDayFilter] = useState<"all" | "hoje" | "ontem">("all")
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialLoad(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const listRef = useRef<HTMLDivElement>(null)
+
+  const fetchGastos = async () => {
+    try {
+      setIsLoading(true)
+      const params = new URLSearchParams({
+        month: period.month.toString(),
+        year: period.year.toString()
+      })
+      const data = await apiClient<ExpenseApiResponse[]>(`/api/Expenses?${params}`)
+      const mappedData: Gasto[] = data.map(item => ({
+        id: item.id,
+        descricao: item.name,
+        valor: item.amount,
+        categoria: item.category,
+        data: formatGastoDate(item.date),
+        dataReal: item.date, // Preserva a data ISO
+        hora: new Date(item.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+      }))
+      setGastos(mappedData)
+    } catch (error) {
+      toast.error("Não foi possível carregar os gastos.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchGastos()
+  }, [period])
+
+  const handleAddGasto = async () => {
+    if (!inputValue.trim() || isSaving) return
+    try {
+      setIsSaving(true)
+      const result = await apiClient<QuickExpenseApiResponse>("/api/DailyExpenses/quick", {
+        method: "POST",
+        body: JSON.stringify({ input: inputValue })
+      })
+      const newGasto: Gasto = {
+        id: result.id,
+        descricao: result.name,
+        valor: result.amount,
+        categoria: result.category,
+        data: formatGastoDate(result.date),
+        dataReal: result.date,
+        hora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
       }
-      const data = match[3]?.toLowerCase() === "ontem" ? "Ontem" : "Hoje"
-      return { descricao, valor, data }
-    }
-    return null
-  }
-
-  const handleAddGasto = () => {
-    if (!inputValue.trim()) return
-    
-    const parsed = parseInput(inputValue)
-    if (parsed) {
-      const now = new Date()
-      const hora = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`
-      
-      setGastos([
-        { id: Date.now(), ...parsed, hora },
-        ...gastos,
-      ])
+      setGastos([newGasto, ...gastos])
       setInputValue("")
+      toast.success("Gasto registrado com sucesso!")
+      window.dispatchEvent(new CustomEvent("finance-update"))
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao processar gasto."
+      toast.error(errorMessage)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleDeleteGasto = () => {
+  const handleSaveEdit = async (data: any) => {
+    try {
+      setIsSaving(true)
+      await apiClient(`/api/Expenses/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify(data)
+      })
+      
+      toast.success("Gasto atualizado com sucesso!")
+      setEditDialog({ open: false, item: null })
+      fetchGastos() // Recarrega a lista
+      window.dispatchEvent(new CustomEvent("finance-update"))
+    } catch (error) {
+      toast.error("Erro ao atualizar gasto.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteGasto = async () => {
     if (deleteDialog.item) {
-      setGastos(gastos.filter(g => g.id !== deleteDialog.item!.id))
-      setDeleteDialog({ open: false, item: null })
+      try {
+        setIsDeleting(true)
+        await apiClient(`/api/Expenses/${deleteDialog.item.id}`, { method: "DELETE" })
+        setGastos(gastos.filter(g => g.id !== deleteDialog.item!.id))
+        setDeleteDialog({ open: false, item: null })
+        toast.success("Gasto excluído.")
+        window.dispatchEvent(new CustomEvent("finance-update"))
+      } catch (error) {
+        toast.error("Erro ao excluir gasto.")
+      } finally {
+        setIsDeleting(false)
+      }
     }
-  }
-
-  const openDeleteDialog = (gasto: Gasto) => {
-    setDeleteDialog({ open: true, item: gasto })
   }
 
   const totalHoje = gastos.filter(g => g.data === "Hoje").reduce((sum, g) => sum + g.valor, 0)
   const totalOntem = gastos.filter(g => g.data === "Ontem").reduce((sum, g) => sum + g.valor, 0)
+  const totalTodos = gastos.reduce((sum, g) => sum + g.valor, 0)
 
   const gastosHoje = gastos.filter(g => g.data === "Hoje")
   const gastosOntem = gastos.filter(g => g.data === "Ontem")
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col gap-6 items-start">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Gastos Diários</h1>
+        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Gastos Diários</h1>
+            </div>
+            <p className="text-muted-foreground text-sm">Registre seus gastos rápidos do dia a dia</p>
           </div>
-          <p className="text-muted-foreground text-sm">Registre seus gastos rápidos do dia a dia</p>
+
+          <div className="flex items-center gap-2">
+            <PeriodFilter value={period} onChange={setPeriod} />
+            <Button 
+              variant="outline" 
+              onClick={() => setIsExportDialogOpen(true)}
+              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={() => setIsExportDialogOpen(true)}
-          className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
-          size="sm"
-        >
-          <Download className="h-4 w-4" />
-          Exportar
-        </Button>
       </div>
 
       <BillsAlert />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <GastoStats 
+          title="Todos os Gastos" 
+          value={totalTodos} 
+          count={gastos.length} 
+          icon={<ListChecks className="h-4 w-4" />}
+          active={dayFilter === "all"}
+          onClick={() => setDayFilter("all")}
+          variant="emerald"
+          discreetMode={discreetMode}
+          isInitialLoad={isInitialLoad}
+        />
+        <GastoStats 
+          title="Gastos de Hoje" 
+          value={totalHoje} 
+          count={gastosHoje.length} 
+          icon={<CalendarFold className="h-4 w-4" />}
+          active={dayFilter === "hoje"}
+          onClick={() => setDayFilter("hoje")}
+          variant="orange"
+          discreetMode={discreetMode}
+          isInitialLoad={isInitialLoad}
+        />
+        <GastoStats 
+          title="Gastos de Ontem" 
+          value={totalOntem} 
+          count={gastosOntem.length} 
+          icon={<CalendarDays className="h-4 w-4" />}
+          active={dayFilter === "ontem"}
+          onClick={() => setDayFilter("ontem")}
+          variant="blue"
+          discreetMode={discreetMode}
+          isInitialLoad={isInitialLoad}
+        />
+      </div>
 
       <Card className="border-border/50">
         <CardHeader>
@@ -127,145 +283,67 @@ export default function GastosDiariosPage() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
               className="flex-1"
+              disabled={isSaving}
             />
-            <Button onClick={handleAddGasto} className="bg-primary text-primary-foreground hover:bg-primary/70">
-              <Send className="h-4 w-4" />
+            <Button onClick={handleAddGasto} className="bg-primary" disabled={isSaving}>
+              <Send className={cn("h-4 w-4", isSaving && "animate-pulse")} />
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Digite a descrição seguida do valor em R$. Ex: "Café 15,50" ou "Uber 25 ontem"
+            Dica: "Uber 25 ontem", "Mercado 150" ou "Café 12,50 hoje"
           </p>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-              Gastos de Hoje
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-2xl font-bold text-card-foreground transition-opacity duration-300",
-              discreetMode && "discreet-mode-blur"
-            )}>
-              {formatCurrency(totalHoje)}
-            </div>
-            <p className="text-xs text-muted-foreground">{gastosHoje.length} lançamentos</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-              Gastos de Ontem
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn(
-              "text-2xl font-bold text-card-foreground transition-opacity duration-300",
-              discreetMode && "discreet-mode-blur"
-            )}>
-              {formatCurrency(totalOntem)}
-            </div>
-            <p className="text-xs text-muted-foreground">{gastosOntem.length} lançamentos</p>
-          </CardContent>
-        </Card>
+      <div ref={listRef} className="space-y-4 md:space-y-6">
+        <FilterBar 
+          search={search}
+          onSearchChange={setSearch}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          categories={todasCategoriasParaFiltro}
+          selectedCategories={selectedCategories}
+          onCategoriesChange={setSelectedCategories}
+          placeholder="Buscar gasto ou palavra-chave..."
+        />
+
+        <GastoList 
+          title="Hoje" 
+          gastos={gastosHoje} 
+          visible={dayFilter === "all" || dayFilter === "hoje"}
+          isLoading={isLoading}
+          isInitialLoad={isInitialLoad}
+          discreetMode={discreetMode}
+          onEdit={(g) => setEditDialog({ open: true, item: g })}
+          onDelete={(g) => setDeleteDialog({ open: true, item: g })}
+        />
+
+        <GastoList 
+          title="Ontem" 
+          gastos={gastosOntem} 
+          visible={dayFilter === "all" || dayFilter === "ontem"}
+          isLoading={isLoading}
+          isInitialLoad={isInitialLoad}
+          discreetMode={discreetMode}
+          onEdit={(g) => setEditDialog({ open: true, item: g })}
+          onDelete={(g) => setDeleteDialog({ open: true, item: g })}
+        />
       </div>
-
-      {gastosHoje.length > 0 && (
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-card-foreground">Hoje</CardTitle>
-              <Badge variant="secondary">{gastosHoje.length} gastos</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {gastosHoje.map((g) => (
-                <div key={g.id} className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                      <ArrowUpRight className="h-4 w-4 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-card-foreground">{g.descricao}</p>
-                      <p className="text-xs text-muted-foreground">{g.hora}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "font-semibold text-card-foreground transition-opacity duration-300",
-                      discreetMode && "discreet-mode-blur"
-                    )}>
-                      {formatCurrency(g.valor)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => openDeleteDialog(g)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {gastosOntem.length > 0 && (
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-card-foreground">Ontem</CardTitle>
-              <Badge variant="secondary">{gastosOntem.length} gastos</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {gastosOntem.map((g) => (
-                <div key={g.id} className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                      <ArrowUpRight className="h-4 w-4 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-card-foreground">{g.descricao}</p>
-                      <p className="text-xs text-muted-foreground">{g.hora}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "font-semibold text-card-foreground transition-opacity duration-300",
-                      discreetMode && "discreet-mode-blur"
-                    )}>
-                      {formatCurrency(g.valor)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => openDeleteDialog(g)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <ConfirmDeleteDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteGasto}
         itemName={deleteDialog.item?.descricao}
+        loading={isDeleting}
+      />
+
+      <GastoDialog 
+        open={editDialog.open}
+        onOpenChange={(open) => setEditDialog({ ...editDialog, open })}
+        onSave={handleSaveEdit}
+        initialData={editDialog.item}
+        isSaving={isSaving}
       />
 
       <ExportPdfDialog 

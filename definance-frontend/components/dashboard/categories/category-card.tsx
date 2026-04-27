@@ -2,8 +2,8 @@
 
 import { Category } from "@/lib/category-context"
 import { Button } from "@/components/ui/button"
-import { Edit2, Trash2, Lock, Landmark, Wallet, Utensils, Home, CarFront, Palmtree, HeartPulse, BookOpen, TrendingUp, MoreHorizontal } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Edit2, Trash2, Lock } from "lucide-react"
+import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
 
 interface CategoryCardProps {
   category: Category
@@ -11,12 +11,7 @@ interface CategoryCardProps {
   onDelete: (category: Category) => void
 }
 
-const iconMap: Record<string, any> = {
-  Utensils, Home, CarFront, Palmtree, HeartPulse, BookOpen, Wallet, TrendingUp, MoreHorizontal, Landmark
-}
-
 export function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) {
-  const IconComponent = category.icon && iconMap[category.icon] ? iconMap[category.icon] : MoreHorizontal
   const categoryColor = category.color || "#64748b"
 
   return (
@@ -31,9 +26,12 @@ export function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) 
         <div className="flex items-center gap-3">
           <div 
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/30"
-            style={{ color: categoryColor }}
           >
-            <IconComponent className="h-5 w-5" />
+            <CategoryIcon 
+              name={category.icon} 
+              color={categoryColor} 
+              className="h-5 w-5"
+            />
           </div>
           <div className="space-y-0.5">
             <h4 className="font-semibold text-foreground">{category.name}</h4>
