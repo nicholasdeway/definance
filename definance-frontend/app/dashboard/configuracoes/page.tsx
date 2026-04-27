@@ -12,6 +12,7 @@ import {
   Database, 
   Download,
   Trash2,
+  Settings
 } from "lucide-react"
 import { toast } from "sonner"
 import { useSettings } from "@/lib/settings-context"
@@ -45,12 +46,20 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="relative space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-          <p className="text-muted-foreground">Personalize sua experiência no Definance</p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Settings className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Configurações</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">Personalize sua experiência no Definance e gerencie suas preferências</p>
         </div>
-        <Button onClick={handleSave} disabled={isActionLoading} className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer">
+        <Button 
+          onClick={handleSave} 
+          disabled={isActionLoading} 
+          className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer w-full sm:w-auto"
+          size="sm"
+        >
           Salvar Alterações
         </Button>
       </div>

@@ -11,35 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { ChevronDown } from "lucide-react"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { CurrencyInput } from "@/components/ui/currency-input"
-
-export const categoriasContas = [
-  "Moradia",
-  "Alimentação",
-  "Transporte",
-  "Veículos",
-  "Saúde",
-  "Educação",
-  "Lazer",
-  "Serviços",
-  "Assinaturas",
-  "Outros",
-]
+import { PremiumModal } from "@/components/ui/premium-modal"
+import { useCategories } from "@/lib/category-context"
+import { CreditCard, Loader2, Save, Plus, ChevronDown } from "lucide-react"
 
 export interface BillFormState {
   id?: string
@@ -71,75 +52,108 @@ export function BillFormDialog({
   onSave,
   isSaving,
 }: BillFormDialogProps) {
+  const { categories } = useCategories()
   const [showDetails, setShowDetails] = useState(false)
   const isEditing = !!form.id
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-foreground text-lg sm:text-xl">
-            {isEditing ? "Editar Conta" : "Nova Conta"}
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
-            {isEditing
-              ? "Edite as informações desta conta"
-              : "Adicione uma nova conta ao seu calendário financeiro"}
-          </DialogDescription>
-        </DialogHeader>
+  // Filtra as categorias dinâmicas para Saída ou Ambos consumindo 100% da API
+  const todasCategorias = Array.from(new Set(
+    categories
+      .filter(c => c.type === "Saída" || c.type === "Ambos")
+      .map(c => c.name.trim())
+  ))
 
-        <div className="grid gap-4 py-4">
+  return (
+    <PremiumModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? "Editar Conta" : "Nova Conta"}
+      description={isEditing ? "Edite as informações desta conta." : "Adicione uma nova conta ao seu calendário financeiro para não perder prazos."}
+      icon={<CreditCard className="h-8 w-8 text-primary" />}
+    >
+      <div className="space-y-8 h-full flex flex-col">
+        <div className="flex-1 space-y-6">
           {/* Nome */}
-          <div className="grid gap-2">
-            <Label htmlFor="bill-nome" className="text-sm">
-              Nome da conta
+          <div className="space-y-2">
+            <Label htmlFor="bill-nome" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+              Nome da Conta
             </Label>
             <Input
               id="bill-nome"
-              placeholder="Ex: Conta de Luz, Aluguel..."
+              placeholder="Ex: Conta de Luz, Aluguel, Steam..."
               value={form.nome}
               onChange={(e) => onFormChange({ ...form, nome: e.target.value })}
+              className="h-12 text-lg bg-muted/20 border-white/5 rounded-2xl px-5 focus:ring-primary/20 transition-all"
             />
           </div>
 
-          {/* Valor + Vencimento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="bill-valor" className="text-sm">
-                Valor
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Valor */}
+            <div className="space-y-2">
+              <Label htmlFor="bill-valor" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Valor da Conta
               </Label>
               <CurrencyInput
                 id="bill-valor"
                 value={form.valor}
                 onChange={(value) => onFormChange({ ...form, valor: value })}
+                placeholder="0,00"
+                className="h-12 text-2xl font-black bg-primary/5 border-primary/10 text-primary rounded-2xl pl-14 pr-5 focus:ring-primary/20"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bill-due-date" className="text-sm">
-                Vencimento
+
+            {/* Vencimento */}
+            <div className="space-y-2">
+              <Label htmlFor="bill-due-date" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Data de Vencimento
               </Label>
               <Input
                 id="bill-due-date"
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => onFormChange({ ...form, dueDate: e.target.value })}
+                className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
               />
             </div>
           </div>
 
-          {/* Tipo + Categoria */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label className="text-sm">Tipo</Label>
-              {/* Toggle visual Fixa / Variável */}
-              <div className="flex rounded-md border border-border overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Categoria - Consumindo apenas a API */}
+            <div className="space-y-2">
+              <Label htmlFor="bill-categoria" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Categoria da Conta
+              </Label>
+              <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-muted/20 h-12 px-5 shadow-sm overflow-hidden">
+                <span className="text-sm font-medium text-muted-foreground truncate min-w-0 mr-2">
+                  {form.categoria || "Selecione uma categoria"}
+                </span>
+                <Select
+                  value={form.categoria}
+                  onValueChange={(value) => onFormChange({ ...form, categoria: value })}
+                >
+                  <SelectTrigger className="w-auto shrink-0 border-0 bg-white/5 px-3 h-8 rounded-lg shadow-none hover:bg-white/10 focus:ring-0 cursor-pointer ml-2 transition-colors">
+                    <SelectValue placeholder="Selecionar" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                    {todasCategorias.sort().map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Tipo (Fixa/Variável) - Estilo Premium Toggle */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Tipo de Conta</Label>
+              <div className="flex p-1 h-12 bg-muted/20 border border-white/5 rounded-2xl shadow-sm">
                 <button
                   type="button"
                   onClick={() => onFormChange({ ...form, tipo: "Fixa" })}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all rounded-xl ${
                     form.tipo === "Fixa"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-transparent text-muted-foreground hover:bg-muted/50"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:bg-white/5"
                   }`}
                 >
                   📌 Fixa
@@ -147,126 +161,101 @@ export function BillFormDialog({
                 <button
                   type="button"
                   onClick={() => onFormChange({ ...form, tipo: "Variável" })}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors border-l border-border ${
+                  className={`flex-1 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all rounded-xl ${
                     form.tipo === "Variável"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-transparent text-muted-foreground hover:bg-muted/50"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:bg-white/5"
                   }`}
                 >
                   🔀 Variável
                 </button>
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bill-categoria" className="text-sm">
-                Categoria
-              </Label>
-              <Select
-                value={form.categoria}
-                onValueChange={(value) => onFormChange({ ...form, categoria: value })}
-              >
-                <SelectTrigger id="bill-categoria">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoriasContas.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="text-sm">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.categoria === "Outros" && (
-                <div className="mt-2 grid gap-1.5">
-                  <Label htmlFor="bill-outro-categoria" className="text-[10px] uppercase font-bold text-muted-foreground">Especifique a categoria</Label>
-                  <Input
-                    id="bill-outro-categoria"
-                    placeholder="Ex: Presente, Venda..."
-                    value={form.outroCategoria || ""}
-                    onChange={(e) => onFormChange({ ...form, outroCategoria: e.target.value })}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              )}
-              {!form.categoria && (
-                <p className="text-[10px] text-orange-500 font-medium animate-pulse mt-1">
-                  💡 Dica: Vincule uma categoria para organizar melhor suas saídas!
-                </p>
-              )}
+          </div>
+
+          {/* Recorrência Switch Row */}
+          <div className="space-y-2">
+            <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Recorrência Mensal</Label>
+            <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-muted/20 h-12 px-5 shadow-sm">
+              <span className="text-sm font-medium text-muted-foreground">Esta conta se repete todo mês?</span>
+              <Switch
+                id="bill-recorrente"
+                checked={form.isRecorrente}
+                onCheckedChange={(checked) => onFormChange({ ...form, isRecorrente: checked })}
+              />
             </div>
           </div>
 
-          {/* Recorrente */}
-          <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
-            <div>
-              <Label htmlFor="bill-recorrente" className="text-sm font-medium">
-                Conta recorrente
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Repete todo mês (ex: Aluguel, Luz, Internet)
-              </p>
+          {/* Outros / Detalhes */}
+          {form.categoria === "Outros" && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Label htmlFor="bill-outro-categoria" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Especifique a categoria</Label>
+              <Input
+                id="bill-outro-categoria"
+                placeholder="Ex: Presente, Venda..."
+                value={form.outroCategoria || ""}
+                onChange={(e) => onFormChange({ ...form, outroCategoria: e.target.value })}
+                className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
+              />
             </div>
-            <Switch
-              id="bill-recorrente"
-              checked={form.isRecorrente}
-              onCheckedChange={(checked) => onFormChange({ ...form, isRecorrente: checked })}
-            />
-          </div>
+          )}
 
-          {/* Detalhes opcionais */}
-          <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+          <Collapsible open={showDetails} onOpenChange={setShowDetails} className="w-full">
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between text-sm">
-                Adicionar notas
+              <Button variant="ghost" className="w-full justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+                {showDetails ? "Ocultar notas" : "Adicionar notas e lembretes"}
                 <ChevronDown
-                  className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform duration-300 ${showDetails ? "rotate-180" : ""}`}
                 />
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid gap-2">
-                <Label htmlFor="bill-descricao" className="text-sm">
-                  Descrição
-                </Label>
-                <Input
-                  id="bill-descricao"
-                  placeholder="Detalhes adicionais"
-                  value={form.descricao}
-                  onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="bill-observacoes" className="text-sm">
-                  Observações
-                </Label>
-                <Input
-                  id="bill-observacoes"
-                  placeholder="Notas ou lembretes"
-                  value={form.observacoes}
-                  onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
-                />
+            <CollapsibleContent className="space-y-6 pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="bill-descricao" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Descrição</Label>
+                  <Input
+                    id="bill-descricao"
+                    placeholder="Detalhes adicionais"
+                    value={form.descricao}
+                    onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
+                    className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bill-observacoes" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Observações</Label>
+                  <Input
+                    id="bill-observacoes"
+                    placeholder="Notas ou lembretes"
+                    value={form.observacoes}
+                    onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
+                    className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
+                  />
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        {/* Footer Actions */}
+        <div className="pt-6 border-t border-white/5 flex items-center justify-end gap-3">
           <Button
-            variant="outline"
+            type="button"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto cursor-pointer"
+            className="rounded-xl px-6 hover:bg-white/5 transition-all cursor-pointer"
           >
             Cancelar
           </Button>
           <Button
-            className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer w-full sm:w-auto"
+            className="min-w-[160px] h-12 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
             onClick={onSave}
             disabled={isSaving}
           >
-            {isSaving ? "Salvando..." : isEditing ? "Salvar Alterações" : "Salvar Conta"}
+            {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+            {isEditing ? "Salvar Alterações" : "Salvar Conta"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </PremiumModal>
   )
 }

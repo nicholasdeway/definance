@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ArrowDownCircle } from "lucide-react"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
@@ -12,6 +12,10 @@ import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expen
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
+import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { filterAndSortItems } from "@/lib/filter-utils"
+import { useCategories } from "@/lib/category-context"
+
 
 export interface ExpenseApiResponse {
   id: string
@@ -22,6 +26,8 @@ export interface ExpenseApiResponse {
   expenseType: string
   status: string
   billId?: string | null
+  description?: string | null
+  notes?: string | null
 }
 
 const emptyForm: ExpenseFormState = {
@@ -36,6 +42,7 @@ const emptyForm: ExpenseFormState = {
 }
 
 export default function DespesasPage() {
+  const { categories: dynamicCategories } = useCategories()
   const [despesas, setDespesas] = useState<Despesa[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -54,6 +61,8 @@ export default function DespesasPage() {
     item: null,
   })
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>("data-recente")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -92,6 +101,8 @@ export default function DespesasPage() {
           tipo: e.expenseType,
           status: e.status,
           billId: e.billId ?? null,
+          descricao: e.description ?? null,
+          observacoes: e.notes ?? null,
         }))
 
         setDespesas(mapped)
@@ -104,6 +115,27 @@ export default function DespesasPage() {
 
     fetchExpenses()
   }, [period])
+
+  const filteredDespesas = useMemo(() => {
+    let result = despesas
+
+    // Primeiro aplica o filtro de status (pago/pendente) que vem dos cards
+    if (filterType === "paid") {
+      result = result.filter(d => d.status === "Pago")
+    } else if (filterType === "pending") {
+      result = result.filter(d => d.status === "Pendente")
+    }
+
+    // Depois aplica a busca, ordenação e filtros de categoria usando a utilitária
+    return filterAndSortItems(
+      result, 
+      search, 
+      sortBy, 
+      selectedCategories,
+      "categoria",
+      dynamicCategories
+    )
+  }, [despesas, search, sortBy, selectedCategories, filterType])
 
   const totalDespesas    = despesas.reduce((sum, d) => sum + d.valor, 0)
   const despesasPagas    = despesas.filter(d => d.status === "Pago").reduce((sum, d) => sum + d.valor, 0)
@@ -126,8 +158,8 @@ export default function DespesasPage() {
       data: inputDate,
       tipo: despesa.tipo,
       status: despesa.status,
-      descricao: "",
-      observacoes: "",
+      descricao: despesa.descricao || "",
+      observacoes: despesa.observacoes || "",
     })
     setIsOpen(true)
   }
@@ -171,6 +203,8 @@ export default function DespesasPage() {
           data: new Date(response.date).toLocaleDateString("pt-BR"),
           tipo: response.expenseType,
           status: response.status,
+          descricao: response.description ?? null,
+          observacoes: response.notes ?? null,
         }
 
         if (isEditing) {
@@ -220,17 +254,17 @@ export default function DespesasPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <BillsAlert />
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Despesas</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Gerencie todas as suas despesas
-            </p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <ArrowDownCircle className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Saídas</h1>
           </div>
+          <p className="text-muted-foreground text-sm">Controle suas despesas e mantenha seu orçamento em dia</p>
+        </div>
 
+        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
           <Button
             className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
@@ -239,25 +273,26 @@ export default function DespesasPage() {
             <Plus className="mr-2 h-4 w-4" />
             Nova Despesa
           </Button>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <PeriodFilter 
-            value={period}
-            onChange={setPeriod}
-          />
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
-            onClick={() => setIsExportDialogOpen(true)}
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
+          <div className="flex items-center gap-2">
+            <PeriodFilter 
+              value={period}
+              onChange={setPeriod}
+            />
+            <Button 
+              variant="outline" 
+              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              onClick={() => setIsExportDialogOpen(true)}
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
         </div>
       </div>
+
+      <BillsAlert />
 
       {/* Cards de Resumo */}
       <ExpensesSummaryCards
@@ -271,9 +306,13 @@ export default function DespesasPage() {
 
       {/* Lista de Despesas */}
       <ExpenseList
-        despesas={despesas}
+        despesas={filteredDespesas}
         search={search}
         onSearchChange={setSearch}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        selectedCategories={selectedCategories}
+        onCategoriesChange={setSelectedCategories}
         statusFilter={filterType}
         onEdit={openEditDialog}
         onMarkAsPaid={handleMarkAsPaid}

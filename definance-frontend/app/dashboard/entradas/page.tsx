@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,10 +26,12 @@ import {
   TrendingUp,
   Home,
   Wallet2,
-  Coins
+  Coins,
+  ArrowUpCircle
 } from "lucide-react"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { useSettings } from "@/lib/settings-context"
+import { useCategories } from "@/lib/category-context"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
@@ -40,6 +42,8 @@ import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { ReceitaStats } from "@/components/dashboard/entradas/receita-stats"
 import { ReceitaItem } from "@/components/dashboard/entradas/receita-item"
 import { ReceitaDialog } from "@/components/dashboard/entradas/receita-dialog"
+import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { filterAndSortItems } from "@/lib/filter-utils"
 
 interface Receita {
   id: string
@@ -61,6 +65,8 @@ export interface IncomeApiResponse {
   type: string
   date: string
   isRecurring: boolean
+  description?: string | null
+  notes?: string | null
 }
 
 export interface OnboardingProgressIncome {
@@ -84,10 +90,23 @@ export interface OnboardingProgressIncome {
   DiaSemana?: string
 }
 
-const tiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
+const baseTiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
 
 export default function ReceitasPage() {
   const { discreetMode } = useSettings()
+  const { categories: dynamicCategories } = useCategories()
+  
+  // Prepara a lista de categorias para o filtro (Padrão + Dinâmicas de Entrada)
+  const todasCategoriasParaFiltro = useMemo(() => {
+    const dynamicFiltered = dynamicCategories
+      .filter(c => c.type === "Entrada" || c.type === "Ambos")
+      .map(c => c.name.trim())
+    
+    return Array.from(new Set([
+      ...baseTiposReceita.map(c => c.trim()),
+      ...dynamicFiltered
+    ].filter(Boolean))).sort()
+  }, [dynamicCategories])
   
   const [receitas, setReceitas] = useState<Receita[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -151,7 +170,9 @@ export default function ReceitasPage() {
               return new Date(y, m - 1, d).toLocaleDateString("pt-BR")
             })(),
             recorrente: inc.isRecurring,
-            isSynced: isBaseType
+            isSynced: isBaseType,
+            descricao: inc.description ?? null,
+            observacoes: inc.notes ?? null
           }
         })
 
@@ -289,17 +310,31 @@ export default function ReceitasPage() {
   })
   
   const [editingReceita, setEditingReceita] = useState<any>(null)
+  const [sortBy, setSortBy] = useState<SortOption>("data-recente")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
-  const filteredReceitas = receitas.filter(r => {
-    const matchesSearch = r.nome.toLowerCase().includes(search.toLowerCase()) ||
-                         r.tipo.toLowerCase().includes(search.toLowerCase());
-    
-    if (filterType === "recurring") return matchesSearch && r.recorrente;
-    if (filterType === "extra") return matchesSearch && !r.recorrente;
-    return matchesSearch;
-  })
+  const filteredReceitas = useMemo(() => {
+    let result = receitas
+
+    // Primeiro aplica o filtro de tipo (recorrente/extra)
+    if (filterType === "recurring") {
+      result = result.filter(r => r.recorrente)
+    } else if (filterType === "extra") {
+      result = result.filter(r => !r.recorrente)
+    }
+
+    // Depois aplica a busca, ordenação e filtros de categoria usando a utilitária
+    return filterAndSortItems(
+      result, 
+      search, 
+      sortBy, 
+      selectedCategories,
+      "tipo", // Em entradas, usamos 'tipo' como categoria
+      dynamicCategories
+    )
+  }, [receitas, search, sortBy, selectedCategories, filterType])
 
   const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0)
   const receitasRecorrentes = receitas.filter(r => r.recorrente).reduce((sum, r) => sum + r.valor, 0)
@@ -392,41 +427,45 @@ export default function ReceitasPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <BillsAlert />
       
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <ArrowUpCircle className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Entradas</h1>
-            <p className="text-muted-foreground text-sm">Gerencie todas as suas fontes de renda</p>
           </div>
-          <Button 
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-fit shadow-sm active:scale-95 transition-all" 
+          <p className="text-muted-foreground text-sm">Acompanhe e gerencie todos os seus recebimentos</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+          <Button
+            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" />
             Nova Receita
           </Button>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <PeriodFilter 
-            value={period}
-            onChange={setPeriod}
-          />
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
-            onClick={() => setIsExportDialogOpen(true)}
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
+          <div className="flex items-center gap-2">
+            <PeriodFilter 
+              value={period}
+              onChange={setPeriod}
+            />
+            <Button 
+              variant="outline" 
+              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              onClick={() => setIsExportDialogOpen(true)}
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
         </div>
       </div>
+      
+      <BillsAlert />
 
       <ReceitaStats 
         total={totalReceitas}
@@ -442,13 +481,16 @@ export default function ReceitasPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm sm:text-base text-card-foreground">Lista de Receitas</CardTitle>
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar receitas..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 sm:pl-9 sm:w-[250px] text-sm sm:text-base focus-visible:ring-primary"
+            <div className="w-full sm:max-w-[520px]">
+              <FilterBar 
+                search={search}
+                onSearchChange={setSearch}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                categories={todasCategoriasParaFiltro}
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                placeholder="Buscar receitas ou palavra-chave..."
               />
             </div>
           </div>

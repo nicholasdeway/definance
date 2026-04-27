@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Shield } from "lucide-react"
+import { Shield, UserCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
@@ -169,10 +169,13 @@ export default function PerfilPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Perfil</h1>
-          <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Perfil</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">Gerencie suas informações pessoais e segurança</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
           <Shield className="h-3 w-3 text-primary" />
