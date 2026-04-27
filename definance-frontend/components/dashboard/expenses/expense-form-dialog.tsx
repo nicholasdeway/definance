@@ -11,32 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { ChevronDown } from "lucide-react"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { CurrencyInput } from "@/components/ui/currency-input"
-
-export const categorias = [
-  "Moradia",
-  "Alimentação",
-  "Transporte",
-  "Lazer",
-  "Saúde",
-  "Educação",
-  "Outros",
-]
+import { PremiumModal } from "@/components/ui/premium-modal"
+import { useCategories } from "@/lib/category-context"
+import { ArrowDownCircle, Loader2, Save, Plus, ChevronDown } from "lucide-react"
 
 export interface ExpenseFormState {
   id?: string
@@ -67,179 +51,194 @@ export function ExpenseFormDialog({
   onSave,
   isSaving,
 }: ExpenseFormDialogProps) {
+  const { categories } = useCategories()
   const [showDetails, setShowDetails] = useState(false)
   const isEditing = !!form.id
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-foreground text-lg sm:text-xl">
-            {isEditing ? "Editar Despesa" : "Nova Despesa"}
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
-            {isEditing
-              ? "Edite as informações da sua despesa"
-              : "Adicione uma nova despesa ao seu controle financeiro"}
-          </DialogDescription>
-        </DialogHeader>
+  // Lista final consolidada (Apenas API - Única)
+  const todasCategorias = Array.from(new Set(
+    categories
+      .filter(c => c.type === "Saída" || c.type === "Ambos")
+      .map(c => c.name.trim())
+  ))
 
-        <div className="grid gap-4 py-4">
+  return (
+    <PremiumModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? "Editar Despesa" : "Nova Despesa"}
+      description={isEditing ? "Ajuste os detalhes desta saída." : "Registre uma nova despesa para manter seu controle financeiro em dia."}
+      icon={<ArrowDownCircle className="h-8 w-8 text-primary" />}
+    >
+      <div className="space-y-8 h-full flex flex-col">
+        <div className="flex-1 space-y-6">
           {/* Nome */}
-          <div className="grid gap-2">
-            <Label htmlFor="expense-nome" className="text-sm sm:text-base">
-              Nome
+          <div className="space-y-2">
+            <Label htmlFor="expense-nome" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+              Nome / Descrição
             </Label>
             <Input
               id="expense-nome"
-              placeholder="Ex: Supermercado"
+              placeholder="Ex: Supermercado, Aluguel, Steam..."
               value={form.nome}
               onChange={(e) => onFormChange({ ...form, nome: e.target.value })}
-              className="text-sm sm:text-base"
+              className="h-12 text-lg bg-muted/20 border-white/5 rounded-2xl px-5 focus:ring-primary/20 transition-all"
             />
           </div>
 
-          {/* Valor + Data */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="expense-valor" className="text-sm sm:text-base">
-                Valor
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Valor */}
+            <div className="space-y-2">
+              <Label htmlFor="expense-valor" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Valor da Despesa
               </Label>
               <CurrencyInput
                 id="expense-valor"
                 value={form.valor}
                 onChange={(value) => onFormChange({ ...form, valor: value })}
+                placeholder="0,00"
+                className="h-12 text-2xl font-black bg-primary/5 border-primary/10 text-primary rounded-2xl pl-14 pr-5 focus:ring-primary/20"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="expense-data" className="text-sm sm:text-base">
-                Data
+
+            {/* Data */}
+            <div className="space-y-2">
+              <Label htmlFor="expense-data" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Data do Gasto
               </Label>
               <Input
                 id="expense-data"
                 type="date"
                 value={form.data}
                 onChange={(e) => onFormChange({ ...form, data: e.target.value })}
-                className="text-sm sm:text-base"
+                className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
               />
             </div>
           </div>
 
-          {/* Categoria + Tipo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="expense-categoria" className="text-sm sm:text-base">
-                Categoria
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Categoria - Estilo Linha Switch */}
+            <div className="space-y-2">
+              <Label htmlFor="expense-categoria" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Categoria da Despesa
               </Label>
-              <Select
-                value={form.categoria}
-                onValueChange={(value) => onFormChange({ ...form, categoria: value })}
-              >
-                <SelectTrigger id="expense-categoria" className="text-sm sm:text-base">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="text-sm sm:text-base">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-muted/20 h-12 px-5 shadow-sm overflow-hidden">
+                <span className="text-sm font-medium text-muted-foreground truncate min-w-0 mr-2">
+                  {form.categoria || "Selecione uma categoria"}
+                </span>
+                <Select
+                  value={form.categoria}
+                  onValueChange={(value) => onFormChange({ ...form, categoria: value })}
+                >
+                  <SelectTrigger className="w-auto shrink-0 border-0 bg-white/5 px-3 h-8 rounded-lg shadow-none hover:bg-white/10 focus:ring-0 cursor-pointer ml-2 transition-colors">
+                    <SelectValue placeholder="Selecionar" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                    {todasCategorias.sort().map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="expense-tipo" className="text-sm sm:text-base">
-                Tipo
+
+            {/* Tipo - Estilo Linha Switch */}
+            <div className="space-y-2">
+              <Label htmlFor="expense-tipo" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Tipo de Gasto
               </Label>
-              <Select
-                value={form.tipo}
-                onValueChange={(value) => onFormChange({ ...form, tipo: value })}
-              >
-                <SelectTrigger id="expense-tipo" className="text-sm sm:text-base">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Fixa" className="text-sm sm:text-base">
-                    Fixa
-                  </SelectItem>
-                  <SelectItem value="Variável" className="text-sm sm:text-base">
-                    Variável
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-muted/20 h-12 px-5 shadow-sm overflow-hidden">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {form.tipo || "Selecione o tipo"}
+                </span>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(value) => onFormChange({ ...form, tipo: value })}
+                >
+                  <SelectTrigger className="w-auto shrink-0 border-0 bg-white/5 px-3 h-8 rounded-lg shadow-none hover:bg-white/10 focus:ring-0 cursor-pointer ml-2 transition-colors">
+                    <SelectValue placeholder="Selecionar" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                    <SelectItem value="Fixa">Fixa</SelectItem>
+                    <SelectItem value="Variável">Variável</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="expense-status" className="text-sm sm:text-base">
-              Já foi pago?
-            </Label>
-            <Switch
-              id="expense-status"
-              checked={form.status === "Pago"}
-              onCheckedChange={(checked) =>
-                onFormChange({ ...form, status: checked ? "Pago" : "Pendente" })
-              }
-            />
+          {/* Status - Switch Row */}
+          <div className="space-y-2">
+            <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Status de Pagamento</Label>
+            <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-muted/20 h-12 px-5 shadow-sm">
+              <span className="text-sm font-medium text-muted-foreground">Esta despesa já foi paga?</span>
+              <Switch
+                id="expense-status"
+                checked={form.status === "Pago"}
+                onCheckedChange={(checked) =>
+                  onFormChange({ ...form, status: checked ? "Pago" : "Pendente" })
+                }
+              />
+            </div>
           </div>
 
           {/* Detalhes opcionais */}
-          <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+          <Collapsible open={showDetails} onOpenChange={setShowDetails} className="w-full">
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between text-sm sm:text-base">
-                Adicionar mais detalhes
+              <Button variant="ghost" className="w-full justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+                {showDetails ? "Ocultar detalhes" : "Adicionar mais detalhes"}
                 <ChevronDown
-                  className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform duration-300 ${showDetails ? "rotate-180" : ""}`}
                 />
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              <div className="grid gap-2">
-                <Label htmlFor="expense-descricao" className="text-sm sm:text-base">
-                  Descrição
-                </Label>
-                <Input
-                  id="expense-descricao"
-                  placeholder="Detalhes adicionais"
-                  value={form.descricao}
-                  onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="expense-observacoes" className="text-sm sm:text-base">
-                  Observações
-                </Label>
-                <Input
-                  id="expense-observacoes"
-                  placeholder="Notas ou lembretes"
-                  value={form.observacoes}
-                  onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
-                  className="text-sm sm:text-base"
-                />
+            <CollapsibleContent className="space-y-6 pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="expense-descricao" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Descrição Detalhada</Label>
+                  <Input
+                    id="expense-descricao"
+                    placeholder="Mais detalhes sobre o gasto"
+                    value={form.descricao}
+                    onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
+                    className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expense-observacoes" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Observações</Label>
+                  <Input
+                    id="expense-observacoes"
+                    placeholder="Notas ou lembretes"
+                    value={form.observacoes}
+                    onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
+                    className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all"
+                  />
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        {/* Footer Actions */}
+        <div className="pt-6 border-t border-white/5 flex items-center justify-end gap-3">
           <Button
-            variant="outline"
+            type="button"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto cursor-pointer"
+            className="rounded-xl px-6 hover:bg-white/5 transition-all cursor-pointer"
           >
             Cancelar
           </Button>
           <Button
-            className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer w-full sm:w-auto"
+            className="min-w-[160px] h-12 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
             onClick={onSave}
             disabled={isSaving}
           >
-            {isSaving ? "Salvando..." : isEditing ? "Salvar Alterações" : "Salvar"}
+            {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+            {isEditing ? "Salvar Alterações" : "Criar Despesa"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </PremiumModal>
   )
 }

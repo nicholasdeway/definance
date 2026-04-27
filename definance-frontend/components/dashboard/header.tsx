@@ -4,7 +4,7 @@ import { useState } from "react"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { Bell, Plus, AlertTriangle, TrendingUp, TrendingDown, CreditCard, Receipt } from "lucide-react"
+import { Bell, Plus, AlertTriangle, TrendingUp, TrendingDown, CreditCard, Receipt, LogOut } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +17,25 @@ import { useSettings } from "@/lib/settings-context"
 import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
+import { apiClient } from "@/lib/api-client"
 
 export function DashboardHeader() {
   const { totalCount, overdueCount, setupCount, isLoading } = useBillsNotifications()
   const { discreetMode, setDiscreetMode } = useSettings()
   const [open, setOpen] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await apiClient("/api/Auth/logout", { method: "POST" })
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+    } finally {
+      
+      window.location.href = "/"
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -165,6 +179,16 @@ export function DashboardHeader() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          className="h-9 w-9 cursor-pointer transition-all hover:bg-destructive/10 hover:text-destructive"
+          title="Sair"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
       </div>
     </header>
   )

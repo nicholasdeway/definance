@@ -10,20 +10,24 @@ import {
   Clock, 
   Plus, 
   Download,
-  MoreHorizontal
+  MoreHorizontal,
+  CreditCard
 } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency, parseCurrencyInput } from "@/lib/currency"
 import { apiClient } from "@/lib/api-client"
-import { BillFormDialog, type BillFormState, categoriasContas } from "@/components/dashboard/bills/bill-form-dialog"
+import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { useSearchParams } from "next/navigation"
+import { useCategories } from "@/lib/category-context"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsStats } from "@/components/dashboard/bills/bills-stats"
 import { BillItem, type ContaItem } from "@/components/dashboard/bills/bill-item"
 import { BillTypeFilter } from "@/components/dashboard/bills/bill-type-filter"
+import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { filterAndSortItems } from "@/lib/filter-utils"
 
 type TypeFilter = "Todas" | "Fixa" | "Variável"
 
@@ -96,6 +100,16 @@ import { BillsAlert } from "@/components/dashboard/bills-alert"
 
 export default function ContasPage() {
   const { discreetMode } = useSettings()
+  const { categories: dynamicCategories } = useCategories()
+
+  // Prepara a lista de categorias para o filtro (Apenas Saída ou Ambos)
+  const todasCategoriasParaFiltro = useMemo(() => {
+    return Array.from(new Set(
+      dynamicCategories
+        .filter(c => c.type === "Saída" || c.type === "Ambos")
+        .map(c => c.name.trim())
+    )).sort()
+  }, [dynamicCategories])
   
   const [contas, setContas] = useState<ContaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -109,6 +123,9 @@ export default function ContasPage() {
   })
   const [activeTab, setActiveTab] = useState("vencer")
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("Todas")
+  const [search, setSearch] = useState("")
+  const [sortBy, setSortBy] = useState<SortOption>("data-recente")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<BillFormState>(emptyForm)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: ContaItem | null }>({
@@ -205,9 +222,21 @@ export default function ContasPage() {
   }, [showTutorial, firstPendingBillId])
 
   const filtered = useMemo(() => {
-    if (typeFilter === "Todas") return contas
-    return contas.filter((c) => c.tipo === typeFilter)
-  }, [contas, typeFilter])
+    let result = contas
+
+    // Filtro por tipo de conta (Fixa/Variável)
+    if (typeFilter !== "Todas") {
+      result = result.filter((c) => c.tipo === typeFilter)
+    }
+
+    // Filtro por busca, ordenação e categoria
+    return filterAndSortItems(
+      result,
+      search,
+      sortBy,
+      selectedCategories
+    )
+  }, [contas, typeFilter, search, sortBy, selectedCategories])
 
   const contasAVencer   = filtered.filter((c) => c.status === "vencer")
   const contasPagas     = filtered.filter((c) => c.status === "paga")
@@ -227,7 +256,7 @@ export default function ContasPage() {
 
   const openEditDialog = (conta: ContaItem) => {
     const inputDate = conta.rawDueDate ? conta.rawDueDate.split('T')[0] : ""
-    const isCustomCategory = conta.categoria && !categoriasContas.includes(conta.categoria) && conta.categoria !== "Outros"
+    const isCustomCategory = conta.categoria && !todasCategoriasParaFiltro.includes(conta.categoria) && conta.categoria !== "Outros"
 
     setForm({
       id: conta.id,
@@ -394,14 +423,16 @@ export default function ContasPage() {
     <div className="space-y-4 md:space-y-6">
 
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Minhas Contas</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Gerencie suas contas a pagar · ao pagar, a despesa vai para Saídas automaticamente
-            </p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Minhas Contas</h1>
           </div>
+          <p className="text-muted-foreground text-sm">Gerencie suas contas e boletos a vencer</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
           <Button
             className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
@@ -410,22 +441,22 @@ export default function ContasPage() {
             <Plus className="mr-2 h-4 w-4" />
             Nova Conta
           </Button>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <PeriodFilter 
-            value={period}
-            onChange={setPeriod}
-          />
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
-            onClick={() => setIsExportDialogOpen(true)}
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
+          <div className="flex items-center gap-2">
+            <PeriodFilter 
+              value={period}
+              onChange={setPeriod}
+            />
+            <Button 
+              variant="outline" 
+              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              onClick={() => setIsExportDialogOpen(true)}
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -443,7 +474,18 @@ export default function ContasPage() {
 
       {/* Lista com Tabs + Filtro de Tipo */}
       <Card className="border-border/50 shadow-sm">
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 space-y-4">
+          <FilterBar 
+            search={search}
+            onSearchChange={setSearch}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            categories={todasCategoriasParaFiltro}
+            selectedCategories={selectedCategories}
+            onCategoriesChange={setSelectedCategories}
+            placeholder="Buscar contas..."
+          />
+
           <BillTypeFilter 
             currentFilter={typeFilter}
             onFilterChange={setTypeFilter}

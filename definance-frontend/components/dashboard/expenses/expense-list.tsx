@@ -35,6 +35,9 @@ import {
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
 import { cn, capitalize } from "@/lib/utils"
+import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { useCategories } from "@/lib/category-context"
+
 
 export interface Despesa {
   id: string
@@ -45,12 +48,18 @@ export interface Despesa {
   tipo: string
   status: string
   billId?: string | null
+  descricao?: string | null
+  observacoes?: string | null
 }
 
 interface ExpenseListProps {
   despesas: Despesa[]
   search: string
   onSearchChange: (value: string) => void
+  sortBy: SortOption
+  onSortChange: (value: SortOption) => void
+  selectedCategories: string[]
+  onCategoriesChange: (categories: string[]) => void
   statusFilter: "all" | "paid" | "pending"
   onEdit: (despesa: Despesa) => void
   onMarkAsPaid: (despesa: Despesa) => void
@@ -62,6 +71,10 @@ export function ExpenseList({
   despesas,
   search,
   onSearchChange,
+  sortBy,
+  onSortChange,
+  selectedCategories,
+  onCategoriesChange,
   statusFilter,
   onEdit,
   onMarkAsPaid,
@@ -69,16 +82,16 @@ export function ExpenseList({
   isLoading,
 }: ExpenseListProps) {
   const { discreetMode } = useSettings()
-  const filtered = despesas.filter(
-    (d) => {
-      const matchesSearch = d.nome.toLowerCase().includes(search.toLowerCase()) ||
-                           d.categoria.toLowerCase().includes(search.toLowerCase())
-      
-      if (statusFilter === "paid") return matchesSearch && d.status === "Pago"
-      if (statusFilter === "pending") return matchesSearch && d.status === "Pendente"
-      return matchesSearch
-    }
-  )
+  const { categories: dynamicCategories } = useCategories()
+
+  // Prepara a lista de categorias para o filtro (Padrão + Dinâmicas de Saída)
+  const categoriasFiltradas = dynamicCategories
+    .filter(c => c.type === "Saída" || c.type === "Ambos")
+    .map(c => c.name.trim())
+
+  const todasCategoriasParaFiltro = Array.from(new Set(
+    categoriasFiltradas
+  )).sort()
 
   const getCategoryIcon = (categoria: string, nome: string) => {
     const c = categoria.toLowerCase()
@@ -119,13 +132,16 @@ export function ExpenseList({
           <CardTitle className="text-sm sm:text-base text-card-foreground">
             Lista de Despesas
           </CardTitle>
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar despesas..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8 sm:pl-9 sm:w-[250px] text-sm sm:text-base"
+          <div className="w-full sm:max-w-[520px]">
+            <FilterBar 
+              search={search}
+              onSearchChange={onSearchChange}
+              sortBy={sortBy}
+              onSortChange={onSortChange}
+              categories={todasCategoriasParaFiltro}
+              selectedCategories={selectedCategories}
+              onCategoriesChange={onCategoriesChange}
+              placeholder="Buscar despesas ou palavra-chave..."
             />
           </div>
         </div>
@@ -140,7 +156,7 @@ export function ExpenseList({
           </div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {filtered.map((d) => (
+            {despesas.map((d) => (
               <div
                 key={d.id}
                 className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 sm:p-4 transition-colors gap-3 sm:gap-4 ${
@@ -176,6 +192,20 @@ export function ExpenseList({
                     <p className="text-xs sm:text-sm text-muted-foreground">
                       {capitalize(d.categoria)} • {d.data}
                     </p>
+                    {(d.descricao || d.observacoes) && (
+                      <div className="flex flex-col gap-1 mt-1.5 pt-1.5 border-t border-white/5">
+                        {d.descricao && (
+                          <p className="text-[11px] leading-relaxed text-muted-foreground/70 italic">
+                            {d.descricao}
+                          </p>
+                        )}
+                        {d.observacoes && (
+                          <p className="text-[10px] leading-relaxed text-primary/60 font-medium">
+                            Obs: {d.observacoes}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -254,7 +284,7 @@ export function ExpenseList({
               </div>
             ))}
 
-            {!isLoading && filtered.length === 0 && (
+            {!isLoading && despesas.length === 0 && (
               <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-xl">
                 Nenhuma despesa encontrada.
               </div>
