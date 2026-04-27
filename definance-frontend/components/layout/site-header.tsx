@@ -11,6 +11,8 @@ import { useAuth } from "@/lib/auth-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSectionNavigation } from "@/lib/scroll-utils"
 
+import { OnboardingExitDialog } from "@/components/dashboard/onboarding/onboarding-exit-dialog"
+
 interface SiteHeaderProps {
   variant?: 'landing' | 'onboarding'
 }
@@ -19,6 +21,8 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [showExitDialog, setShowExitDialog] = useState(false)
+  const [exitAction, setExitAction] = useState<(() => void) | null>(null)
   const { user, isAuthenticated, isLoading, logout } = useAuth()
   const pathname = usePathname()
 
@@ -33,11 +37,20 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
 
   const handleLogout = () => {
     if (isOnboarding) {
-      if (window.confirm("Você ainda não finalizou o onboarding. Se sair agora, seu progresso será salvo, mas você precisará voltar aqui depois para concluir. Deseja sair?")) {
-        logout()
-      }
+      setExitAction(() => logout)
+      setShowExitDialog(true)
     } else {
       logout()
+    }
+  }
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (isOnboarding) {
+      e.preventDefault()
+      setExitAction(() => () => window.location.href = "/")
+      setShowExitDialog(true)
+    } else {
+      handleScrollClick(e, '/')
     }
   }
 
@@ -66,7 +79,8 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
         <Link 
           href="/" 
           className="flex items-center gap-2 z-10"
-          onClick={(e) => handleScrollClick(e, '/')}>
+          onClick={handleLogoClick}
+        >
           <Logo size={18} withCard variant="muted" />
           <span className="text-xl font-bold text-foreground">Definance</span>
         </Link>
@@ -218,6 +232,14 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
           )}
         </AnimatePresence>
       )}
+      <OnboardingExitDialog 
+        isOpen={showExitDialog}
+        onOpenChange={setShowExitDialog}
+        onConfirm={() => {
+          if (exitAction) exitAction();
+          setShowExitDialog(false);
+        }}
+      />
     </header>
   )
 }

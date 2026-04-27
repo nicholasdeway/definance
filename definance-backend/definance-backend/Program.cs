@@ -29,12 +29,31 @@ using definance_backend.Features.Bills.Repositories;
 using definance_backend.Features.Bills.Services;
 using definance_backend.Features.Goals.Repositories;
 using definance_backend.Features.Goals.Services;
+using definance_backend.Features.DailyExpenses.Services;
+using definance_backend.Features.DailyExpenses.Repositories;
 using definance_backend.Features.Analysis.Repositories;
 using definance_backend.Features.Analysis.Services;
 using definance_backend.Features.Categories.Repositories;
 using definance_backend.Features.Categories.Services;
 
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Configuração de Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("ai-limit", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -111,6 +130,12 @@ builder.Services.AddScoped<IIncomeService, IncomeService>();
 // EXPENSES
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+
+// DAILY EXPENSES
+builder.Services.AddScoped<IDailyExpenseRepository, DailyExpenseRepository>();
+builder.Services.AddScoped<IDailyExpenseService, DailyExpenseService>();
+builder.Services.AddScoped<IQuickExpenseParser, QuickExpenseParser>();
+builder.Services.AddHttpClient(); // Comunicação com a IA
 
 // BILLS (Minhas Contas)
 builder.Services.AddScoped<IBillRepository, BillRepository>();
