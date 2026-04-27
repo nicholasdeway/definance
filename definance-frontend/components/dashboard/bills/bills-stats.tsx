@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { Clock, CheckCircle2, AlertTriangle } from "lucide-react"
 
 interface BillsStatsProps {
   totalAVencer: number
@@ -25,11 +26,12 @@ export const BillsStats = ({
 }: BillsStatsProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-            A Vencer
-          </CardTitle>
+      <Card className="border-border/50 shadow-sm transition-all duration-300 hover:border-yellow-500/30 hover:shadow-md">
+        <CardHeader className="pb-2 space-y-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">A Vencer</CardTitle>
+          <div className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+            <Clock className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className={cn(
@@ -40,38 +42,40 @@ export const BillsStats = ({
           </div>
           <p className={cn(
             "text-xs text-muted-foreground transition-all duration-300",
-            isLoading && "blur-sm opacity-50"
+            (isLoading || discreetMode) && "discreet-mode-blur"
           )}>
             {allAVencerCount} contas
           </p>
         </CardContent>
       </Card>
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-            Pagas este mês
-          </CardTitle>
+      <Card className="border-border/50 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:shadow-md">
+        <CardHeader className="pb-2 space-y-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Pagas este mês</CardTitle>
+          <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className={cn(
-            "text-2xl sm:text-3xl font-bold text-primary transition-opacity duration-300",
+            "text-2xl sm:text-3xl font-bold text-emerald-600 transition-opacity duration-300",
             (isLoading || discreetMode) && "discreet-mode-blur"
           )}>
             {allPagasCount}
           </div>
           <p className={cn(
             "text-xs text-muted-foreground transition-all duration-300",
-            isLoading && "blur-sm opacity-50"
+            (isLoading || discreetMode) && "discreet-mode-blur"
           )}>
             contas quitadas
           </p>
         </CardContent>
       </Card>
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
-            Atrasadas
-          </CardTitle>
+      <Card className="border-border/50 shadow-sm transition-all duration-300 hover:border-red-500/30 hover:shadow-md">
+        <CardHeader className="pb-2 space-y-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Atrasadas</CardTitle>
+          <div className="h-8 w-8 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className={cn(
@@ -82,7 +86,7 @@ export const BillsStats = ({
           </div>
           <p className={cn(
             "text-xs text-muted-foreground transition-all duration-300",
-            isLoading && "blur-sm opacity-50"
+            (isLoading || discreetMode) && "discreet-mode-blur"
           )}>
             {allAtrasadasCount} contas
           </p>

@@ -1,32 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-import Link from "next/link"
-import { cn, capitalize, formatDateBR } from "@/lib/utils"
 import { 
   Plus, 
-  ArrowDownLeft, 
-  Search, 
-  MoreHorizontal, 
-  Landmark, 
   Download,
-  Briefcase,
-  Building2,
-  User,
-  Laptop,
-  GraduationCap,
-  TrendingUp,
-  Home,
-  Wallet2,
-  Coins,
   ArrowUpCircle
 } from "lucide-react"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
@@ -315,6 +294,17 @@ export default function ReceitasPage() {
 
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
 
+  const listRef = useRef<HTMLDivElement>(null)
+  const prevFilterType = useRef(filterType)
+
+  useEffect(() => {
+    if (prevFilterType.current === filterType) return
+    prevFilterType.current = filterType
+    if (listRef.current) {
+      listRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [filterType])
+
   const filteredReceitas = useMemo(() => {
     let result = receitas
 
@@ -477,7 +467,7 @@ export default function ReceitasPage() {
         discreetMode={discreetMode}
       />
 
-      <Card className="border-border/50">
+      <Card ref={listRef} className="border-border/50">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm sm:text-base text-card-foreground">Lista de Receitas</CardTitle>

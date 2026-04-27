@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace definance_backend.Domain.Entities
 {
     public class Expense
@@ -10,6 +12,8 @@ namespace definance_backend.Domain.Entities
         public DateTime Date { get; set; }
         public string ExpenseType { get; set; } = null!;
         public string Status { get; set; } = null!;
+        [JsonPropertyName("transactionType")]
+        public string? TransactionType { get; set; }
         public string? Description { get; set; }
         public string? Notes { get; set; }
         public Guid? BillId { get; set; }

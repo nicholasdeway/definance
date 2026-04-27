@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, Download, ArrowDownCircle } from "lucide-react"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
@@ -12,7 +12,7 @@ import { ExpenseList, type Despesa } from "@/components/dashboard/expenses/expen
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
-import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { type SortOption } from "@/components/dashboard/filter-bar"
 import { filterAndSortItems } from "@/lib/filter-utils"
 import { useCategories } from "@/lib/category-context"
 
@@ -63,6 +63,17 @@ export default function DespesasPage() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>("data-recente")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+
+  const listRef = useRef<HTMLDivElement>(null)
+  const prevFilterType = useRef(filterType)
+
+  useEffect(() => {
+    if (prevFilterType.current === filterType) return
+    prevFilterType.current = filterType
+    if (listRef.current) {
+      listRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [filterType])
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -305,7 +316,8 @@ export default function DespesasPage() {
       />
 
       {/* Lista de Despesas */}
-      <ExpenseList
+      <div ref={listRef}>
+        <ExpenseList
         despesas={filteredDespesas}
         search={search}
         onSearchChange={setSearch}
@@ -319,6 +331,7 @@ export default function DespesasPage() {
         onDelete={(d) => setDeleteDialog({ open: true, item: d })}
         isLoading={isLoading}
       />
+      </div>
 
       {/* Dialog de Formulário */}
       <ExpenseFormDialog
