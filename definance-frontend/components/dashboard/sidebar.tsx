@@ -38,6 +38,7 @@ import {
   CalendarDays,
   Shield,
   Landmark,
+  Tags
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 
@@ -48,6 +49,7 @@ const menuItems = [
   { title: "Gastos Diários", url: "/dashboard/gastos-diarios", icon: CalendarDays },
   { title: "Minhas Contas", url: "/dashboard/contas", icon: CreditCard },
   { title: "Metas", url: "/dashboard/metas", icon: Target },
+  { title: "Categorias", url: "/dashboard/categorias", icon: Tags },
   { title: "Análises", url: "/dashboard/relatorios", icon: BarChart3 },
   { title: "Perfil Financeiro", url: "/dashboard/perfil-financeiro", icon: Landmark },
 ]
@@ -136,13 +138,13 @@ export function DashboardSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/perfil" className="flex items-center gap-2">
+                  <Link href="/dashboard/perfil" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" />
                     Perfil
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/configuracoes" className="flex items-center gap-2">
+                  <Link href="/dashboard/configuracoes" className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
                     Configurações
                   </Link>

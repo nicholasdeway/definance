@@ -2,14 +2,15 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Download, Wallet, Loader2 } from "lucide-react"
+import { Download, Wallet, Loader2, BarChart3 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { toast } from "sonner"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
-import { cn, capitalize } from "@/lib/utils"
+import { capitalize } from "@/lib/utils"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { incomeTypes } from "@/components/onboarding/constants"
 import { AnalysisStats } from "@/components/dashboard/relatorios/analysis-stats"
 import { MonthlyComparisonChart } from "@/components/dashboard/relatorios/monthly-comparison-chart"
@@ -258,11 +259,14 @@ export default function RelatoriosPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Análises</h1>
-          <p className="text-muted-foreground">Análise detalhada das suas finanças</p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Análises</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">Relatórios e insights detalhados do seu dinheiro</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <PeriodFilter 
             value={period}
             onChange={setPeriod}
@@ -270,13 +274,16 @@ export default function RelatoriosPage() {
           <Button 
             variant="outline" 
             onClick={() => setIsExportDialogOpen(true)}
-            className="cursor-pointer"
+            className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer"
+            size="sm"
           >
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
         </div>
       </div>
+
+      <BillsAlert />
 
       {loading ? (
         <div className="flex h-[400px] items-center justify-center">

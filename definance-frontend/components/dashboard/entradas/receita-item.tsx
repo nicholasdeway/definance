@@ -36,6 +36,8 @@ interface ReceitaItemProps {
     recorrente: boolean
     isSynced?: boolean
     tipoValue?: string
+    descricao?: string | null
+    observacoes?: string | null
   }
   discreetMode: boolean
   onEdit: (receita: any) => void
@@ -65,18 +67,18 @@ export const ReceitaItem = ({
 
   return (
     <div className={cn(
-      "flex items-center justify-between p-4 rounded-xl border transition-all bg-card/50",
+      "flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all bg-card/50 gap-2",
       receita.isSynced 
         ? "border-primary/30 border-dashed border-2 shadow-[0_0_15px_rgba(34,197,94,0.02)]" 
         : "border-border/50 hover:bg-muted/30"
     )}>
-      <div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm flex-shrink-0">
           {getIcon(receita.tipo, receita.isSynced)}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-sm sm:text-base">{receita.nome}</h4>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <h4 className="font-semibold text-xs sm:text-base truncate">{receita.nome}</h4>
             {receita.isSynced && (
               <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter py-0 px-1.5 border-primary/20 text-primary bg-primary/5">
                 Sincronizado
@@ -89,13 +91,27 @@ export const ReceitaItem = ({
             <span>{receita.tipo}</span>
             {receita.recorrente && <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-1 rounded font-medium">Recorrente</span>}
           </div>
+          {(receita.descricao || receita.observacoes) && (
+            <div className="flex flex-col gap-1 mt-1.5 pt-1.5 border-t border-white/5">
+              {receita.descricao && (
+                <p className="text-[11px] leading-relaxed text-muted-foreground/70 italic">
+                  {receita.descricao}
+                </p>
+              )}
+              {receita.observacoes && (
+                <p className="text-[10px] leading-relaxed text-primary/60 font-medium">
+                  Obs: {receita.observacoes}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         <div className="text-right">
           <p className={cn(
-            "font-bold text-sm sm:text-base transition-all duration-300",
+            "font-bold text-xs sm:text-base transition-all duration-300",
             discreetMode && "discreet-mode-blur"
           )}>
             {formatCurrency(receita.valor)}

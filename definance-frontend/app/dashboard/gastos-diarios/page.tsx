@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUpRight, Send, Trash2, Download } from "lucide-react"
+import { ArrowUpRight, Send, Trash2, Download, CalendarDays } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { formatCurrency } from "@/lib/currency"
 import { useSettings } from "@/lib/settings-context"
 import { cn } from "@/lib/utils"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 
 interface Gasto {
   id: number
@@ -93,21 +94,26 @@ export default function GastosDiariosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gastos Diários</h1>
-          <p className="text-muted-foreground">Registre seus gastos rapidamente</p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Gastos Diários</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">Registre seus gastos rápidos do dia a dia</p>
         </div>
         <Button 
           variant="outline" 
-          size="sm" 
-          className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
           onClick={() => setIsExportDialogOpen(true)}
+          className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+          size="sm"
         >
           <Download className="h-4 w-4" />
           Exportar
         </Button>
       </div>
+
+      <BillsAlert />
 
       <Card className="border-border/50">
         <CardHeader>

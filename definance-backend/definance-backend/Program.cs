@@ -31,6 +31,8 @@ using definance_backend.Features.Goals.Repositories;
 using definance_backend.Features.Goals.Services;
 using definance_backend.Features.Analysis.Repositories;
 using definance_backend.Features.Analysis.Services;
+using definance_backend.Features.Categories.Repositories;
+using definance_backend.Features.Categories.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,6 +123,14 @@ builder.Services.AddScoped<IGoalService, GoalService>();
 // ANALYSIS
 builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
+
+// CATEGORIES
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// DATABASE
+builder.Services.AddTransient<Npgsql.NpgsqlConnection>(provider => 
+    new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // GLOBAL EXCEPTION HANDLER
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

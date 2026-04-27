@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Star, Loader2 } from "lucide-react"
+import { Plus, Star, Loader2, Target } from "lucide-react"
+import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { goalsApi, Goal, CreateUpdateGoalDto } from "@/lib/goals"
 import { useToast } from "@/components/ui/use-toast"
@@ -121,23 +122,26 @@ export default function MetasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Metas</h1>
-            <p className="text-muted-foreground">Acompanhe seus objetivos financeiros</p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Target className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Metas</h1>
           </div>
-          <Button 
-            id="btn-nova-meta" 
-            className="bg-primary/70 text-primary-foreground hover:bg-primary w-full sm:w-auto cursor-pointer" 
-            onClick={() => setModalForm({ open: true, meta: null })}
-            size="sm"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Meta
-          </Button>
+          <p className="text-muted-foreground text-sm">Acompanhe seus objetivos financeiros e sonhos</p>
         </div>
+        <Button 
+          id="btn-nova-meta" 
+          className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto" 
+          onClick={() => setModalForm({ open: true, meta: null })}
+          size="sm"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Meta
+        </Button>
       </div>
+
+      <BillsAlert />
 
       {loading ? (
         <div className="flex h-[400px] items-center justify-center">

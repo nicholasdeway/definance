@@ -75,26 +75,32 @@ function FinancialProfileContent() {
         </div>
       )}
       
-      <BillsAlert />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Perfil Financeiro</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Configurações base que alimentam o restante do seu dashboard</p>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Landmark className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Perfil Financeiro</h1>
+          </div>
+          <p className="text-muted-foreground text-sm">Configurações base que alimentam o restante do seu dashboard</p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden xs:flex flex-col items-end">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sincronização</span>
-                <SyncStatusIndicator status={syncStatus} />
-            </div>
-            <div className="h-10 w-px bg-border/40 hidden xs:block" />
-            <div className="bg-primary/10 border border-primary/20 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1.5 sm:gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                <span className="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-tighter">Protegido</span>
-            </div>
+        
+        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex flex-col items-start">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sincronização</span>
+                  <SyncStatusIndicator status={syncStatus} />
+              </div>
+              <div className="h-10 w-px bg-border/40" />
+              <div className="bg-primary/10 border border-primary/20 rounded-full px-3 py-1 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-tighter">Protegido</span>
+              </div>
+          </div>
         </div>
       </div>
  
+      <BillsAlert />
       <div className="grid gap-6">
         <Tabs defaultValue="renda" onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-0 bg-transparent border-none gap-2 mb-6">

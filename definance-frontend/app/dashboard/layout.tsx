@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { MobileDashboardNav } from "@/components/dashboard/mobile-nav"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AuthProvider, useAuth } from "@/lib/auth-provider"
+import { CategoryProvider } from "@/lib/category-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Spinner } from "@/components/ui/spinner"
@@ -41,7 +42,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <DashboardHeader />
         <MobileDashboardNav />
         <main className="flex-1 p-4 md:p-6 pb-2">
-          {children}
+          <CategoryProvider>
+            {children}
+          </CategoryProvider>
         </main>
         <footer className="py-6 flex justify-center mt-auto">
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50 text-center px-4">
