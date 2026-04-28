@@ -116,6 +116,7 @@ namespace definance_backend.Features.Expenses.Services
             Date        = expense.Date,
             ExpenseType = expense.ExpenseType,
             Status      = expense.Status,
+            TransactionType = expense.TransactionType,
             Description = expense.Description,
             Notes       = expense.Notes
         };

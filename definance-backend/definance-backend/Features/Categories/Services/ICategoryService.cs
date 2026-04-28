@@ -8,5 +8,6 @@ namespace definance_backend.Features.Categories.Services
         Task<CategoryDto> CreateCategoryAsync(Guid userId, CreateCategoryDto dto);
         Task<CategoryDto> UpdateCategoryAsync(Guid userId, Guid categoryId, UpdateCategoryDto dto);
         Task DeleteCategoryAsync(Guid userId, Guid categoryId);
+        Task UpdateCategoryLimitAsync(Guid userId, Guid categoryId, decimal? monthlyLimit);
     }
 }

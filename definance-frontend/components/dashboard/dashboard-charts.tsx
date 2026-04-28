@@ -1,163 +1,206 @@
 "use client"
-
+ 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import { Loader2, PieChart as PieIcon } from "lucide-react"
 
-const pieData = [
-  { name: "Moradia", value: 1800, color: "var(--chart-1)" },
-  { name: "Alimentação", value: 1200, color: "var(--chart-2)" },
-  { name: "Transporte", value: 600, color: "var(--chart-3)" },
-  { name: "Lazer", value: 450, color: "var(--chart-4)" },
-  { name: "Outros", value: 300, color: "var(--chart-5)" },
+export interface CategoryData {
+  categoria: string
+  valor: number
+}
+
+export interface MonthlyData {
+  month: string
+  receitas: number
+  despesas: number
+}
+
+interface DashboardChartsProps {
+  categoryData: CategoryData[]
+  monthlyData: MonthlyData[]
+  loading?: boolean
+}
+
+const CHART_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ]
 
-const lineData = [
-  { month: "Jan", receitas: 6500, despesas: 4200 },
-  { month: "Fev", receitas: 7200, despesas: 4800 },
-  { month: "Mar", receitas: 8500, despesas: 4350 },
-]
-
-export function DashboardCharts() {
+export function DashboardCharts({ categoryData, monthlyData, loading }: DashboardChartsProps) {
   const { discreetMode } = useSettings()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
-  const cursorFill = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const total = pieData.reduce((sum, item) => sum + item.value, 0)
+  const total = categoryData.reduce((sum, item) => sum + item.valor, 0)
+
+  if (loading || !mounted) {
+    return (
+      <Card className="border-border/50 bg-card h-full flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/20" />
+      </Card>
+    )
+  }
 
   return (
-    <Card className="border-border/50 bg-card">
-      <CardHeader>
-        <CardTitle className="text-base text-card-foreground">Gastos por Categoria</CardTitle>
+    <Card className="border-border/50 bg-card h-full flex flex-col">
+      <CardHeader className="py-4">
+        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">Análise de Gastos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <div className={cn(
-            "relative h-48 w-48 transition-all duration-300",
-            discreetMode && "discreet-mode-blur"
-          )}>
-            {mounted && (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
+        {categoryData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-center bg-muted/5 rounded-xl border border-dashed border-border/50">
+            <PieIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p className="text-xs font-medium text-muted-foreground">Sem dados de categorias este mês</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-6 md:flex-row">
+            <div className={cn(
+              "relative h-44 w-44 shrink-0 transition-all duration-300",
+              discreetMode && "discreet-mode-blur"
+            )}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="valor"
+                    nameKey="categoria"
                   >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {categoryData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",
-                      borderRadius: "8px",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                      fontWeight: "bold"
                     }}
-                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Valor"]}
+                    itemStyle={{ color: "var(--foreground)" }}
+                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Total"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
-            )}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-lg font-bold text-card-foreground">
-                R$ {total.toLocaleString("pt-BR")}
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid flex-1 grid-cols-2 gap-2 text-sm md:grid-cols-1">
-            {pieData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-muted-foreground">{item.name}</span>
-                <span className={cn(
-                  "ml-auto font-medium text-card-foreground transition-opacity duration-300",
-                  discreetMode && "discreet-mode-blur"
-                )}>
-                  {((item.value / total) * 100).toFixed(0)}%
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Total</span>
+                <span className="text-sm font-black text-card-foreground">
+                  {total > 1000 ? `${(total/1000).toFixed(1)}k` : `R$ ${total.toFixed(0)}`}
                 </span>
               </div>
-            ))}
+            </div>
+            
+            <div className="flex-1 w-full space-y-2.5">
+              {categoryData.slice(0, 5).map((item, index) => (
+                <div key={item.categoria} className="flex items-center gap-2 group">
+                  <div
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                  />
+                  <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors truncate flex-1 min-w-0">
+                    {item.categoria}
+                  </span>
+                  <div className="hidden sm:block flex-1 border-b border-dashed border-border/30 mx-1 mb-1" />
+                  <span className={cn(
+                    "text-[11px] font-bold text-card-foreground transition-opacity duration-300 shrink-0 tabular-nums",
+                    discreetMode && "discreet-mode-blur"
+                  )}>
+                    {((item.valor / total) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="mt-6">
-          <h4 className="mb-4 text-sm font-medium text-card-foreground">Evolução Mensal</h4>
+        <div className="pt-4 border-t border-border/50">
+          <h4 className="mb-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 text-center">Evolução Mensal</h4>
           <div className={cn(
-            "h-48 transition-all duration-300",
+            "h-44 transition-all duration-300",
             discreetMode && "discreet-mode-blur"
           )}>
-            {mounted && (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <LineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                    axisLine={{ stroke: "var(--border)" }}
-                  />
-                  <YAxis 
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                    axisLine={{ stroke: "var(--border)" }}
-                    tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip
-                    cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                    }}
-                    labelStyle={{ color: "var(--card-foreground)" }}
-                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="receitas"
-                    stroke="var(--chart-1)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--chart-1)" }}
-                    name="Receitas"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="despesas"
-                    stroke="var(--chart-5)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--chart-5)" }}
-                    name="Despesas"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-          <div className="mt-2 flex justify-center gap-6 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-chart-1" />
-              <span className="text-muted-foreground">Receitas</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-chart-5" />
-              <span className="text-muted-foreground">Despesas</span>
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-5)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--chart-5)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/30" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
+                />
+                <YAxis 
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => {
+                    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`
+                    return value.toString()
+                  }}
+                />
+                <Tooltip
+                  cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', strokeWidth: 2 }}
+                  contentStyle={{
+                    backgroundColor: "rgba(var(--card-rgb), 0.9)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "12px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                  }}
+                  formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="receitas"
+                  stroke="var(--chart-1)"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorReceitas)"
+                  name="Receitas"
+                  animationDuration={1500}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="despesas"
+                  stroke="var(--chart-5)"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorDespesas)"
+                  name="Despesas"
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </CardContent>

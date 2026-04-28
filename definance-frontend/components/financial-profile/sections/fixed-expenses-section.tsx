@@ -1,6 +1,6 @@
 "use client"
 
-import React, { Fragment } from "react"
+import { Fragment } from "react"
 import { Check, Plus, Trash2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CurrencyInput } from "@/components/ui/currency-input"
@@ -103,8 +103,8 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Toque nas categorias que se aplicam a você e informe o valor mensal.
+      <p className="text-[9px] text-muted-foreground/60 uppercase tracking-widest">
+        Selecione as categorias e informe o valor mensal.
       </p>
 
       {/* Grade de categorias */}
@@ -116,19 +116,22 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
               key={cat.key}
               type="button"
               onClick={() => toggleExpense(cat.key)}
-              className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-all hover:border-primary/50 cursor-pointer ${
-                isSelected ? "border-primary bg-primary/5" : "border-border bg-background/50"
-              }`}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-all cursor-pointer",
+                isSelected
+                  ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10"
+                  : "border-white/5 bg-white/5 hover:border-primary/20 hover:bg-primary/5"
+              )}
             >
               {isSelected && (
-                <div className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/70">
-                  <Check className="h-2 w-2 text-primary-foreground" />
+                <div className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/20">
+                  <Check className="h-2 w-2 text-primary" />
                 </div>
               )}
-              <cat.icon className={cn("h-6 w-6 transition-colors", isSelected ? "text-primary" : "text-muted-foreground")} />
-              <span className="text-xs font-medium leading-tight text-card-foreground">{cat.label}</span>
+              <cat.icon className={cn("h-4 w-4 transition-colors", isSelected ? "text-primary" : "text-muted-foreground/60")} />
+              <span className={cn("text-[9px] font-medium leading-tight tracking-tight", isSelected ? "text-primary" : "text-muted-foreground")}>{cat.label}</span>
               {isSelected && selectedExpenses[cat.key] !== undefined && selectedExpenses[cat.key] > 0 && (
-                <span className="text-[10px] font-semibold text-primary">
+                <span className="text-[8px] text-primary">
                   {formatCurrency(selectedExpenses[cat.key])}
                 </span>
               )}
@@ -139,22 +142,22 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
 
       {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
-        <div className="space-y-6 border-t border-border/50 pt-4">
+        <div className="space-y-3 border-t border-white/5 pt-4">
           {/* Seção 1: Contas com Opção de Empréstimo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo (Com Empréstimo)</span>
-                <span className="h-px flex-1 bg-border/40" />
+                <span className="h-px flex-1 bg-white/5" />
+                <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Contas de Consumo</span>
+                <span className="h-px flex-1 bg-white/5" />
               </div>
               <div className="grid gap-4">
                 {fixedExpenseCategories
                   .filter((cat) => ["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
                     <Fragment key={cat.key}>
-                      <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/30 p-3">
-                        <cat.icon className="h-6 w-6 text-primary transition-colors" />
+                      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                        <cat.icon className="h-5 w-5 text-primary transition-colors" />
                         <div className="flex-1 space-y-1">
                           <FieldLabel 
                             label={cat.label} 
@@ -235,15 +238,15 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
           {fixedExpenseCategories.some(c => !["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="h-px flex-1 bg-border/40" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Moradia, Assinaturas e Serviços</span>
-                <span className="h-px flex-1 bg-border/40" />
+                <span className="h-px flex-1 bg-white/5" />
+                <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Moradia, Assinaturas e Serviços</span>
+                <span className="h-px flex-1 bg-white/5" />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
-                    <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-border/40 bg-background/30 p-2.5">
+                    <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
                       <cat.icon className="h-5 w-5 text-primary" />
                       <div className="flex-1 space-y-1">
                         <FieldLabel 
@@ -274,15 +277,15 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
 
       {/* Gastos personalizados */}
       {customExpenses.length > 0 && (
-        <div className="space-y-4 border-t border-border/50 pt-4">
+        <div className="space-y-4 border-t border-white/5 pt-4">
           <div className="flex items-center gap-2">
-            <span className="h-px flex-1 bg-border/20" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Gastos Personalizados</span>
-            <span className="h-px flex-1 bg-border/20" />
+            <span className="h-px flex-1 bg-white/5" />
+            <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Gastos Personalizados</span>
+            <span className="h-px flex-1 bg-white/5" />
           </div>
           <div className="space-y-3">
             {customExpenses.map((exp, idx) => (
-              <div key={exp.id} className="group relative space-y-3 rounded-xl border border-border/40 bg-background/30 p-3 pb-4">
+              <div key={exp.id} className="group relative space-y-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 pb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">Item {idx + 1}</span>
                   <button
@@ -342,18 +345,19 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
       <button
         type="button"
         onClick={addCustomExpense}
-        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer"
+        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/5 p-3 text-[11px] font-bold text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-primary cursor-pointer"
       >
         <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
         Adicionar outra despesa fixa
       </button>
 
-      <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-6">
+      <div className="flex items-center justify-end pt-4 border-t border-white/5 mt-3">
         <Button 
-          type="button" 
+          type="button"
+          size="sm"
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary/80 font-bold"
+          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary text-xs cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Despesas"}
         </Button>

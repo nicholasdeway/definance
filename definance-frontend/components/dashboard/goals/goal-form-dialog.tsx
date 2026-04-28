@@ -28,6 +28,7 @@ import { ptBR } from "date-fns/locale"
 import { DateRange } from "react-day-picker"
 import { Goal, CreateUpdateGoalDto } from "@/lib/goals"
 import { PremiumModal } from "@/components/ui/premium-modal"
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 interface GoalFormDialogProps {
   open: boolean
@@ -57,6 +58,7 @@ const CATEGORIAS: Categoria[] = [
 const FORM_VAZIO = { nome: "", valorAlvo: "", categoria: "outros", reservaMensal: "", diaReserva: "" }
 
 export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: GoalFormDialogProps) {
+  const isMobile = useIsMobile()
   const [form, setForm] = useState(FORM_VAZIO)
   const [range, setRange] = useState<DateRange | undefined>(undefined)
   const [monthStart, setMonthStart] = useState<Date>(new Date())
@@ -110,56 +112,63 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
       open={open}
       onOpenChange={onOpenChange}
       title={meta ? "Editar Meta" : "Nova Meta"}
-      description={meta ? "Atualize as informações do seu objetivo." : "Defina um objetivo financeiro claro para focar seus esforços e economias."}
+      description={meta ? "Atualize as informações do seu objetivo." : "Defina um objetivo financeiro claro."}
       icon={<Target className="h-8 w-8 text-primary" />}
     >
-      <form onSubmit={handleSubmit} className="space-y-8 h-full flex flex-col">
-        <div className="flex-1 space-y-6">
+      <form onSubmit={handleSubmit} className={cn("flex flex-col h-full", isMobile ? "space-y-4" : "space-y-8")}>
+        <div className={cn("flex-1", isMobile ? "space-y-3" : "space-y-6")}>
           {/* Nome da Meta */}
-          <div className="space-y-2">
-            <Label htmlFor="meta-nome" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+          <div className="space-y-0.5 sm:space-y-2">
+            <Label htmlFor="meta-nome" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
               Nome do Objetivo
             </Label>
             <Input
               id="meta-nome"
-              placeholder="Ex: Viagem para Europa, Carro Novo..."
+              placeholder={isMobile ? "Ex: Europa, Carro..." : "Ex: Viagem para Europa, Carro Novo..."}
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              className="h-12 text-lg bg-muted/20 border-white/5 rounded-2xl px-5 focus:ring-primary/20 transition-all"
+              className={cn(
+                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5"
+              )}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6">
             {/* Valor Alvo */}
-            <div className="space-y-2">
-              <Label htmlFor="meta-valor" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
-                Quanto você quer juntar?
+            <div className="flex-1 space-y-0.5 sm:space-y-2">
+              <Label htmlFor="meta-valor" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">
+                {isMobile ? "Alvo" : "Quanto você quer juntar?"}
               </Label>
               <CurrencyInput
                 id="meta-valor"
                 value={form.valorAlvo}
                 onChange={(value) => setForm({ ...form, valorAlvo: value })}
                 placeholder="0,00"
-                className="h-12 text-2xl font-black bg-primary/5 border-primary/10 text-primary rounded-2xl pl-14 pr-5 focus:ring-primary/20"
+                className={cn(
+                  "font-black bg-primary/5 border-primary/10 text-primary rounded-lg md:rounded-2xl",
+                  isMobile ? "h-8 text-xs pl-8 pr-1" : "h-12 text-2xl pl-12 pr-5"
+                )}
               />
             </div>
 
             {/* Período */}
-            <div className="space-y-2">
-              <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Período da Meta</Label>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="flex-1 space-y-0.5 sm:space-y-2">
+              <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">Período</Label>
+              <div className="grid grid-cols-2 gap-1.5 md:gap-3">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
                       variant="outline"
                       className={cn(
-                        "h-12 justify-start text-left font-normal w-full bg-muted/20 border-white/5 rounded-2xl px-4 transition-all",
+                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-4",
                         !range?.from && "text-muted-foreground"
                       )}
                     >
-                      <CalendarRange className="mr-2 h-4 w-4 shrink-0 text-primary" />
-                      {range?.from ? format(range.from, "dd/MM/yyyy") : "Início"}
+                      <CalendarRange className={cn("shrink-0 text-primary", isMobile ? "h-3 w-3 mr-1" : "h-4 w-4 mr-2")} />
+                      <span className="truncate">{range?.from ? format(range.from, "dd/MM/yy") : "Início"}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -183,12 +192,13 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                       type="button"
                       variant="outline"
                       className={cn(
-                        "h-12 justify-start text-left font-normal w-full bg-muted/20 border-white/5 rounded-2xl px-4 transition-all",
+                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-4",
                         !range?.to && "text-muted-foreground"
                       )}
                     >
-                      <CalendarRange className="mr-2 h-4 w-4 shrink-0 text-primary" />
-                      {range?.to ? format(range.to, "dd/MM/yyyy") : "Término"}
+                      <CalendarRange className={cn("shrink-0 text-primary", isMobile ? "h-3 w-3 mr-1" : "h-4 w-4 mr-2")} />
+                      <span className="truncate">{range?.to ? format(range.to, "dd/MM/yy") : "Fim"}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
@@ -209,10 +219,10 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6">
             {/* Reserva Mensal */}
-            <div className="space-y-2">
-              <Label htmlFor="meta-reserva" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+            <div className="flex-1 space-y-0.5 sm:space-y-2">
+              <Label htmlFor="meta-reserva" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">
                 Reserva Mensal
               </Label>
               <CurrencyInput
@@ -220,13 +230,16 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                 value={form.reservaMensal}
                 onChange={(value) => setForm({ ...form, reservaMensal: value })}
                 placeholder="0,00"
-                className="h-12 text-lg font-bold bg-muted/20 border-white/5 rounded-2xl pl-14 pr-5 focus:ring-primary/20"
+                className={cn(
+                  "font-bold bg-muted/20 border-white/5 rounded-lg md:rounded-2xl focus:ring-primary/20",
+                  isMobile ? "h-8 text-xs pl-8 pr-1" : "h-12 text-lg pl-12 pr-5"
+                )}
               />
             </div>
 
             {/* Dia da Reserva */}
-            <div className="space-y-2">
-              <Label htmlFor="meta-dia" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+            <div className="flex-1 space-y-0.5 sm:space-y-2">
+              <Label htmlFor="meta-dia" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">
                 Dia do Depósito
               </Label>
               <div className="relative">
@@ -236,7 +249,10 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                   min={1}
                   max={31}
                   placeholder="Ex: 5"
-                  className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all font-mono"
+                  className={cn(
+                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl px-5 transition-all font-mono no-spinner",
+                    isMobile ? "h-8 text-[11px]" : "h-12"
+                  )}
                   value={form.diaReserva}
                   onChange={(e) => {
                     const val = e.target.value
@@ -245,9 +261,11 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                     else if (!isNaN(num) && num >= 1 && num <= 31) setForm({ ...form, diaReserva: String(num) })
                   }}
                 />
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase tracking-wider text-muted-foreground/40">
-                  Todo mês
-                </span>
+                {!isMobile && (
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold uppercase tracking-wider text-muted-foreground/40">
+                    Todo mês
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -258,26 +276,34 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
             const diffInMonths = Math.max(1, (range.to.getFullYear() - range.from.getFullYear()) * 12 + (range.to.getMonth() - range.from.getMonth()))
             const sugerido = alvo / diffInMonths
             
-            const reserva = parseCurrencyInput(form.reservaMensal)
-            const mesesMeta = reserva > 0 ? Math.ceil(alvo / reserva) : 0
-
             return (
               <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-                <div className="flex items-center gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-                    <Clock className="h-6 w-6 text-primary" />
+                <div className={cn(
+                  "flex items-center gap-2 md:gap-4 rounded-xl md:rounded-3xl border border-primary/20 bg-primary/5",
+                  isMobile ? "p-2.5" : "p-4"
+                )}>
+                  <div className={cn(
+                    "flex shrink-0 items-center justify-center rounded-lg md:rounded-2xl bg-primary/10",
+                    isMobile ? "h-8 w-8" : "h-12 w-12"
+                  )}>
+                    <Clock className={cn("text-primary", isMobile ? "h-4 w-4" : "h-6 w-6")} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-0.5">Sugestão de Economia</p>
-                    <p className="text-sm font-medium text-foreground truncate">
-                      Reserve <span className="text-primary font-bold">{formatCurrency(sugerido)}</span> por mês para atingir em {diffInMonths} meses.
+                    <p className={cn("font-bold uppercase tracking-widest text-muted-foreground/60 mb-0.5", isMobile ? "text-[7px]" : "text-[10px]")}>
+                      Sugestão
+                    </p>
+                    <p className={cn("font-medium text-foreground truncate", isMobile ? "text-[9px]" : "text-sm")}>
+                      Reserve <span className="text-primary font-bold">{formatCurrency(sugerido)}</span>/mês em {diffInMonths} meses.
                     </p>
                   </div>
                   <Button 
                     type="button"
                     variant="ghost" 
                     size="sm" 
-                    className="h-10 px-4 rounded-xl hover:bg-primary/20 text-primary font-bold text-xs uppercase tracking-wider cursor-pointer"
+                    className={cn(
+                      "rounded-lg md:rounded-xl hover:bg-primary/20 text-primary font-bold uppercase tracking-wider cursor-pointer",
+                      isMobile ? "h-6 px-2 text-[8px]" : "h-10 px-4 text-xs"
+                    )}
                     onClick={() => setForm({ ...form, reservaMensal: toCents(sugerido).toString() })}
                   >
                     Aplicar
@@ -288,9 +314,9 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
           })()}
 
           {/* Categoria Grid */}
-          <div className="space-y-3">
-            <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Escolha um Ícone</Label>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="space-y-2 md:space-y-3">
+            <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Escolha um Ícone</Label>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
               {CATEGORIAS.map((cat) => {
                 const Icon = cat.icon
                 const sel  = form.categoria === cat.id
@@ -300,19 +326,21 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                     type="button"
                     onClick={() => setForm({ ...form, categoria: cat.id })}
                     className={cn(
-                      "flex flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-300 group cursor-pointer",
+                      "flex flex-col items-center gap-1 md:gap-2 rounded-xl md:rounded-2xl border transition-all duration-300 group cursor-pointer",
+                      isMobile ? "p-2" : "p-4",
                       sel
                         ? "border-primary bg-primary/10 shadow-[0_0_15px_-3px_rgba(var(--primary),0.3)]"
                         : "border-white/5 bg-muted/10 hover:bg-muted/20 hover:border-white/10"
                     )}
                   >
                     <div className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                      "flex items-center justify-center rounded-lg md:rounded-xl transition-all duration-300",
+                      isMobile ? "h-7 w-7" : "h-10 w-10",
                       sel ? "bg-primary text-primary-foreground rotate-6" : cn(cat.bgCor, cat.cor, "group-hover:scale-110")
                     )}>
-                      <Icon className="h-5 w-5" />
+                      <Icon className={isMobile ? "h-4 w-4" : "h-5 w-5"} />
                     </div>
-                    <span className={cn("text-[10px] font-bold uppercase tracking-widest transition-colors", sel ? "text-primary" : "text-muted-foreground")}>
+                    <span className={cn("font-bold uppercase tracking-widest transition-colors", isMobile ? "text-[7px]" : "text-[10px]", sel ? "text-primary" : "text-muted-foreground")}>
                       {cat.label}
                     </span>
                   </button>
@@ -323,29 +351,22 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-6 border-t border-white/5 flex items-center justify-end gap-3">
-          {!isFormValid && (
-            <div className="flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                <span className="text-destructive mr-1">*</span> Preencha todos os campos obrigatórios
-              </p>
-            </div>
-          )}
+        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="rounded-xl px-6 hover:bg-white/5 transition-all cursor-pointer"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
-            className="min-w-[160px] h-12 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 bg-primary text-primary-foreground text-xs md:text-sm font-bold rounded-lg md:rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             disabled={saving || !isFormValid}
           >
-            {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-            {meta ? "Salvar Alterações" : "Criar Meta"}
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {meta ? "Salvar" : "Criar"}
           </Button>
         </div>
       </form>

@@ -22,6 +22,7 @@ interface GastoListProps {
   discreetMode: boolean
   onEdit: (gasto: Gasto) => void
   onDelete: (gasto: Gasto) => void
+  onDetails: (gasto: Gasto) => void
 }
 
 export function GastoList({ 
@@ -32,19 +33,20 @@ export function GastoList({
   isInitialLoad, 
   discreetMode, 
   onEdit,
-  onDelete 
+  onDelete,
+  onDetails 
 }: GastoListProps) {
   if (!visible || (gastos.length === 0 && !isLoading)) return null
 
   return (
     <Card className="border-border/50 shadow-sm">
-      <CardHeader className="pb-3">
+      <CardHeader className="p-4 pb-1 sm:p-6 sm:pb-1 space-y-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm sm:text-base text-card-foreground">{title}</CardTitle>
-          <Badge variant="secondary" className="text-xs">{gastos.length} gastos</Badge>
+          <CardTitle className="text-sm sm:text-base text-card-foreground font-bold">{title}</CardTitle>
+          <Badge variant="secondary" className="text-[10px] sm:text-xs bg-muted/50">{gastos.length} gastos</Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-1 sm:p-6 sm:pt-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -63,6 +65,7 @@ export function GastoList({
                 discreetMode={discreetMode} 
                 onEdit={onEdit}
                 onDelete={onDelete} 
+                onDetails={onDetails}
               />
             ))}
           </div>

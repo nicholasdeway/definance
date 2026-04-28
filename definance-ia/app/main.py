@@ -28,12 +28,12 @@ async def health_check():
     return {"status": "healthy", "version": settings.APP_VERSION}
 
 @app.post("/parse-expense", response_model=ParsedExpense, tags=["IA"])
-async def parse_expense(request: ExpenseRequest, categories: List[str] = []):
+async def parse_expense(request: ExpenseRequest):
     """
     Recebe um texto e uma lista de categorias e retorna os dados financeiros estruturados.
     """
-    logger.info("Recebida requisição de processamento.")
-    return await parse_expense_text(request.text, categories)
+    logger.info(f"Recebida requisição de processamento: {request.text}")
+    return await parse_expense_text(request.text, request.categories)
 
 if __name__ == "__main__":
     import uvicorn

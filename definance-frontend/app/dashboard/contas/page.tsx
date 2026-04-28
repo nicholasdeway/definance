@@ -20,7 +20,7 @@ import { apiClient } from "@/lib/api-client"
 import { BillFormDialog, type BillFormState } from "@/components/dashboard/bills/bill-form-dialog"
 import { ConfirmPayDialog } from "@/components/dashboard/bills/confirm-pay-dialog"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { useCategories } from "@/lib/category-context"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsStats } from "@/components/dashboard/bills/bills-stats"
@@ -28,6 +28,7 @@ import { BillItem, type ContaItem } from "@/components/dashboard/bills/bill-item
 import { BillTypeFilter } from "@/components/dashboard/bills/bill-type-filter"
 import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
 import { filterAndSortItems } from "@/lib/filter-utils"
+import { BillDetailsModal } from "@/components/dashboard/bills/bill-details-modal"
 
 type TypeFilter = "Todas" | "Fixa" | "Variável"
 
@@ -139,7 +140,12 @@ export default function ContasPage() {
   const [showTutorial, setShowTutorial] = useState(false)
   const [hasTriggeredTutorial, setHasTriggeredTutorial] = useState(false)
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [detailsModal, setDetailsModal] = useState<{ open: boolean; item: ContaItem | null }>({
+    open: false,
+    item: null
+  })
   const searchParams = useSearchParams()
+  const router = useRouter()
 
 
 
@@ -188,9 +194,21 @@ export default function ContasPage() {
     contas.find(c => !c.rawDueDate)?.id, 
   [contas])
 
+  const scrollToTabs = () => {
+    setTimeout(() => {
+      const el = document.getElementById("bills-list-section")
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    }, 100)
+  }
+
   useEffect(() => {
     const tab = searchParams.get("tab")
-    if (tab === "atrasadas") setActiveTab("atrasadas")
+    if (tab === "atrasadas") {
+      setActiveTab("atrasadas")
+      scrollToTabs()
+    }
     else if (tab === "pagas") setActiveTab("pagas")
     else if (tab === "vencer") setActiveTab("vencer")
   }, [searchParams])
@@ -368,15 +386,22 @@ export default function ContasPage() {
   }
 
 
-  const handleAlertAction = (type: "overdue" | "setup") => {
+  const handleAlertAction = (type: "overdue" | "setup" | "dueSoon" | "budget" | "spending") => {
     if (type === "overdue") {
       setActiveTab("atrasadas")
       setTypeFilter("Todas")
+      scrollToTabs()
     } else if (type === "setup") {
       setActiveTab("vencer")
       setTypeFilter("Todas")
       setShowTutorial(true)
       setHasTriggeredTutorial(true)
+    } else if (type === "dueSoon") {
+      setActiveTab("vencer")
+      setTypeFilter("Todas")
+      scrollToTabs()
+    } else if (type === "budget" || type === "spending") {
+      router.push("/dashboard/relatorios")
     }
   }
 
@@ -412,6 +437,7 @@ export default function ContasPage() {
             onEdit={openEditDialog}
             onDelete={(item) => setDeleteDialog({ open: true, item })}
             onPay={(item) => setPayDialog({ open: true, item })}
+            onShowDetails={(item) => setDetailsModal({ open: true, item })}
           />
         ))}
       </div>
@@ -427,14 +453,14 @@ export default function ContasPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <CreditCard className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Minhas Contas</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Minhas Contas</h1>
           </div>
-          <p className="text-muted-foreground text-sm">Gerencie suas contas e boletos a vencer</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Gerencie suas contas e boletos</p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+
+        <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
+            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto h-9 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20"
             onClick={openAddDialog}
             size="sm"
           >
@@ -442,21 +468,19 @@ export default function ContasPage() {
             Nova Conta
           </Button>
 
-          <div className="flex items-center gap-2">
-            <PeriodFilter 
-              value={period}
-              onChange={setPeriod}
-            />
+          <PeriodFilter 
+            value={period}
+            onChange={setPeriod}
+          >
             <Button 
               variant="outline" 
-              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer border-white/10 sm:border-border/50 text-xs sm:text-sm font-medium"
               onClick={() => setIsExportDialogOpen(true)}
-              size="sm"
             >
-              <Download className="h-4 w-4" />
-              Exportar
+              <Download className="h-3.5 w-3.5 sm:h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
-          </div>
+          </PeriodFilter>
         </div>
       </div>
 
@@ -473,7 +497,7 @@ export default function ContasPage() {
       />
 
       {/* Lista com Tabs + Filtro de Tipo */}
-      <Card className="border-border/50 shadow-sm">
+      <Card id="bills-list-section" className="border-border/50 shadow-sm scroll-mt-20">
         <CardContent className="pt-4 space-y-4">
           <FilterBar 
             search={search}
@@ -578,12 +602,39 @@ export default function ContasPage() {
         fileName={`contas-${period.month}-${period.year}`}
       />
 
+      <BillDetailsModal
+        open={detailsModal.open}
+        onOpenChange={(open) => setDetailsModal({ ...detailsModal, open })}
+        conta={detailsModal.item}
+        onEdit={() => {
+          if (detailsModal.item) {
+            openEditDialog(detailsModal.item)
+            setDetailsModal({ ...detailsModal, open: false })
+          }
+        }}
+        onDelete={() => {
+          if (detailsModal.item) {
+            setDeleteDialog({ open: true, item: detailsModal.item })
+            setDetailsModal({ ...detailsModal, open: false })
+          }
+        }}
+        onPay={() => {
+          if (detailsModal.item) {
+            setPayDialog({ open: true, item: detailsModal.item })
+            setDetailsModal({ ...detailsModal, open: false })
+          }
+        }}
+      />
+
       {/* Tutorial Hint Overlay */}
       {showTutorial && (
         <>
           <div 
             className="fixed inset-0 z-[100] cursor-pointer" 
-            onClick={() => setShowTutorial(false)}
+            onClick={() => {
+              setShowTutorial(false)
+              scrollToTabs()
+            }}
           />
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[90%] max-w-md animate-in slide-in-from-bottom-4 duration-500">
             <div className="bg-zinc-900/95 backdrop-blur-md text-zinc-100 p-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 flex items-start gap-4 ring-1 ring-white/5">
@@ -599,7 +650,10 @@ export default function ContasPage() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => setShowTutorial(false)}
+                    onClick={() => {
+                      setShowTutorial(false)
+                      scrollToTabs()
+                    }}
                     className="h-8 text-xs font-bold px-5 bg-white/5 hover:bg-white/10 text-white rounded-xl cursor-pointer"
                   >
                     Entendi!

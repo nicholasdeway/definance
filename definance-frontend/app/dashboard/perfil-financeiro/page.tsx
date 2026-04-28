@@ -51,10 +51,10 @@ function FinancialProfileContent() {
 
   if (isLoadingRecovery) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Spinner className="h-8 w-8 text-primary" />
-          <p className="text-muted-foreground">Sincronizando seu perfil financeiro...</p>
+      <div className="flex h-[40vh] sm:h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-2 sm:gap-4">
+          <Spinner className="h-5 w-5 sm:h-8 sm:w-8 text-primary" />
+          <p className="text-[11px] sm:text-sm text-muted-foreground/70">Sincronizando...</p>
         </div>
       </div>
     )
@@ -192,12 +192,11 @@ function FinancialProfileContent() {
         <Card className="bg-primary/5 border-primary/20 border">
             <CardContent className="pt-2">
                 <div className="flex items-start gap-3">
-                    <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                        <p className="text-sm font-bold text-primary uppercase tracking-tighter">Entenda como funciona</p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                            As alterações feitas aqui são salvas automaticamente e refletem imediatamente nas suas **Entradas**, **Saídas** e **Relatórios de Desempenho**. 
-                            Não é necessário recriar as transações fixas todo mês; o sistema fará isso por você com base nestes dados.
+                        <p className="text-[10px] font-medium text-primary uppercase tracking-wider">Como funciona</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            As alterações feitas aqui são salvas automaticamente e refletem em todo o sistema — dashboard, entradas, saídas, relatórios e outras funcionalidades. Seus dados base são a fundação de toda a inteligência financeira do Definance.
                         </p>
                     </div>
                 </div>

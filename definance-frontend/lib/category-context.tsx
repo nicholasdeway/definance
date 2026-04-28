@@ -12,6 +12,7 @@ export interface Category {
   icon: string | null
   keywords: string | null
   isSystem: boolean
+  monthlyLimit: number | null
 }
 
 interface CategoryContextType {
@@ -110,7 +111,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
 export function useCategories() {
   const context = useContext(CategoryContext)
   if (context === undefined) {
-    throw new Error("useCategories must be used within a CategoryProvider")
+    throw new Error("useCategories deve ser usado dentro de um CategoryProvider")
   }
   return context
 }

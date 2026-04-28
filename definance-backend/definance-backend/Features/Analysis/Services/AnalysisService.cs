@@ -33,16 +33,19 @@ namespace definance_backend.Features.Analysis.Services
             else
             {
                 end = DateTime.UtcNow;
-                start = end.AddMonths(-6);
+                start = new DateTime(end.Year, end.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             }
+
+            // Para os gráficos de evolução, pegamos sempre um período maior (6 meses atrás até o fim do período atual)
+            var chartStart = end.AddMonths(-6);
 
             var totalReceitasTask = _analysisRepository.GetTotalIncomesAsync(userId, start, end);
             var totalDespesasTask = _analysisRepository.GetTotalExpensesAsync(userId, start, end);
             var totalAtrasadasTask = _analysisRepository.GetTotalOverdueBillsAsync(userId);
-            var monthlyComparisonTask = _analysisRepository.GetMonthlyComparisonAsync(userId, start, end);
+            var monthlyComparisonTask = _analysisRepository.GetMonthlyComparisonAsync(userId, chartStart, end);
             var categoryAnalysisTask = _analysisRepository.GetCategoryAnalysisAsync(userId, start, end);
             var incomeAnalysisTask = _analysisRepository.GetIncomeAnalysisAsync(userId, start, end);
-            var balanceEvolutionTask = _analysisRepository.GetBalanceEvolutionAsync(userId, start, end);
+            var balanceEvolutionTask = _analysisRepository.GetBalanceEvolutionAsync(userId, chartStart, end);
 
             await Task.WhenAll(totalReceitasTask, totalDespesasTask, totalAtrasadasTask, monthlyComparisonTask, categoryAnalysisTask, incomeAnalysisTask, balanceEvolutionTask);
 
