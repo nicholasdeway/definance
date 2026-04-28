@@ -4,7 +4,6 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -35,9 +34,6 @@ using definance_backend.Features.Analysis.Repositories;
 using definance_backend.Features.Analysis.Services;
 using definance_backend.Features.Categories.Repositories;
 using definance_backend.Features.Categories.Services;
-
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,7 +96,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "https://definance-zeta.vercel.app",
-                "https://localhost:3000"
+                "https://localhost:3000",
+                "http://localhost:3000"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -231,8 +228,8 @@ builder.Services
     .AddCookie("External", options =>
     {
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.SlidingExpiration = true;
         options.Cookie.MaxAge = TimeSpan.FromMinutes(10);
@@ -286,10 +283,12 @@ app.MapGet("/", ctx =>
 
 app.UseStaticFiles();
 
+/* 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+*/
 
 app.UseExceptionHandler();
 
