@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Palette, 
-  Bell, 
+import {
+  Palette,
+  Bell,
   Database, 
   Download,
-  Trash2,
   Settings
 } from "lucide-react"
 import { toast } from "sonner"
@@ -22,7 +21,20 @@ export default function ConfiguracoesPage() {
   const [isActionLoading, setIsActionLoading] = useState(false)
   
   // Estados Globais
-  const { discreetMode, setDiscreetMode } = useSettings()
+  const { 
+    discreetMode, 
+    setDiscreetMode, 
+    showOverdueAlerts, 
+    setShowOverdueAlerts,
+    showSetupAlerts,
+    setShowSetupAlerts,
+    showDueSoonAlerts,
+    setShowDueSoonAlerts,
+    showBudgetAlerts,
+    setShowBudgetAlerts,
+    showSpendingAlerts,
+    setShowSpendingAlerts
+  } = useSettings()
   
   const [notifs, setNotifs] = useState({
     expenses: true,
@@ -54,14 +66,6 @@ export default function ConfiguracoesPage() {
           </div>
           <p className="text-muted-foreground text-sm">Personalize sua experiência no Definance e gerencie suas preferências</p>
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={isActionLoading} 
-          className="bg-primary/70 hover:bg-primary text-primary-foreground cursor-pointer w-full sm:w-auto"
-          size="sm"
-        >
-          Salvar Alterações
-        </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -112,12 +116,45 @@ export default function ConfiguracoesPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-card-foreground">Alertas de Gastos</Label>
-                <p className="text-xs text-muted-foreground">Notificar ao atingir 80% do teto mensal de categorias</p>
+                <Label className="text-card-foreground">Alerta de Saídas vs Receita</Label>
+                <p className="text-xs text-muted-foreground">Notificar ao atingir 80% da receita mensal em despesas totais</p>
+              </div>
+              <Switch
+                checked={showSpendingAlerts}
+                onCheckedChange={setShowSpendingAlerts}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-card-foreground">Alerta por Categoria</Label>
+                <p className="text-xs text-muted-foreground">Notificar ao atingir 80% do teto mensal definido por categoria</p>
               </div>
               <Switch 
-                checked={notifs.expenses} 
-                onCheckedChange={(v) => setNotifs({...notifs, expenses: v})}
+                checked={showBudgetAlerts} 
+                onCheckedChange={setShowBudgetAlerts}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-card-foreground">Pagamentos Atrasados</Label>
+                <p className="text-xs text-muted-foreground">Exibir alerta de faturas vencidas nas telas do dashboard</p>
+              </div>
+              <Switch 
+                checked={showOverdueAlerts} 
+                onCheckedChange={setShowOverdueAlerts}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-card-foreground">Configuração de Contas</Label>
+                <p className="text-xs text-muted-foreground">Exibir alerta de contas sincronizadas sem data de vencimento</p>
+              </div>
+              <Switch 
+                checked={showSetupAlerts} 
+                onCheckedChange={setShowSetupAlerts}
               />
             </div>
             <Separator />
@@ -127,14 +164,14 @@ export default function ConfiguracoesPage() {
                 <p className="text-xs text-muted-foreground">Avisar 2 dias antes do vencimento de boletos registrados</p>
               </div>
               <Switch 
-                checked={notifs.dueDates} 
-                onCheckedChange={(v) => setNotifs({...notifs, dueDates: v})}
+                checked={showDueSoonAlerts} 
+                onCheckedChange={setShowDueSoonAlerts}
               />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-card-foreground">Relatório Semanal</Label>
+                <Label className="text-card-foreground">Relatório Semanal (Em Breve)</Label>
                 <p className="text-xs text-muted-foreground">Receber um resumo financeiro por e-mail toda segunda-feira</p>
               </div>
               <Switch 
@@ -166,14 +203,6 @@ export default function ConfiguracoesPage() {
                 <span className="font-semibold">Exportar (Google Sheets)</span>
               </Button>
             </div>
-            </div>
-            
-            <div className="mt-auto pt-4">
-              <Separator className="mb-4" />
-              <Button variant="outline" className="w-full text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50 cursor-pointer border-border/40 transition-all h-10">
-                <Trash2 className="mr-2 h-3 w-3" />
-                Limpar Dados de Transações
-              </Button>
             </div>
           </CardContent>
         </Card>

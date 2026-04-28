@@ -25,6 +25,7 @@ namespace definance_backend.Features.Expenses.Repositories
                     date::timestamp AS ""Date"",
                     expense_type  AS ""ExpenseType"",
                     status        AS ""Status"",
+                    transaction_type AS ""TransactionType"",
                     description   AS ""Description"",
                     notes         AS ""Notes"",
                     bill_id       AS ""BillId"",
@@ -51,6 +52,7 @@ namespace definance_backend.Features.Expenses.Repositories
                     date::timestamp AS ""Date"",
                     expense_type  AS ""ExpenseType"",
                     status        AS ""Status"",
+                    transaction_type AS ""TransactionType"",
                     description   AS ""Description"",
                     notes         AS ""Notes"",
                     bill_id       AS ""BillId"",
@@ -87,10 +89,10 @@ namespace definance_backend.Features.Expenses.Repositories
         {
             const string sql = @"
                 INSERT INTO expenses (
-                    id, user_id, name, amount, category, date, expense_type, status,
+                    id, user_id, name, amount, category, date, expense_type, status, transaction_type,
                     description, notes, bill_id, due_date, created_at, updated_at
                 ) VALUES (
-                    @Id, @UserId, @Name, @Amount, @Category, @Date, @ExpenseType, @Status,
+                    @Id, @UserId, @Name, @Amount, @Category, @Date, @ExpenseType, @Status, @TransactionType,
                     @Description, @Notes, @BillId, @DueDate, NOW(), NOW()
                 );
             ";
@@ -109,6 +111,7 @@ namespace definance_backend.Features.Expenses.Repositories
                     date         = @Date,
                     expense_type = @ExpenseType,
                     status       = @Status,
+                    transaction_type = @TransactionType,
                     description  = @Description,
                     notes        = @Notes,
                     bill_id      = @BillId,

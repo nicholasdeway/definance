@@ -11,6 +11,45 @@ interface CategoryIconProps extends Omit<LucideProps, "ref" | "color" | "name"> 
 }
 
 const iconMap: Record<string, any> = {
+  "Alimentação": Icons.Utensils,
+  "Restaurante": Icons.Utensils,
+  "Mercado": Icons.ShoppingCart,
+  "Transporte": Icons.Car,
+  "Uber": Icons.Car,
+  "Combustível": Icons.Fuel,
+  "Moradia": Icons.Home,
+  "Aluguel": Icons.Home,
+  "Saúde": Icons.HeartPulse,
+  "Farmácia": Icons.Pill,
+  "Educação": Icons.BookOpen,
+  "Lazer": Icons.Palmtree,
+  "Entretenimento": Icons.Gamepad2,
+  "Compras": Icons.ShoppingBag,
+  "Vestuário": Icons.Shirt,
+  "Serviços": Icons.Zap,
+  "Contas": Icons.FileText,
+  "Assinaturas": Icons.Tv,
+  "Finanças": Icons.Landmark,
+  "Salário": Icons.DollarSign,
+  "Renda": Icons.TrendingUp,
+  "Investimentos": Icons.BarChart3,
+  "Pix": Icons.Zap,
+  "Transferência": Icons.ArrowRightLeft,
+  "Empréstimo": Icons.HandCoins,
+  "Veículo": Icons.CarFront,
+  "Viagem": Icons.Plane,
+  "CLT": Icons.Briefcase,
+  "PJ": Icons.Building2,
+  "Extra": Icons.Coins,
+  "Variável": Icons.Coins,
+  "Renda Extra": Icons.Coins,
+  "Entrada": Icons.Coins,
+  "Entradas": Icons.Coins,
+  "Autônomo": Icons.User,
+  "Freelancer": Icons.Laptop,
+  "Mesada": Icons.GraduationCap,
+  "Bônus": Icons.Coins,
+
   // Finanças
   "Wallet": Icons.Wallet,
   "Landmark": Icons.Landmark,
@@ -37,7 +76,6 @@ const iconMap: Record<string, any> = {
   "Music": Icons.Music,
   "Headphones": Icons.Headphones,
   "Steam": Icons.Gamepad2,
-  "Uber": Icons.Car,
   
   // Outros
   "MoreHorizontal": Icons.MoreHorizontal,
@@ -47,8 +85,12 @@ const iconMap: Record<string, any> = {
 }
 
 export function CategoryIcon({ name, color, fallback = "MoreHorizontal", className, ...props }: CategoryIconProps) {
-  // Tenta encontrar pelo nome exato, depois pelo mapeador, e por fim usa o fallback
-  const IconComponent = (name && (iconMap[name] || (Icons as any)[name])) || iconMap[fallback]
+  // Tenta encontrar pelo nome exato, depois em caixa alta (para PJ, CLT, etc), depois pelo mapeador padrão, e por fim usa o fallback
+  const IconComponent = (name && (
+    iconMap[name] || 
+    iconMap[name.toUpperCase()] || 
+    (Icons as any)[name]
+  )) || iconMap[fallback]
 
   return (
     <IconComponent 

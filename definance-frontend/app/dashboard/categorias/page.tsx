@@ -4,14 +4,17 @@ import { useState, useMemo } from "react"
 import { useCategories, Category } from "@/lib/category-context"
 import { CategoryCard } from "@/components/dashboard/categories/category-card"
 import { CategoryDialog } from "@/components/dashboard/categories/category-dialog"
+import { SetLimitDialog } from "@/components/dashboard/categories/set-limit-dialog"
 import { Button } from "@/components/ui/button"
 import { Plus, Tags, Lock, Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
 
 export default function CategoriasPage() {
-  const { categories, isLoading, createCategory, updateCategory, deleteCategory } = useCategories()
+  const { categories, isLoading, createCategory, updateCategory, deleteCategory, refreshCategories } = useCategories()
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -22,6 +25,12 @@ export default function CategoriasPage() {
     open: false,
     item: null,
   })
+
+  const [limitDialog, setLimitDialog] = useState<{ open: boolean; item: Category | null }>({
+    open: false,
+    item: null,
+  })
+  const [isSavingLimit, setIsSavingLimit] = useState(false)
 
   const userCategories = useMemo(() => categories.filter(c => !c.isSystem), [categories])
   
@@ -81,6 +90,23 @@ export default function CategoriasPage() {
     if (!open) setEditingCategory(null)
   }
 
+  const handleSaveLimit = async (categoryId: string, limit: number | null) => {
+    setIsSavingLimit(true)
+    try {
+      await apiClient(`/api/categories/${categoryId}/limit`, {
+        method: "PATCH",
+        body: JSON.stringify({ monthlyLimit: limit }),
+      })
+      await refreshCategories()
+      toast.success(limit ? "Teto mensal definido com sucesso!" : "Teto mensal removido.")
+      setLimitDialog({ open: false, item: null })
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar o teto mensal.")
+    } finally {
+      setIsSavingLimit(false)
+    }
+  }
+
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
       {/* Header */}
@@ -88,9 +114,9 @@ export default function CategoriasPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Tags className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Gerenciar Categorias</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Gerenciar Categorias</h1>
           </div>
-          <p className="text-muted-foreground text-sm">Personalize como você organiza suas finanças</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Personalize como você organiza suas finanças</p>
         </div>
         <Button 
           onClick={handleOpenAdd}
@@ -124,7 +150,7 @@ export default function CategoriasPage() {
         ) : userCategories.length === 0 ? (
           <div className="py-12 text-center border-2 border-dashed border-border/50 rounded-3xl space-y-3">
              <p className="text-muted-foreground italic">Você ainda não criou nenhuma categoria personalizada.</p>
-             <Button variant="outline" size="sm" onClick={handleOpenAdd} className="rounded-xl">Começar agora</Button>
+             <Button variant="outline" size="sm" onClick={handleOpenAdd} className="rounded-xl cursor-pointer">Começar agora</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -134,6 +160,7 @@ export default function CategoriasPage() {
                 category={category} 
                 onEdit={handleOpenEdit}
                 onDelete={(c) => setDeleteDialog({ open: true, item: c })}
+                onSetLimit={(c) => setLimitDialog({ open: true, item: c })}
               />
             ))}
           </div>
@@ -156,7 +183,8 @@ export default function CategoriasPage() {
                 key={category.id} 
                 category={category} 
                 onEdit={() => {}} 
-                onDelete={() => {}} 
+                onDelete={() => {}}
+                onSetLimit={(c) => setLimitDialog({ open: true, item: c })}
               />
             ))
           )}
@@ -179,7 +207,8 @@ export default function CategoriasPage() {
                 key={category.id} 
                 category={category} 
                 onEdit={() => {}} 
-                onDelete={() => {}} 
+                onDelete={() => {}}
+                onSetLimit={(c) => setLimitDialog({ open: true, item: c })}
               />
             ))
           )}
@@ -201,6 +230,14 @@ export default function CategoriasPage() {
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.name}
         loading={isDeleting}
+      />
+
+      <SetLimitDialog
+        open={limitDialog.open}
+        onOpenChange={(open) => setLimitDialog({ ...limitDialog, open })}
+        category={limitDialog.item}
+        onSave={handleSaveLimit}
+        isSaving={isSavingLimit}
       />
     </div>
   )

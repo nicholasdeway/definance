@@ -9,6 +9,7 @@ namespace definance_backend.Features.Categories.DTOs
         public string? Icon { get; set; }
         public string? Keywords { get; set; }
         public bool IsSystem { get; set; }
+        public decimal? MonthlyLimit { get; set; }
     }
 
     public class CreateCategoryDto
@@ -18,6 +19,7 @@ namespace definance_backend.Features.Categories.DTOs
         public string? Color { get; set; }
         public string? Icon { get; set; }
         public string? Keywords { get; set; }
+        public decimal? MonthlyLimit { get; set; }
     }
 
     public class UpdateCategoryDto
@@ -27,5 +29,11 @@ namespace definance_backend.Features.Categories.DTOs
         public string? Color { get; set; }
         public string? Icon { get; set; }
         public string? Keywords { get; set; }
+        public decimal? MonthlyLimit { get; set; }
+    }
+
+    public class UpdateCategoryLimitDto
+    {
+        public decimal? MonthlyLimit { get; set; }
     }
 }

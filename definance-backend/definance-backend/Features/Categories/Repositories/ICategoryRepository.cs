@@ -12,5 +12,6 @@ namespace definance_backend.Features.Categories.Repositories
         Task DeleteAsync(Guid id);
         Task<bool> IsInUseAsync(Guid categoryId);
         Task<bool> ExistsByNameAsync(Guid userId, string name, string type);
+        Task UpdateLimitAsync(Guid id, decimal? monthlyLimit);
     }
 }

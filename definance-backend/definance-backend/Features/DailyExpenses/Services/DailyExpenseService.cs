@@ -39,7 +39,9 @@ namespace definance_backend.Features.DailyExpenses.Services
             _logger.LogInformation("Iniciando processamento de gasto rápido para usuário {UserId}: {Input}", userId, dto.Input);
 
             var userCategories = await _categoryRepository.GetByUserIdAsync(userId);
-            var categoryNames = userCategories.Select(c => c.Name).ToList();
+            var categoryNames = userCategories
+                .Select(c => string.IsNullOrEmpty(c.Keywords) ? c.Name : $"{c.Name} ({c.Keywords})")
+                .ToList();
 
             ParsedExpenseResult parsedResult;
 
@@ -67,13 +69,13 @@ namespace definance_backend.Features.DailyExpenses.Services
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                Name = parsedResult.Description,
+                Name = string.IsNullOrEmpty(parsedResult.Description) ? "Gasto rápido" : char.ToUpper(parsedResult.Description[0]) + parsedResult.Description.Substring(1),
                 Amount = parsedResult.Amount,
                 Category = string.IsNullOrEmpty(parsedResult.Category) ? "Outros" : parsedResult.Category,
                 Date = parsedResult.Date,
                 ExpenseType = "Variável",
                 Status = "Pago",
-                TransactionType = "Saída",
+                TransactionType = parsedResult.TransactionType,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -87,7 +89,7 @@ namespace definance_backend.Features.DailyExpenses.Services
                 Amount = expense.Amount,
                 Category = expense.Category,
                 Date = expense.Date,
-                TransactionType = "Saída",
+                TransactionType = expense.TransactionType,
                 Status = expense.Status
             };
         }
@@ -102,29 +104,35 @@ namespace definance_backend.Features.DailyExpenses.Services
             {
                 var json = await response.Content.ReadAsStringAsync();
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var aiData = JsonSerializer.Deserialize<AiParsedResponse>(json, options);
+                var aiData = JsonSerializer.Deserialize<AiParsedResponseDto>(json, options);
 
                 if (aiData != null)
                 {
+                    // Força o fuso horário de Brasília (UTC-3)
+                    DateTime nowInBrazil;
+                    try 
+                    {
+                        var brazilZone = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+                        nowInBrazil = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brazilZone);
+                    }
+                    catch 
+                    {
+                        // Fallback caso o ID do fuso seja diferente no OS
+                        nowInBrazil = DateTime.UtcNow.AddHours(-3);
+                    }
+
                     return new ParsedExpenseResult
                     {
                         Description = aiData.Name,
                         Amount = (decimal)aiData.Amount,
                         Category = aiData.Category,
-                        TransactionType = "Saída", // Ignora detecção de entrada da IA
-                        Date = aiData.Date?.ToLower() == "ontem" ? DateTime.Now.AddDays(-1) : DateTime.Now
+                        TransactionType = aiData.Type ?? "Saída",
+                        Date = aiData.Date?.ToLower() == "ontem" ? nowInBrazil.AddDays(-1) : nowInBrazil
                     };
                 }
             }
             return null;
         }
 
-        private class AiParsedResponse
-        {
-            public string Name { get; set; } = string.Empty;
-            public double Amount { get; set; }
-            public string Category { get; set; } = string.Empty;
-            public string? Date { get; set; }
-        }
     }
 }

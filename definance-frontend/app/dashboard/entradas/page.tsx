@@ -30,11 +30,15 @@ interface Receita {
   valor: number
   tipo: string
   data: string
+  dataReal: string
+  hora: string
   recorrente: boolean
   isSynced?: boolean
   frequencia?: string
   diasRecebimento?: string
   diaSemana?: string
+  descricao?: string | null
+  observacoes?: string | null
 }
 
 export interface IncomeApiResponse {
@@ -148,6 +152,8 @@ export default function ReceitasPage() {
               const [y, m, d] = datePart.split('-').map(Number)
               return new Date(y, m - 1, d).toLocaleDateString("pt-BR")
             })(),
+            dataReal: inc.date,
+            hora: new Date(inc.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
             recorrente: inc.isRecurring,
             isSynced: isBaseType,
             descricao: inc.description ?? null,
@@ -236,6 +242,8 @@ export default function ReceitasPage() {
                     diasRecebimento: effectiveDias,
                     diaSemana: diaSemana,
                     data: itemDate.toLocaleDateString("pt-BR"),
+                    dataReal: itemDate.toISOString(),
+                    hora: "00:00",
                     recorrente: true,
                     isSynced: true
                   }
@@ -247,8 +255,6 @@ export default function ReceitasPage() {
                const typeLower = m.tipo.toLowerCase()
                const isBaseType = incomeTypes.some(t => t.value === typeLower)
                
-               // Se for um tipo base e nós já temos uma projeção ativa para este tipo neste mês, removemos o do banco
-               // Agora usamos tipoValue para garantir que o match aconteça corretamente
                if (isBaseType && syncedIncomes.some(s => (s as any).tipoValue === typeLower)) {
                   return false
                }
@@ -271,7 +277,6 @@ export default function ReceitasPage() {
     fetchIncomes()
   }, [period])
 
-  // Abrir modal automaticamente se vier do header com ?action=new
   useEffect(() => {
     if (searchParams?.get('action') === 'new') {
       openAddDialog()
@@ -321,7 +326,7 @@ export default function ReceitasPage() {
       search, 
       sortBy, 
       selectedCategories,
-      "tipo", // Em entradas, usamos 'tipo' como categoria
+      "tipo",
       dynamicCategories
     )
   }, [receitas, search, sortBy, selectedCategories, filterType])
@@ -335,7 +340,24 @@ export default function ReceitasPage() {
     
     setIsSaving(true)
     const valorReal = parseCurrencyInput(formData.valor)
-    const dateParsed = formData.data ? new Date(formData.data).toISOString() : new Date().toISOString()
+    const now = new Date()
+    let dateParsed = now.toISOString()
+    
+    if (formData.data) {
+      const [y, m, d] = formData.data.split('-').map(Number)
+      const selectedDate = new Date(y, m - 1, d)
+      
+      if (formData.hora) {
+        const [hh, mm] = formData.hora.split(':').map(Number)
+        selectedDate.setHours(hh, mm, 0, 0)
+      } else {
+        selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
+      }
+      
+      // Formata como ISO Local (yyyy-MM-ddTHH:mm:ss)
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      dateParsed = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}:${pad(selectedDate.getSeconds())}`
+    }
     
     try {
         const isEditing = !!formData.id;
@@ -356,20 +378,37 @@ export default function ReceitasPage() {
         })
         
         if (response && response.id) {
+            const savedDate = new Date(response.date)
             const savedItem: Receita = {
               id: response.id,
               nome: response.name,
               valor: response.amount,
               tipo: response.type,
-              data: new Date(response.date).toLocaleDateString("pt-BR"),
+              data: savedDate.toLocaleDateString("pt-BR"),
+              dataReal: response.date,
+              hora: savedDate.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
               recorrente: response.isRecurring,
               isSynced: false
             }
             
+            // Verifica se o item salvo pertence ao período que o usuário está visualizando agora
+            const isSameMonth = savedDate.getMonth() + 1 === period.month
+            const isSameYear = savedDate.getFullYear() === period.year
+            const isVisibleInCurrentPeriod = period.type === "monthly" ? (isSameMonth && isSameYear) : true
+
             if (isEditing) {
                 setReceitas(receitas.map(r => r.id === savedItem.id ? savedItem : r));
+                toast.success("Renda atualizada com sucesso!")
             } else {
-                setReceitas([savedItem, ...receitas]);
+                if (isVisibleInCurrentPeriod) {
+                    setReceitas([savedItem, ...receitas]);
+                    toast.success("Renda registrada com sucesso!")
+                } else {
+                    const monthName = savedDate.toLocaleString('pt-BR', { month: 'long' })
+                    toast.info(`Renda salva! Ela aparecerá no filtro de ${monthName}/${savedDate.getFullYear()}.`, {
+                        duration: 5000
+                    })
+                }
             }
 
             setIsOpen(false)
@@ -386,7 +425,15 @@ export default function ReceitasPage() {
   const openEditDialog = (receita: Receita) => {
     const parts = receita.data.split("/");
     const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
-    setEditingReceita({ ...receita, data: inputDate })
+    
+    // Se tiver dataReal, usamos ela para pegar a hora correta
+    let inputTime = receita.hora || "";
+    if (receita.dataReal) {
+      const d = new Date(receita.dataReal);
+      inputTime = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    setEditingReceita({ ...receita, data: inputDate, hora: inputTime })
     setIsOpen(true)
   }
 
@@ -422,12 +469,12 @@ export default function ReceitasPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <ArrowUpCircle className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Entradas</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Entradas</h1>
           </div>
-          <p className="text-muted-foreground text-sm">Acompanhe e gerencie todos os seus recebimentos</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Acompanhe e gerencie todos os seus recebimentos</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+        <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
             className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
@@ -437,21 +484,17 @@ export default function ReceitasPage() {
             Nova Receita
           </Button>
 
-          <div className="flex items-center gap-2">
-            <PeriodFilter 
-              value={period}
-              onChange={setPeriod}
-            />
+          <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
-              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               onClick={() => setIsExportDialogOpen(true)}
               size="sm"
             >
               <Download className="h-4 w-4" />
-              Exportar
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
-          </div>
+          </PeriodFilter>
         </div>
       </div>
       

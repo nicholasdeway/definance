@@ -7,7 +7,7 @@ import {
   Trash2, 
   Edit, 
   Briefcase,
-  Star,
+  Coins,
   Plus,
   Building2,
   User,
@@ -33,6 +33,7 @@ interface ReceitaItemProps {
     valor: number
     tipo: string
     data: string
+    hora: string
     recorrente: boolean
     isSynced?: boolean
     tipoValue?: string
@@ -59,7 +60,7 @@ export const ReceitaItem = ({
     if (t.includes("mesada")) return <GraduationCap className="h-5 w-5 text-pink-500" />
     if (t.includes("investimento")) return <TrendingUp className="h-5 w-5 text-emerald-500" />
     if (t.includes("aluguel")) return <Home className="h-5 w-5 text-amber-600" />
-    if (t.includes('extra') || t.includes('bônus')) return <Star className="h-5 w-5 text-purple-500" />
+    if (t.includes('extra') || t.includes('bônus')) return <Coins className="h-5 w-5 text-purple-500" />
     
     if (isSynced) return <Landmark className="h-5 w-5 text-primary" />
     return <Plus className="h-5 w-5 text-emerald-500" />
@@ -67,7 +68,7 @@ export const ReceitaItem = ({
 
   return (
     <div className={cn(
-      "flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all bg-card/50 gap-2",
+      "flex items-center justify-between p-2 sm:p-4 rounded-xl border transition-all bg-card/50 gap-2",
       receita.isSynced 
         ? "border-primary/30 border-dashed border-2 shadow-[0_0_15px_rgba(34,197,94,0.02)]" 
         : "border-border/50 hover:bg-muted/30"
@@ -80,16 +81,30 @@ export const ReceitaItem = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
             <h4 className="font-semibold text-xs sm:text-base truncate">{receita.nome}</h4>
             {receita.isSynced && (
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter py-0 px-1.5 border-primary/20 text-primary bg-primary/5">
+              <Badge variant="outline" className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-tighter py-0 px-1.5 border-primary/20 text-primary bg-primary/5">
                 Sincronizado
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-            <span>{receita.data}</span>
-            <span>•</span>
-            <span>{receita.tipo}</span>
-            {receita.recorrente && <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-1 rounded font-medium">Recorrente</span>}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="sm:hidden font-medium text-muted-foreground/90">
+                {receita.data.replace(/\/20(\d{2})/g, '/$1')} • {receita.hora}
+              </span>
+              <span className="hidden sm:inline">{receita.data} às {receita.hora}</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline truncate">{receita.tipo}</span>
+            </div>
+            
+            <span className="sm:hidden truncate text-[9px] uppercase tracking-wider font-bold text-primary/60">
+              {receita.tipo}
+            </span>
+
+            {receita.recorrente && (
+              <span className="hidden sm:inline text-[10px] bg-emerald-500/10 text-emerald-600 px-1 rounded font-medium">
+                Recorrente
+              </span>
+            )}
           </div>
           {(receita.descricao || receita.observacoes) && (
             <div className="flex flex-col gap-1 mt-1.5 pt-1.5 border-t border-white/5">
@@ -108,14 +123,24 @@ export const ReceitaItem = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        <div className="text-right">
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="flex flex-col items-end gap-1 sm:gap-1">
+          {receita.isSynced && (
+            <span className="sm:hidden text-[8px] font-black text-emerald-500 tracking-tighter uppercase">
+              Sincronizado
+            </span>
+          )}
           <p className={cn(
-            "font-bold text-xs sm:text-base transition-all duration-300",
+            "font-bold text-[13px] sm:text-base transition-all duration-300 leading-none",
             discreetMode && "discreet-mode-blur"
           )}>
             {formatCurrency(receita.valor)}
           </p>
+          {receita.recorrente && (
+            <span className="sm:hidden text-[8px] font-black text-muted-foreground/40 tracking-tighter uppercase">
+              Recorrente
+            </span>
+          )}
         </div>
 
         <DropdownMenu>

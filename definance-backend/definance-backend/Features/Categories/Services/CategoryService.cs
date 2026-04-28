@@ -37,6 +37,7 @@ namespace definance_backend.Features.Categories.Services
                 Color = dto.Color,
                 Icon = dto.Icon,
                 Keywords = dto.Keywords,
+                MonthlyLimit = dto.MonthlyLimit,
                 IsSystem = false
             };
 
@@ -66,6 +67,7 @@ namespace definance_backend.Features.Categories.Services
             category.Color = dto.Color;
             category.Icon = dto.Icon;
             category.Keywords = dto.Keywords;
+            category.MonthlyLimit = dto.MonthlyLimit;
 
             await _categoryRepository.UpdateAsync(category);
             return MapToDto(category);
@@ -91,6 +93,19 @@ namespace definance_backend.Features.Categories.Services
             _logger.LogInformation("Categoria {CategoryId} excluída com sucesso", categoryId);
         }
 
+        public async Task UpdateCategoryLimitAsync(Guid userId, Guid categoryId, decimal? monthlyLimit)
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId);
+
+            if (category == null)
+                throw new KeyNotFoundException("Categoria não encontrada.");
+
+            if (!category.IsSystem && category.UserId != userId)
+                throw new UnauthorizedAccessException("Você não tem permissão para configurar o limite desta categoria.");
+
+            await _categoryRepository.UpdateLimitAsync(categoryId, monthlyLimit);
+        }
+
         private static CategoryDto MapToDto(Category category) => new()
         {
             Id = category.Id,
@@ -99,7 +114,8 @@ namespace definance_backend.Features.Categories.Services
             Color = category.Color,
             Icon = category.Icon,
             Keywords = category.Keywords,
-            IsSystem = category.IsSystem
+            IsSystem = category.IsSystem,
+            MonthlyLimit = category.MonthlyLimit
         };
     }
 }

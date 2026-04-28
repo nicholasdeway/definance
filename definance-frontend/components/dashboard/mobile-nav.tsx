@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -9,24 +10,47 @@ import {
   ArrowUpRight, 
   Target, 
   Landmark,
-  CreditCard
+  CreditCard,
+  History,
+  CalendarDays,
+  Tags,
+  BarChart3
 } from "lucide-react"
 
 const navItems = [
-  { title: "Geral", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Entradas", url: "/dashboard/entradas", icon: ArrowDownLeft },
   { title: "Saídas", url: "/dashboard/saidas", icon: ArrowUpRight },
-  { title: "Contas", url: "/dashboard/contas", icon: CreditCard },
+  { title: "Histórico", url: "/dashboard/historico", icon: History },
+  { title: "Gastos Diários", url: "/dashboard/gastos-diarios", icon: CalendarDays },
+  { title: "Minhas Contas", url: "/dashboard/contas", icon: CreditCard },
   { title: "Metas", url: "/dashboard/metas", icon: Target },
-  { title: "Perfil", url: "/dashboard/perfil-financeiro", icon: Landmark },
+  { title: "Categorias", url: "/dashboard/categorias", icon: Tags },
+  { title: "Análises", url: "/dashboard/relatorios", icon: BarChart3 },
+  { title: "Perfil Financeiro", url: "/dashboard/perfil-financeiro", icon: Landmark },
 ]
 
 export function MobileDashboardNav() {
   const pathname = usePathname()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const activeItem = scrollContainerRef.current.querySelector('[data-active="true"]')
+      if (activeItem) {
+        activeItem.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center"
+        })
+      }
+    }
+  }, [pathname])
 
   return (
     <div className="md:hidden border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-14 z-10 w-full overflow-hidden">
       <div 
+        ref={scrollContainerRef}
         className="flex items-center gap-2 overflow-x-auto px-4 py-3 no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         style={{ 
           WebkitOverflowScrolling: 'touch'
@@ -38,6 +62,7 @@ export function MobileDashboardNav() {
             <Link
               key={item.url}
               href={item.url}
+              data-active={isActive}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all duration-300 border",
                 isActive 

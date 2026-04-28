@@ -179,9 +179,17 @@ export default function DespesasPage() {
     if (!form.nome || !form.valor) return
 
     const amount = parseCurrencyInput(form.valor)
-    const dateParsed = form.data
-      ? new Date(form.data).toISOString()
-      : new Date().toISOString()
+    const now = new Date()
+    let dateParsed = now.toISOString()
+    
+    if (form.data) {
+      const [y, m, d] = form.data.split('-').map(Number)
+      const selectedDate = new Date(y, m - 1, d)
+      selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
+      
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      dateParsed = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}:${pad(selectedDate.getSeconds())}`
+    }
 
     const payload = {
       name: form.nome,
@@ -270,12 +278,12 @@ export default function DespesasPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <ArrowDownCircle className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Saídas</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Saídas</h1>
           </div>
-          <p className="text-muted-foreground text-sm">Controle suas despesas e mantenha seu orçamento em dia</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Controle suas despesas e mantenha seu orçamento em dia</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+        <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
             className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
@@ -285,21 +293,17 @@ export default function DespesasPage() {
             Nova Despesa
           </Button>
 
-          <div className="flex items-center gap-2">
-            <PeriodFilter 
-              value={period}
-              onChange={setPeriod}
-            />
+          <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
-              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               onClick={() => setIsExportDialogOpen(true)}
               size="sm"
             >
               <Download className="h-4 w-4" />
-              Exportar
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
-          </div>
+          </PeriodFilter>
         </div>
       </div>
 

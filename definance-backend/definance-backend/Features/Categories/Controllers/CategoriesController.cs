@@ -68,6 +68,21 @@ namespace definance_backend.Features.Categories.Controllers
             }
         }
 
+        [HttpPatch("{id:guid}/limit")]
+        public async Task<IActionResult> UpdateCategoryLimit(Guid id, [FromBody] UpdateCategoryLimitDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                await _categoryService.UpdateCategoryLimitAsync(userId, id, dto.MonthlyLimit);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteCategory(Guid id)
         {

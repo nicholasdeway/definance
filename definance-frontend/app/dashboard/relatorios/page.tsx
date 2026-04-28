@@ -258,38 +258,37 @@ export default function RelatoriosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Análises</h1>
+      <div className="flex flex-col gap-6 items-start">
+        <div className="flex flex-wrap items-center gap-4 w-full">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Análises</h1>
+            </div>
+            <p className="text-muted-foreground text-xs sm:text-sm">Relatórios e insights detalhados do seu dinheiro</p>
           </div>
-          <p className="text-muted-foreground text-sm">Relatórios e insights detalhados do seu dinheiro</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PeriodFilter 
-            value={period}
-            onChange={setPeriod}
-          />
-          <Button 
-            variant="outline" 
-            onClick={() => setIsExportDialogOpen(true)}
-            className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer"
-            size="sm"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+
+          <PeriodFilter value={period} onChange={setPeriod}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsExportDialogOpen(true)}
+              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </Button>
+          </PeriodFilter>
         </div>
       </div>
 
       <BillsAlert />
 
       {loading ? (
-        <div className="flex h-[400px] items-center justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Processando dados...</p>
+        <div className="flex h-[40vh] sm:h-[60vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-2 sm:gap-4">
+            <Loader2 className="h-5 w-5 sm:h-8 sm:w-8 animate-spin text-primary" />
+            <p className="text-[11px] sm:text-sm text-muted-foreground/70">Processando...</p>
           </div>
         </div>
       ) : data ? (

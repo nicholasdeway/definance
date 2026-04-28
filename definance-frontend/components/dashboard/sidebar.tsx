@@ -38,7 +38,8 @@ import {
   CalendarDays,
   Shield,
   Landmark,
-  Tags
+  Tags,
+  History
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 
@@ -46,6 +47,7 @@ const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Entradas", url: "/dashboard/entradas", icon: ArrowDownLeft },
   { title: "Saídas", url: "/dashboard/saidas", icon: ArrowUpRight },
+  { title: "Histórico", url: "/dashboard/historico", icon: History },
   { title: "Gastos Diários", url: "/dashboard/gastos-diarios", icon: CalendarDays },
   { title: "Minhas Contas", url: "/dashboard/contas", icon: CreditCard },
   { title: "Metas", url: "/dashboard/metas", icon: Target },

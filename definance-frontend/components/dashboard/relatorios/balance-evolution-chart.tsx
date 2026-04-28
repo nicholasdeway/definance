@@ -33,36 +33,49 @@ export const BalanceEvolutionChart = ({
           "h-[300px] transition-all duration-300",
           discreetMode && "discreet-mode-blur"
         )}>
-          {data.length > 0 ? (
+          {data && data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <AreaChart data={data}>
+              <AreaChart 
+                data={data}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
                   tickFormatter={formatMonth}
+                  dy={10}
                 />
                 <YAxis 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
-                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                  domain={[0, 'auto']}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => {
+                    if (Math.abs(value) >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`
+                    return `R$ ${value}`
+                  }}
                 />
                 <Tooltip
                   labelFormatter={formatMonth}
-                  cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)', strokeWidth: 2 }}
+                  cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', strokeWidth: 2 }}
                   contentStyle={{
-                    backgroundColor: "var(--card)",
+                    backgroundColor: "rgba(var(--card-rgb), 0.9)",
+                    backdropFilter: "blur(8px)",
                     border: "1px solid var(--border)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
-                  formatter={(value: any) => [formatCurrency(Number(value || 0)), "Saldo"]}
+                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  formatter={(value: any) => [formatCurrency(Number(value || 0)), "Saldo Acumulado"]}
                 />
                 <Area 
                   type="monotone" 
@@ -71,6 +84,7 @@ export const BalanceEvolutionChart = ({
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorSaldo)" 
+                  animationDuration={1500}
                 />
               </AreaChart>
             </ResponsiveContainer>
