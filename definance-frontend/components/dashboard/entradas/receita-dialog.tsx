@@ -12,6 +12,7 @@ import { useCategories } from "@/lib/category-context"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
 import { TrendingUp, Loader2, Save, Plus } from "lucide-react"
+import { toCents } from "@/lib/currency"
 
 export interface ReceitaFormState {
   id: string
@@ -80,7 +81,7 @@ export const ReceitaDialog = ({
       setFormData({
         id: initialData.id || "",
         nome: initialData.nome || "",
-        valor: initialData.valor?.toString() || "",
+        valor: initialData.valor ? toCents(initialData.valor).toString() : "",
         tipo: isCustomType ? "Outros" : (exactMatch || "Outros"),
         outroTipo: isCustomType ? initialTipo : "",
         data: initialData.data ? (() => {
