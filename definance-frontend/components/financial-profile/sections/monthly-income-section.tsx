@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
-import { FieldLabel } from "@/components/onboarding/components/field-label"
 import { incomeTypes, incomeFrequencies } from "@/components/onboarding/constants"
 import { IncomeDetail, IncomeFrequency } from "@/components/onboarding/types"
 import { useAutoSave } from "@/components/onboarding/hooks/use-auto-save"
@@ -171,7 +170,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-muted-foreground uppercase font-black tracking-widest opacity-70">Fontes de Renda</p>
+        <p className="text-[9px] text-muted-foreground/60 uppercase tracking-widest">Fontes de Renda</p>
         <div className="flex items-center gap-2 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
           <span className="text-[10px] font-bold text-primary uppercase">Total:</span>
           <span className="text-[10px] font-black text-primary">{formatCurrency(totalIncome)}</span>
@@ -205,14 +204,14 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
 
           return (
             <div key={typeInfo.value} className={cn(
-               "rounded-xl border bg-background overflow-hidden transition-all duration-300",
-               hasError ? "border-destructive/40 shadow-[0_0_10px_rgba(239,68,68,0.05)]" : "border-border/60 hover:border-primary/30"
+               "rounded-2xl border bg-white/[0.02] overflow-hidden transition-all duration-300 relative",
+               hasError ? "border-destructive/20" : "border-white/5 hover:border-primary/20"
             )}>
               {/* Mini Header dentro do Card */}
-              <div className="bg-muted/30 px-4 py-3 border-b border-border/40 flex items-center justify-between">
+              <div className="bg-white/[0.02] px-3 py-2.5 border-b border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                   <typeInfo.icon className="h-4 w-4 text-primary" />
-                   <span className="text-xs font-bold text-card-foreground uppercase tracking-wide">{typeInfo.label}</span>
+                   <typeInfo.icon className="h-3.5 w-3.5 text-primary" />
+                   <span className="text-[10px] font-medium text-card-foreground uppercase tracking-wide">{typeInfo.label}</span>
                 </div>
                 {hasError && <AlertCircle className="h-3 w-3 text-destructive animate-pulse" />}
               </div>
@@ -220,19 +219,17 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
               <div className="p-4 space-y-4">
                  {/* Valor */}
                  <div className="space-y-1.5">
-                   <FieldLabel 
-                     label={inc.frequencia === IncomeFrequency.VARIAVEL ? "Valor médio mensal" : "Valor do Salário / Pro-labore"} 
-                     required 
-                     isEmpty={!inc.valor || inc.valor === 0} 
-                     wasAttempted={wasAttempted} 
-                   />
+                    <Label className="text-[9px] uppercase text-muted-foreground/60 tracking-widest">
+                      {inc.frequencia === IncomeFrequency.VARIAVEL ? "Valor médio mensal" : "Valor do Salário / Pro-labore"}
+                      {(!inc.valor || inc.valor === 0) && wasAttempted && <span className="text-destructive ml-1">*</span>}
+                    </Label>
                    <CurrencyInput
                      id={`income-${typeInfo.value}`}
                      placeholder="R$ 0,00"
                      value={inc.valor ? Math.round(Number(inc.valor) * 100).toString() : ""}
                      onChange={(value) => updateIncomeValue(typeInfo.value, value)}
                      className={cn(
-                        "h-11 text-base font-bold bg-muted/5 focus:bg-background transition-colors",
+                        "h-9 text-sm bg-muted/5 focus:bg-background transition-colors",
                         wasAttempted && (!inc.valor || inc.valor === 0) && "border-destructive/50"
                      )}
                    />
@@ -250,38 +247,38 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
 
                  {/* Frequencia */}
                  <div className="space-y-1.5">
-                   <Label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest opacity-70">Frequência de Recebimento</Label>
+                   <Label className="text-[9px] uppercase text-muted-foreground/60 tracking-widest">Frequência</Label>
                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {incomeFrequencies.map(freq => {
-                         const isSelected = inc.frequencia === freq.value
-                         return (
-                            <button
-                               key={freq.value}
-                               type="button"
-                               onClick={() => updateIncome(typeInfo.value, "frequencia", freq.value)}
-                               className={cn(
-                                  "text-[10px] p-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter",
-                                  isSelected 
-                                    ? "bg-primary/70 text-primary-foreground border-primary/50 shadow-sm scale-[1.02]" 
-                                    : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 hover:border-border"
-                               )}
-                            >
-                               {freq.label}
-                            </button>
-                         )
-                      })}
-                   </div>
+                    {incomeFrequencies.map(freq => {
+                       const isSelected = inc.frequencia === freq.value
+                       return (
+                          <button
+                             key={freq.value}
+                             type="button"
+                             onClick={() => updateIncome(typeInfo.value, "frequencia", freq.value)}
+                             className={cn(
+                                "text-center text-[9px] py-1.5 px-1 rounded-lg border transition-all duration-200",
+                                isSelected
+                                  ? "bg-primary/70 text-primary-foreground border-primary shadow-sm"
+                                  : "bg-white/[0.03] border-transparent text-muted-foreground/70 hover:bg-white/[0.06] cursor-pointer"
+                             )}
+                          >
+                             {freq.label}
+                          </button>
+                       )
+                    })}
+                 </div>
                  </div>
 
                  {/* Dias de Recebimento (Definance Helper) */}
                   {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-400">
-                       <div className="flex items-center gap-2">
-                         <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-none">
-                           <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                         </div>
-                         <Label className="text-[10px] font-black text-primary uppercase tracking-widest">Ajudante de Projeção:</Label>
-                       </div>
+                     <div className="bg-primary/[0.02] border border-primary/10 rounded-xl p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-400">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-none">
+                            <CalendarDays className="h-3.5 w-3.5 text-primary/70" />
+                          </div>
+                          <Label className="text-[8px] text-primary/70 uppercase tracking-wider">Ciclo:</Label>
+                        </div>
 
                        {inc.frequencia === IncomeFrequency.SEMANAL ? (
                           <div className="space-y-1.5">
@@ -435,12 +432,13 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
         })}
       </div>
 
-      <div className="flex items-center justify-end pt-6 border-t border-border/20 mt-4">
+      <div className="flex items-center justify-end pt-4 border-t border-white/5 mt-3">
         <Button 
           type="button" 
+          size="sm"
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary font-bold cursor-pointer"
+          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary text-xs cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Informações"}
         </Button>

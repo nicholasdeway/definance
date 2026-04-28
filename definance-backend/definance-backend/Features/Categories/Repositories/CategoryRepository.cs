@@ -25,6 +25,7 @@ namespace definance_backend.Features.Categories.Repositories
                     icon AS ""Icon"", 
                     keywords AS ""Keywords"",
                     is_system AS ""IsSystem"", 
+                    monthly_limit AS ""MonthlyLimit"",
                     created_at AS ""CreatedAt"", 
                     updated_at AS ""UpdatedAt""
                 FROM categories
@@ -39,7 +40,8 @@ namespace definance_backend.Features.Categories.Repositories
             const string sql = @"
                 SELECT 
                     id, user_id AS ""UserId"", name AS ""Name"", type AS ""Type"", 
-                    color AS ""Color"", icon AS ""Icon"", keywords AS ""Keywords"", is_system AS ""IsSystem""
+                    color AS ""Color"", icon AS ""Icon"", keywords AS ""Keywords"", is_system AS ""IsSystem"",
+                    monthly_limit AS ""MonthlyLimit""
                 FROM categories
                 WHERE user_id = @UserId OR is_system = true
                 ORDER BY is_system DESC, name ASC;
@@ -53,7 +55,8 @@ namespace definance_backend.Features.Categories.Repositories
             const string sql = @"
                 SELECT 
                     id, user_id AS ""UserId"", name AS ""Name"", type AS ""Type"", 
-                    color AS ""Color"", icon AS ""Icon"", keywords AS ""Keywords"", is_system AS ""IsSystem""
+                    color AS ""Color"", icon AS ""Icon"", keywords AS ""Keywords"", is_system AS ""IsSystem"",
+                    monthly_limit AS ""MonthlyLimit""
                 FROM categories
                 WHERE is_system = true;
             ";
@@ -64,8 +67,8 @@ namespace definance_backend.Features.Categories.Repositories
         public async Task CreateAsync(Category category)
         {
             const string sql = @"
-                INSERT INTO categories (id, user_id, name, type, color, icon, keywords, is_system, created_at, updated_at)
-                VALUES (@Id, @UserId, @Name, @Type, @Color, @Icon, @Keywords, @IsSystem, NOW(), NOW());
+                INSERT INTO categories (id, user_id, name, type, color, icon, keywords, is_system, monthly_limit, created_at, updated_at)
+                VALUES (@Id, @UserId, @Name, @Type, @Color, @Icon, @Keywords, @IsSystem, @MonthlyLimit, NOW(), NOW());
             ";
 
             await _connection.ExecuteAsync(sql, category);
@@ -80,6 +83,7 @@ namespace definance_backend.Features.Categories.Repositories
                     color = @Color,
                     icon = @Icon,
                     keywords = @Keywords,
+                    monthly_limit = @MonthlyLimit,
                     updated_at = NOW()
                 WHERE id = @Id AND is_system = false;
             ";
@@ -121,6 +125,16 @@ namespace definance_backend.Features.Categories.Repositories
             ";
 
             return await _connection.ExecuteScalarAsync<bool>(sql, new { UserId = userId, Name = name, Type = type });
+        }
+
+        public async Task UpdateLimitAsync(Guid id, decimal? monthlyLimit)
+        {
+            const string sql = @"
+                UPDATE categories SET monthly_limit = @MonthlyLimit, updated_at = NOW()
+                WHERE id = @Id;
+            ";
+
+            await _connection.ExecuteAsync(sql, new { Id = id, MonthlyLimit = monthlyLimit });
         }
     }
 }

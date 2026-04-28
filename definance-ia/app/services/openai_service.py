@@ -24,30 +24,35 @@ def get_system_prompt(categories: List[str]) -> str:
     categories_str = ", ".join(categories) if categories else "Outros"
     
     return f"""
-    Você é um assistente financeiro especializado em extrair dados de GASTOS (Saídas).
+    Você é um assistente financeiro especializado em extrair dados de movimentações financeiras (Entradas e Saídas).
     Seu objetivo é transformar frases informais em dados estruturados (JSON).
 
     Regras:
-    1. Extraia o NOME, VALOR e a CATEGORIA do gasto mencionado.
-    2. Mesmo que a frase pareça um ganho (ex: 'recebi'), trate como um registro de valor para a categoria 'Outros' ou similar.
+    1. Extraia o NOME, VALOR e a CATEGORIA mencionado.
+    2. Identifique se é uma 'Entrada' (recebimento, ganho, salário, venda) ou 'Saída' (gasto, compra, pagamento).
     3. O valor deve ser um número float.
     4. Identifique se o usuário mencionou 'hoje' ou 'ontem'.
     
     CATEGORIAS DISPONÍVEIS:
     [{categories_str}]
     
-    5. Escolha a categoria MAIS ADEQUADA apenas entre as CATEGORIAS DISPONÍVEIS acima. 
-    6. Se nenhuma categoria servir, use 'Outros'.
+    5. Cada categoria na lista acima pode conter palavras-chave entre parênteses. 
+    6. Priorize SEMPRE uma categoria cujo NOME ou uma das PALAVRAS-CHAVE entre parênteses seja igual ou muito próxima ao item mencionado (ex: se o item é 'Steam' e existe a categoria 'Jogos (steam)', use 'Jogos').
+    7. Se não houver correspondência clara por nome ou palavra-chave, escolha a categoria MAIS ADEQUADA semanticamente entre as disponíveis.
+    8. IMPORTANTE: No campo "category" do JSON, retorne APENAS o NOME da categoria, sem as palavras-chave entre parênteses.
+    9. Se nenhuma categoria da lista servir de forma alguma, use 'Outros'.
     
-    7. Retorne APENAS o JSON no formato abaixo:
+    10. Retorne APENAS o JSON no formato abaixo:
     {{
       "name": "Nome corrigido",
       "amount": 0.0,
-      "category": "Categoria escolhida",
-      "type": "Saída",
+      "category": "Nome da Categoria",
+      "type": "Entrada" ou "Saída",
       "date": "hoje/ontem",
       "confidence": 0.95
     }}
+
+    11. IMPORTANTE: Formate o NOME de maneira legível em PORTUGUÊS, garantindo que a primeira letra seja maiúscula. Corrija a ortografia e adicione acentos se necessário (ex: 'cafe' vira 'Café', 'almoco' vira 'Almoço', 'pao' vira 'Pão', 'agua' vira 'Água'). Preserve nomes de marcas/empresas (ex: 'Steam', 'Uber').
     """
 
 async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExpense:
@@ -76,6 +81,10 @@ async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExp
         
         content = response.choices[0].message.content
         data = json.loads(content)
+        
+        # Garante que o nome comece com letra maiúscula
+        if "name" in data and data["name"]:
+            data["name"] = data["name"][0].upper() + data["name"][1:]
         
         logger.info(f"IA processou com sucesso: {data.get('name')} - R$ {data.get('amount')}")
         return ParsedExpense(**data)

@@ -94,10 +94,11 @@ namespace definance_backend.Features.Analysis.Repositories
         public async Task<IEnumerable<CategoryAnalysisDto>> GetCategoryAnalysisAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
             const string sql = @"
-                SELECT category as Categoria, sum(amount) as Valor
-                FROM expenses
-                WHERE user_id = @UserId AND date::timestamp >= @StartDate AND date::timestamp <= @EndDate
-                GROUP BY category
+                SELECT e.category as Categoria, SUM(e.amount) as Valor, MAX(c.monthly_limit) as MonthlyLimit
+                FROM expenses e
+                LEFT JOIN categories c ON e.category = c.name AND (c.user_id = @UserId OR c.is_system = true)
+                WHERE e.user_id = @UserId AND e.date::timestamp >= @StartDate AND e.date::timestamp <= @EndDate
+                GROUP BY e.category
                 ORDER BY Valor DESC;
             ";
 

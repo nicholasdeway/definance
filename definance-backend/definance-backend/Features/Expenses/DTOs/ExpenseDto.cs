@@ -9,6 +9,7 @@ namespace definance_backend.Features.Expenses.DTOs
         public DateTime Date { get; set; }
         public string ExpenseType { get; set; } = null!;
         public string Status { get; set; } = null!;
+        public string? TransactionType { get; set; }
         public string? Description { get; set; }
         public string? Notes { get; set; }
         public Guid? BillId { get; set; }

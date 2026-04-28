@@ -1,7 +1,7 @@
 "use client"
 
-import React from "react"
 import { AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 // Context & Hooks
@@ -10,7 +10,6 @@ import { useOnboarding } from "./hooks/use-onboarding"
 import { useOnboardingRecovery } from "./hooks/use-onboarding-recovery"
 import { useAutoSave } from "./hooks/use-auto-save"
 
-// Shared Components
 // Domestic Components
 import { SiteHeader } from "@/components/layout/site-header"
 import { OnboardingProgress } from "./components/onboarding-progress"
@@ -52,20 +51,38 @@ function OnboardingWizardContent() {
     <div className="container flex min-h-screen flex-col items-center justify-center px-4 pt-26 pb-12">
       <SiteHeader variant="onboarding" />
       
-      <Card className="w-full max-w-lg border-border/50 bg-card/50 backdrop-blur">
-        <CardHeader className="">
-          <div className="mb-6 px-2">
+      <Card className={cn(
+        "w-full border-border/50 bg-card/50 backdrop-blur transition-all duration-700 ease-in-out overflow-hidden",
+        (currentStep >= 1 && currentStep <= 6) ? "max-w-2xl" : "max-w-xl"
+      )}>
+        <CardHeader className="p-4 sm:p-6 pb-0 sm:pb-0">
+          <div className="mb-2 sm:mb-4 px-1">
             <OnboardingProgress />
           </div>
-          <div className="mt-2 pt-2 border-t border-border/10 flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-xl text-card-foreground">
+          <div className="flex items-center justify-between sm:mt-1 sm:pt-1.5 sm:border-t sm:border-border/10">
+            <div className="space-y-0.5 sm:space-y-0.5">
+              <CardTitle className="text-lg sm:text-lg text-card-foreground font-bold">
                 {steps[currentStep - 1]?.title || "Carregando..."}
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                {currentStep === 1 && "Selecione suas prioridades financeiras e vamos te ajudar a alcançá-las."}
-                {currentStep === 2 && "Como você recebe sua principal fonte de renda?"}
-                {currentStep === 3 && "Qual é sua renda mensal aproximada?"}
+              <CardDescription className="text-[13px] sm:text-sm text-muted-foreground leading-tight">
+                {currentStep === 1 && (
+                  <>
+                    <span className="sm:hidden">Selecione suas prioridades.</span>
+                    <span className="hidden sm:inline">Selecione suas prioridades financeiras e vamos te ajudar a alcançá-las.</span>
+                  </>
+                )}
+                {currentStep === 2 && (
+                  <>
+                    <span className="sm:hidden">Como você recebe sua renda?</span>
+                    <span className="hidden sm:inline">Como você recebe sua principal fonte de renda?</span>
+                  </>
+                )}
+                {currentStep === 3 && (
+                  <>
+                    <span className="sm:hidden">Qual é sua renda mensal?</span>
+                    <span className="hidden sm:inline">Qual é sua renda mensal aproximada?</span>
+                  </>
+                )}
                 {currentStep === 4 && "Selecione suas despesas fixas mensais"}
                 {currentStep === 5 && "Adicione seus veículos e custos associados"}
                 {currentStep === 6 && "Registre suas dívidas em aberto"}
@@ -75,7 +92,9 @@ function OnboardingWizardContent() {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className={cn(
+          "relative transition-all duration-500 p-4 sm:p-6 pt-0 sm:pt-0 space-y-0"
+        )}>
           <div ref={formTopRef} className="scroll-mt-32" />
           
           <AnimatePresence mode="wait">
@@ -87,7 +106,10 @@ function OnboardingWizardContent() {
             )}
           </AnimatePresence>
 
-          <div className="min-h-[300px]">
+          <div className={cn(
+            "transition-all duration-500",
+            (currentStep >= 1 && currentStep <= 3) ? "min-h-0 sm:min-h-[160px]" : "min-h-[300px]"
+          )}>
              {currentStep === 1 && <Step1Motivations />}
              {currentStep === 2 && <Step2IncomeType />}
              {currentStep === 3 && <Step3MonthlyIncome />}

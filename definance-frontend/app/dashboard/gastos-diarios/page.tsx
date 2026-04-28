@@ -9,12 +9,12 @@ import {
   Download, 
   CalendarDays,
   CalendarFold,
-  ListChecks
+  ListChecks,
+  Loader2
 } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { useSettings } from "@/lib/settings-context"
 import { useCategories } from "@/lib/category-context"
-import { cn } from "@/lib/utils"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
@@ -26,6 +26,7 @@ import { toast } from "sonner"
 import { GastoStats } from "@/components/dashboard/gastos-diarios/gasto-stats"
 import { GastoList } from "@/components/dashboard/gastos-diarios/gasto-list"
 import { GastoDialog } from "@/components/dashboard/gastos-diarios/gasto-dialog"
+import { GastoDetailsModal } from "@/components/dashboard/gastos-diarios/gasto-details-modal"
 
 // Standardized Utils
 import { formatGastoDate } from "@/lib/gastos-utils"
@@ -81,6 +82,10 @@ export default function GastosDiariosPage() {
     item: null,
   })
   const [editDialog, setEditDialog] = useState<{ open: boolean; item: Gasto | null }>({
+    open: false,
+    item: null,
+  })
+  const [detailsDialog, setDetailsDialog] = useState<{ open: boolean; item: Gasto | null }>({
     open: false,
     item: null,
   })
@@ -213,29 +218,28 @@ export default function GastosDiariosPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Gastos Diários</h1>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Gastos Diários</h1>
             </div>
-            <p className="text-muted-foreground text-sm">Registre seus gastos rápidos do dia a dia</p>
+            <p className="text-muted-foreground text-xs sm:text-sm">Registre seus gastos rápidos do dia a dia</p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <PeriodFilter value={period} onChange={setPeriod} />
+          <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
               onClick={() => setIsExportDialogOpen(true)}
-              className="h-9 gap-2 hidden sm:flex hover:bg-primary/5 transition-colors cursor-pointer"
+              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               size="sm"
             >
               <Download className="h-4 w-4" />
-              Exportar
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
-          </div>
+          </PeriodFilter>
         </div>
       </div>
 
       <BillsAlert />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <GastoStats 
           title="Todos os Gastos" 
           value={totalTodos} 
@@ -246,6 +250,7 @@ export default function GastosDiariosPage() {
           variant="emerald"
           discreetMode={discreetMode}
           isInitialLoad={isInitialLoad}
+          className="col-span-2 sm:col-span-1"
         />
         <GastoStats 
           title="Gastos de Hoje" 
@@ -271,27 +276,40 @@ export default function GastosDiariosPage() {
         />
       </div>
 
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base text-card-foreground">Adicionar Gasto Rápido</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder='Ex: "Gasolina 200,00 hoje" ou "Almoço 45"'
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
-              className="flex-1"
-              disabled={isSaving}
-            />
-            <Button onClick={handleAddGasto} className="bg-primary" disabled={isSaving}>
-              <Send className={cn("h-4 w-4", isSaving && "animate-pulse")} />
-            </Button>
+      <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
+        <CardContent className="pt-4 pb-3 px-4">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Lançamento Rápido</h3>
+              <span className="text-[9px] text-muted-foreground/50 italic">Pressione Enter para salvar</span>
+            </div>
+            
+            <div className="flex gap-2">
+              <Input
+                placeholder='Ex: "Mercado 150" ou "Uber 25"'
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
+                className="flex-1 h-9 bg-muted/20 border-border/50 text-xs truncate placeholder:text-[10px] sm:placeholder:text-xs"
+                disabled={isSaving}
+              />
+              <Button 
+                onClick={handleAddGasto} 
+                className="bg-primary/80 hover:bg-primary h-9 w-9 p-0 shrink-0 shadow-lg shadow-primary/20" 
+                disabled={isSaving}
+                size="icon"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
+            <p className="text-[12px] text-muted-foreground/50 italic">
+              Dica: "Gasolina 50 hoje" ou "Lanche 30 ontem"
+            </p>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dica: "Uber 25 ontem", "Mercado 150" ou "Café 12,50 hoje"
-          </p>
         </CardContent>
       </Card>
 
@@ -316,6 +334,7 @@ export default function GastosDiariosPage() {
           discreetMode={discreetMode}
           onEdit={(g) => setEditDialog({ open: true, item: g })}
           onDelete={(g) => setDeleteDialog({ open: true, item: g })}
+          onDetails={(g) => setDetailsDialog({ open: true, item: g })}
         />
 
         <GastoList 
@@ -327,6 +346,7 @@ export default function GastosDiariosPage() {
           discreetMode={discreetMode}
           onEdit={(g) => setEditDialog({ open: true, item: g })}
           onDelete={(g) => setDeleteDialog({ open: true, item: g })}
+          onDetails={(g) => setDetailsDialog({ open: true, item: g })}
         />
       </div>
 
@@ -359,6 +379,20 @@ export default function GastosDiariosPage() {
           { header: "Hora", key: "hora" },
         ]}
         fileName="gastos-diarios"
+      />
+
+      <GastoDetailsModal
+        open={detailsDialog.open}
+        onOpenChange={(open) => setDetailsDialog({ ...detailsDialog, open })}
+        gasto={detailsDialog.item}
+        onEdit={() => {
+          setDetailsDialog({ open: false, item: null })
+          if (detailsDialog.item) setEditDialog({ open: true, item: detailsDialog.item })
+        }}
+        onDelete={() => {
+          setDetailsDialog({ open: false, item: null })
+          if (detailsDialog.item) setDeleteDialog({ open: true, item: detailsDialog.item })
+        }}
       />
     </div>
   )

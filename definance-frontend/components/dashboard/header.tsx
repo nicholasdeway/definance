@@ -21,8 +21,8 @@ import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 
 export function DashboardHeader() {
-  const { totalCount, overdueCount, setupCount, isLoading } = useBillsNotifications()
-  const { discreetMode, setDiscreetMode } = useSettings()
+  const { totalCount, overdueCount, setupCount, dueSoonCount, budgetAlertsCount, spendingAlert, spendingPct, isLoading } = useBillsNotifications()
+  const { discreetMode, setDiscreetMode, showBudgetAlerts, showSpendingAlerts } = useSettings()
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
@@ -45,7 +45,7 @@ export function DashboardHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer shadow-sm active:scale-95 transition-all">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Nova Transação</span>
             </Button>
           </DropdownMenuTrigger>
@@ -163,6 +163,66 @@ export function DashboardHeader() {
                           <p className="text-xs font-semibold text-primary leading-tight mb-0.5">Configuração Pendente</p>
                           <p className="text-[11px] text-muted-foreground leading-tight truncate">
                             {setupCount} {setupCount === 1 ? 'importação pendente' : 'importações pendentes'}
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {dueSoonCount > 0 && (
+                    <DropdownMenuItem 
+                      onSelect={() => setOpen(false)}
+                      asChild 
+                      className="p-0 border-none focus:bg-amber-500/10 cursor-pointer"
+                    >
+                      <Link href="/dashboard/contas?tab=vencer" className="flex items-center gap-2.5 px-4 py-2.5">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <AlertTriangle className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-amber-600 leading-tight mb-0.5">Atenção</p>
+                          <p className="text-[11px] text-muted-foreground leading-tight truncate">
+                            {dueSoonCount} {dueSoonCount === 1 ? 'conta vence em 2 dias' : 'contas vencem em 2 dias'}
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {budgetAlertsCount > 0 && showBudgetAlerts && (
+                    <DropdownMenuItem
+                      onSelect={() => setOpen(false)}
+                      asChild
+                      className="p-0 border-none focus:bg-blue-500/10 cursor-pointer"
+                    >
+                      <Link href="/dashboard/relatorios" className="flex items-center gap-2.5 px-4 py-2.5">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <TrendingUp className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-blue-600 leading-tight mb-0.5">Limite de Categorias</p>
+                          <p className="text-[11px] text-muted-foreground leading-tight truncate">
+                            {budgetAlertsCount} {budgetAlertsCount === 1 ? 'categoria no limite' : 'categorias no limite'}
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {spendingAlert && showSpendingAlerts && (
+                    <DropdownMenuItem
+                      onSelect={() => setOpen(false)}
+                      asChild
+                      className="p-0 border-none focus:bg-orange-500/10 cursor-pointer"
+                    >
+                      <Link href="/dashboard/relatorios" className="flex items-center gap-2.5 px-4 py-2.5">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                          <TrendingUp className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-orange-600 leading-tight mb-0.5">Gastos Elevados</p>
+                          <p className="text-[11px] text-muted-foreground leading-tight truncate">
+                            {Math.round(spendingPct * 100)}% da receita consumida em despesas
                           </p>
                         </div>
                       </Link>

@@ -25,6 +25,7 @@ namespace definance_backend.Features.Analysis.DTOs
     {
         public string Categoria { get; set; }
         public decimal Valor { get; set; }
+        public decimal? MonthlyLimit { get; set; }
     }
 
     public class BalanceEvolutionDto

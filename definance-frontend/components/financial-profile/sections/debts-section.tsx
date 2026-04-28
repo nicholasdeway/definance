@@ -1,13 +1,11 @@
 "use client"
 
-import React, { useState } from "react"
+import { useState } from "react"
 import { 
   CreditCard,
   Landmark,
   Plus,
   Trash2,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   AlertCircle
 } from "lucide-react"
@@ -149,10 +147,11 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
 
                     return (
                         <AccordionItem key={debt.id} value={debt.id} className={cn(
-                            "w-full rounded-xl border border-border/60 bg-background/50 overflow-hidden transition-all duration-300",
-                            isExpanded && "border-primary/30 shadow-lg bg-background",
-                            hasError && "border-destructive/30"
-                        )}>
+                        "w-full rounded-xl border overflow-hidden transition-all duration-300",
+                        isExpanded && "border-primary/30 shadow-lg bg-white/[0.03]",
+                        hasError && "border-destructive/30",
+                        !isExpanded && !hasError && "border-white/5 bg-white/[0.02]"
+                    )}>
                             <AccordionTrigger className="hover:no-underline px-5 py-4 group data-[state=open]:pb-2 w-full">
                                 <div className="flex items-center justify-between w-full">
                                     <div className="flex items-center gap-3 flex-1 text-left">
@@ -163,7 +162,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                             <CreditCard className={cn("h-5 w-5", isExpanded ? "text-primary" : "text-muted-foreground")} />
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-semibold text-card-foreground truncate">
+                                            <span className="text-[11px] font-medium text-card-foreground truncate">
                                                 {debt.descricao || `Dívida ${idx + 1}`}
                                             </span>
                                             {hasError && (
@@ -172,7 +171,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-xs font-medium text-muted-foreground">
+                                                <span className="text-[10px] text-muted-foreground/70">
                                                     {debt.valor ? formatCurrency(debt.valor) : "R$ 0,00"}
                                                 </span>
                                                 {debt.extras && debt.extras.length > 0 && (
@@ -191,7 +190,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                     </div>
 
                                     <div className="flex items-center gap-4 ml-auto">
-                                        <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider hidden md:inline-block transition-colors">
+                                        <span className="text-[9px] uppercase text-muted-foreground/40 tracking-wider hidden md:inline-block">
                                             {isExpanded ? "Recolher" : "Ver detalhes"}
                                         </span>
                                         
@@ -259,7 +258,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                         />
                                     </div>
                                     <div className="flex items-center justify-between pt-2">
-                                        <Label className="text-xs font-semibold text-primary/80 uppercase">Parcelada?</Label>
+                                        <Label className="text-[9px] font-medium text-primary/70 uppercase">Parcelada?</Label>
                                         <Switch checked={debt.parcelado} onCheckedChange={(checked) => updateDebt(debt.id, "parcelado", checked)} />
                                     </div>
 
@@ -327,7 +326,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                     {/* Gastos Adicionais da Dívida */}
                                     <div className="space-y-3 border-t border-border/20 pt-4 sm:col-span-2">
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-[10px] uppercase font-bold text-muted-foreground transition-colors hover:text-primary">Gastos Extras desta Dívida</Label>
+                                            <Label className="text-[9px] uppercase text-muted-foreground/60">Gastos Extras desta Dívida</Label>
                                         </div>
 
                                         {debt.extras && debt.extras.length > 0 && (
@@ -414,7 +413,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                             type="button" 
                                             disabled={isSaving}
                                             onClick={handleSave}
-                                            className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary/80 font-bold"
+                                            className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary font-bold cursor-pointer"
                                         >
                                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Dívida"}
                                         </Button>
@@ -426,7 +425,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                 })}
             </Accordion>
 
-            <button type="button" onClick={addDebt} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-all cursor-pointer">
+            <button type="button" onClick={addDebt} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/5 p-2.5 text-[10px] text-muted-foreground/70 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all cursor-pointer">
                 <Plus className="h-4 w-4" />
                 Adicionar dívida
             </button>
