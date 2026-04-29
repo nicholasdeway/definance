@@ -5,7 +5,7 @@ O **Definance** é um sistema de gestão financeira pessoal que transforma a for
 A proposta é simples: você não precisa abrir um app ou preencher planilhas. Basta enviar uma mensagem — como se estivesse conversando — e o sistema cuida do resto.
 
 🔗 Acesse a aplicação:
-[https://definance-zeta.vercel.app/](https://definance.com.br)
+[https://definance.com.br](https://definance.com.br)
 
 ---
 
