@@ -182,7 +182,7 @@ namespace definance_backend.Features.Auth.Services
 
             await _repository.UpdateAsync(user);
 
-            var frontendUrl = _configuration["Google:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var frontendUrl = _configuration["FrontendBaseUrl"] ?? "https://definance.com.br";
             var resetLink = $"{frontendUrl}/reset-password?email={user.Email}&token={token}";
 
             await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink, user.FirstName, token);

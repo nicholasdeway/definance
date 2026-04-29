@@ -42,7 +42,7 @@ namespace definance_backend.Features.Auth.Controllers
 
             _frontendBase =
                 configuration["FrontendBaseUrl"]
-                ?? "http://localhost:3000";
+                ?? "https://definance.com.br";
         }
 
         [HttpGet("login")]
