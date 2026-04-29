@@ -14,6 +14,7 @@ using definance_backend.Features.Auth.Repositories;
 using definance_backend.Common.Settings;
 using definance_backend.Features.Auth.Validations;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using definance_backend.Common.Interfaces;
 using definance_backend.Services.Email;
 using definance_backend.Features.Profiles.Services;
@@ -50,6 +51,20 @@ builder.Services.AddRateLimiter(options =>
 
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
+
+// Configuração de Portas para Produção
+if (!builder.Environment.IsDevelopment())
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(80);
+        // Descomente se for gerenciar SSL diretamente no Kestrel
+        // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
+    });
+    
+    // Define as URLs que o servidor vai escutar
+    builder.WebHost.UseUrls("http://*:80"); 
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -91,11 +106,13 @@ builder.Services.AddSwaggerGen(c =>
 // CORS
 builder.Services.AddCors(options =>
 {
+    var frontendUrl = builder.Configuration["FrontendBaseUrl"] ?? "https://definance.com.br";
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
             .WithOrigins(
-                "https://definance-zeta.vercel.app",
+                frontendUrl,
+                "https://www.definance.com.br",
                 "https://localhost:3000",
                 "http://localhost:3000"
             )
@@ -103,6 +120,15 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials();
     });
+});
+
+// Configure Forwarded Headers for Proxy Support (Nginx/ALB)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Clear known networks and proxies to allow headers from any source (common in container environments)
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 // FLUENT VALIDATION
@@ -228,11 +254,12 @@ builder.Services
     .AddCookie("External", options =>
     {
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+        // No localhost, SameSite=None sem Secure costuma falhar em navegadores modernos.
+        // Usamos Lax para o cookie externo ser enviado corretamente após o redirecionamento do Google.
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.SlidingExpiration = true;
-        options.Cookie.MaxAge = TimeSpan.FromMinutes(10);
     })
 
     // Google OAuth
@@ -260,10 +287,10 @@ builder.Services
         {
             OnRemoteFailure = context =>
             {
-                var frontendBase = builder.Configuration["Google:FrontendBaseUrl"]
+                var frontendBase = builder.Configuration["FrontendBaseUrl"]
                                    ?? "http://localhost:3000";
 
-                context.Response.Redirect($"{frontendBase}/auth/login?googleError=access_denied");
+                context.Response.Redirect($"{frontendBase}/login?googleError=access_denied");
                 context.HandleResponse();
                 return Task.CompletedTask;
             }
@@ -291,6 +318,8 @@ if (!app.Environment.IsDevelopment())
 */
 
 app.UseExceptionHandler();
+
+app.UseForwardedHeaders();
 
 app.UseRouting();
 
