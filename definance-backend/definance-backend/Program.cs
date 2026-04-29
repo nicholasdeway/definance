@@ -288,7 +288,7 @@ builder.Services
             OnRemoteFailure = context =>
             {
                 var frontendBase = builder.Configuration["FrontendBaseUrl"]
-                                   ?? "http://localhost:3000";
+                                   ?? "https://definance.com.br";
 
                 context.Response.Redirect($"{frontendBase}/login?googleError=access_denied");
                 context.HandleResponse();
