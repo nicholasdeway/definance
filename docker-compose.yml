@@ -6,12 +6,12 @@ services:
       context: ./definance-backend/definance-backend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "5000:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - AWS_REGION=us-east-2
       - S3_BUCKET_NAME=definance-avatars
-      - IA_SERVICE_URL=http://ia-service:8000
+      - AiService__Url=http://ia-service:8000/parse-expense
     container_name: definance_api
     restart: always
     networks:
