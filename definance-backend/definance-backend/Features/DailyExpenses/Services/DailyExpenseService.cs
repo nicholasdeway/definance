@@ -104,8 +104,8 @@ namespace definance_backend.Features.DailyExpenses.Services
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var aiData = JsonSerializer.Deserialize<AiParsedResponseDto>(json, options);
+                var deserializeOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var aiData = JsonSerializer.Deserialize<AiParsedResponseDto>(json, deserializeOptions);
 
                 if (aiData != null)
                 {
