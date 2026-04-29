@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, u
 import { useRouter, usePathname } from "next/navigation"
 import { apiClient } from "./api-client"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5137"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api-proxy"
 
 function normalizeUser(user: User | null): User | null {
   if (!user) return null
@@ -13,7 +13,7 @@ function normalizeUser(user: User | null): User | null {
     if (user.pictureUrl.startsWith("http")) {
       user.avatar = user.pictureUrl
     } else {
-      user.avatar = `${BACKEND_URL}${user.pictureUrl}`
+      user.avatar = `${API_URL}${user.pictureUrl}`
     }
   }
   
@@ -260,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const loginWithGoogle = useCallback(async (): Promise<boolean> => {
-    window.location.href = `${BACKEND_URL}/api/Auth/google/login`
+    window.location.href = `${API_URL}/api/Auth/google/login`
     return true
   }, [])
 
