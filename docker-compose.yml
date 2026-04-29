@@ -6,7 +6,7 @@ services:
       context: ./definance-backend/definance-backend
       dockerfile: Dockerfile
     ports:
-      - "5000:8080"
+      - "80:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - AWS_REGION=us-east-2

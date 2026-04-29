@@ -4,10 +4,11 @@ const nextConfig: NextConfig = {
   // @ts-ignore - Esta propriedade é necessária no ambiente de dev para 127.0.0.1
   allowedDevOrigins: ["127.0.0.1"],
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:5137";
     return [
       {
         source: "/api-proxy/:path*",
-        destination: "http://localhost:5137/:path*",
+        destination: `${backendUrl}/:path*`,
       },
     ];
   },

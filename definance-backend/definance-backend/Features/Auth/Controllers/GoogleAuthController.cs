@@ -24,6 +24,7 @@ namespace definance_backend.Features.Auth.Controllers
         private readonly IJwtService _jwtService;
         private readonly GoogleSettings _googleSettings;
         private readonly ILogger<GoogleAuthController> _logger;
+        private readonly IConfiguration _configuration;
         private readonly string _frontendBase;
 
         public GoogleAuthController(
@@ -37,10 +38,10 @@ namespace definance_backend.Features.Auth.Controllers
             _jwtService = jwtService;
             _googleSettings = googleOptions.Value;
             _logger = logger;
+            _configuration = configuration;
 
             _frontendBase =
-                configuration["Google:FrontendBaseUrl"]
-                ?? configuration["FrontendBaseUrl"]
+                configuration["FrontendBaseUrl"]
                 ?? "http://localhost:3000";
         }
 
@@ -69,14 +70,14 @@ namespace definance_backend.Features.Auth.Controllers
             if (!externalResult.Succeeded || externalResult.Principal == null)
             {
                 _logger.LogWarning("Falha ao autenticar cookie externo do Google.");
-                return Redirect($"{_frontendBase}/auth/login?googleError=external_auth_failed");
+                return Redirect($"{_frontendBase}/login?googleError=external_auth_failed");
             }
 
             var principal = externalResult.Principal;
 
             try
             {
-                var token = await UpsertUserFromGoogleAsync(principal);
+                var tokenInfo = await UpsertUserFromGoogleAsync(principal);
 
                 await HttpContext.SignOutAsync("External");
 
@@ -86,8 +87,9 @@ namespace definance_backend.Features.Auth.Controllers
                     $"{_frontendBase}/api-proxy/api/auth/google/finish-login",
                     new Dictionary<string, string?>
                     {
-                        ["token"] = token,
-                        ["returnUrl"] = finalReturnUrl
+                        ["token"] = tokenInfo.Token,
+                        ["returnUrl"] = finalReturnUrl,
+                        ["onboarding"] = tokenInfo.HasCompletedOnboarding.ToString().ToLower()
                     });
 
                 return Redirect(finishUrl);
@@ -95,22 +97,35 @@ namespace definance_backend.Features.Auth.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao processar Callback do Google.");
-                return Redirect($"{_frontendBase}/auth/login?googleError=server_error");
+                return Redirect($"{_frontendBase}/login?googleError=server_error");
             }
         }
 
         [HttpGet("finish-login")]
         [AllowAnonymous]
-        public IActionResult FinishLogin([FromQuery] string token, [FromQuery] string? returnUrl = null)
+        public IActionResult FinishLogin(
+            [FromQuery] string token, 
+            [FromQuery] string onboarding,
+            [FromQuery] string? returnUrl = null)
         {
             if (string.IsNullOrWhiteSpace(token))
                 return BadRequest("Token is required");
 
             SetTokenCookie(token);
 
-            var finalReturnUrl = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+            // Se o usuário já tiver uma returnUrl específica, respeita ela.
+            // Senão, verifica se completou o onboarding.
+            string targetPath;
+            if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/")
+            {
+                targetPath = returnUrl;
+            }
+            else
+            {
+                targetPath = onboarding == "true" ? "/dashboard" : "/onboarding";
+            }
             
-            return Redirect($"{_frontendBase}/auth/google/callback?returnUrl={finalReturnUrl}");
+            return Redirect($"{_frontendBase}{targetPath}");
         }
 
         private void SetTokenCookie(string token)
@@ -120,6 +135,7 @@ namespace definance_backend.Features.Auth.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
+                Domain = _configuration["CookieDomain"],
                 Expires = DateTime.UtcNow.AddMinutes(480),
                 IsEssential = true
             };
@@ -128,7 +144,7 @@ namespace definance_backend.Features.Auth.Controllers
 
         // ========= Helpers =========
 
-        private async Task<string> UpsertUserFromGoogleAsync(ClaimsPrincipal principal)
+        private async Task<(string Token, bool HasCompletedOnboarding)> UpsertUserFromGoogleAsync(ClaimsPrincipal principal)
         {
             var sub = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                    ?? principal.FindFirst("sub")?.Value;
@@ -200,7 +216,7 @@ namespace definance_backend.Features.Auth.Controllers
             }
 
             var token = _jwtService.GenerateToken(user);
-            return token;
+            return (token, user.HasCompletedOnboarding);
         }
 
         private static void SplitName(string? displayName, out string firstName, out string lastName)

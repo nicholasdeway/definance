@@ -40,6 +40,7 @@ namespace definance_backend.Features.Auth.Controllers
                 HttpOnly = true,
                 Secure = !_env.IsDevelopment(),
                 SameSite = _env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+                Domain = _configuration["CookieDomain"],
                 Expires = DateTime.UtcNow.AddMinutes(expiresMinutes),
                 IsEssential = true
             };
@@ -200,7 +201,8 @@ namespace definance_backend.Features.Auth.Controllers
             {
                 HttpOnly = true,
                 Secure = !_env.IsDevelopment(),
-                SameSite = _env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None
+                SameSite = _env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+                Domain = _configuration["CookieDomain"]
             });
             return Ok(new { message = "Logged out" });
         }
