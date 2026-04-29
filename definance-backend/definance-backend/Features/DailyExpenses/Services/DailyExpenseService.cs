@@ -97,7 +97,8 @@ namespace definance_backend.Features.DailyExpenses.Services
         private async Task<ParsedExpenseResult?> TryParseWithAIAsync(string input, List<string> categories)
         {
             var payload = new { text = input, categories = categories };
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var content = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync(_aiServiceUrl, content);
 
             if (response.IsSuccessStatusCode)
