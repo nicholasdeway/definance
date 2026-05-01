@@ -7,11 +7,16 @@ import { formatCurrency } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { EmptyChart } from "./empty-chart"
 
+export interface BalanceData {
+  month: string
+  saldo: number
+}
+
 interface BalanceEvolutionChartProps {
-  data: any[]
+  data: BalanceData[]
   discreetMode: boolean
   isDark: boolean
-  formatMonth: (month: any) => string
+  formatMonth: (month: string) => string
 }
 
 export const BalanceEvolutionChart = ({
@@ -20,6 +25,23 @@ export const BalanceEvolutionChart = ({
   isDark,
   formatMonth
 }: BalanceEvolutionChartProps) => {
+  // Função para formatar o valor do eixo Y
+  const formatYAxisTick = (value: number): string => {
+    if (Math.abs(value) >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`
+    return `R$ ${value}`
+  }
+
+  // Função para o formatter do Tooltip - Tratando todas as possibilidades do Recharts (incluindo name como number)
+  const tooltipFormatter = (value: number | string | undefined | readonly (number | string)[], name?: string | number) => {
+    const finalValue = Array.isArray(value) ? value[0] : value
+    return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
+  }
+
+  // Função para o labelFormatter do Tooltip - usando unknown para segurança
+  const tooltipLabelFormatter = (label: unknown): string => {
+    return formatMonth(String(label ?? ""))
+  }
+
   return (
     <Card className="border-border/50">
       <CardHeader>
@@ -59,23 +81,19 @@ export const BalanceEvolutionChart = ({
                   tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => {
-                    if (Math.abs(value) >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`
-                    return `R$ ${value}`
-                  }}
+                  tickFormatter={formatYAxisTick}
                 />
                 <Tooltip
-                  labelFormatter={formatMonth}
+                  labelFormatter={tooltipLabelFormatter}
                   cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', strokeWidth: 2 }}
                   contentStyle={{
-                    backgroundColor: "rgba(var(--card-rgb), 0.9)",
-                    backdropFilter: "blur(8px)",
+                    backgroundColor: "var(--card)",
                     border: "1px solid var(--border)",
                     borderRadius: "12px",
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                   itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                  formatter={(value: any) => [formatCurrency(Number(value || 0)), "Saldo Acumulado"]}
+                  formatter={tooltipFormatter}
                 />
                 <Area 
                   type="monotone" 
@@ -84,6 +102,7 @@ export const BalanceEvolutionChart = ({
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorSaldo)" 
+                  name="Saldo"
                   animationDuration={1500}
                 />
               </AreaChart>

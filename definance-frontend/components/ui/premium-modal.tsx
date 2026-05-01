@@ -35,7 +35,7 @@ export function PremiumModal({
       <DialogContent 
         showCloseButton={false}
         className={cn(
-          "!max-w-[1100px] w-[95vw] min-h-[auto] md:min-h-[600px] p-0 overflow-hidden border-none bg-[#0a0a0a]/90 backdrop-blur-md md:backdrop-blur-xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[1.5rem] md:rounded-[2.5rem] transition-all duration-75 ease-out outline-none",
+          "!max-w-[1100px] w-[95vw] min-h-[auto] md:min-h-[600px] p-0 overflow-hidden border border-white/5 bg-[#0a0a0a] shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] rounded-[1.5rem] md:rounded-[2.5rem] outline-none",
           className
         )}
       >
@@ -79,7 +79,7 @@ export function PremiumModal({
             </div>
           </div>
         </div>
-        <DialogClose className="fixed right-4 top-4 h-7 w-7 rounded-full flex items-center justify-center bg-background/80 hover:bg-background text-foreground transition-all active:scale-90 border border-white/20 z-[100] cursor-pointer shadow-xl backdrop-blur-md">
+        <DialogClose className="fixed right-4 top-4 h-7 w-7 rounded-full flex items-center justify-center bg-card hover:bg-muted text-foreground transition-all active:scale-90 border border-white/10 z-[100] cursor-pointer shadow-xl">
           <X className="h-3.5 w-3.5" />
         </DialogClose>
       </DialogContent>

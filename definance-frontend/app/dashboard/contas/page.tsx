@@ -55,14 +55,20 @@ export interface ApiBill {
   description?: string | null
 }
 
-function mapApiToConta(b: ApiBill): ContaItem {
+function mapApiToConta(b: ApiBill, targetMonth?: number, targetYear?: number): ContaItem {
   const rawDue = b.dueDate ?? null
   let dueDate: Date | null = null
   
   if (rawDue) {
     const datePart = rawDue.split('T')[0]
     const [year, month, day] = datePart.split('-').map(Number)
-    dueDate = new Date(year, month - 1, day)
+    
+    // Se for recorrente e estivermos em um filtro mensal, projetamos o dia para o mês/ano alvo
+    if (b.isRecurring && targetMonth && targetYear) {
+      dueDate = new Date(targetYear, targetMonth - 1, day)
+    } else {
+      dueDate = new Date(year, month - 1, day)
+    }
   }
 
   const hoje = new Date()
@@ -176,7 +182,12 @@ export default function ContasPage() {
         }
 
         const data = await apiClient<ApiBill[]>(`/api/bills?${queryParams}`) || []
-        setContas(data.map(mapApiToConta))
+        
+        // Passamos o mês e ano do período para a projeção de contas recorrentes
+        const targetMonth = period.type === "monthly" ? period.month : undefined
+        const targetYear = period.type === "monthly" ? period.year : undefined
+        
+        setContas(data.map(b => mapApiToConta(b, targetMonth, targetYear)))
       } catch (err) {
         console.error("Erro ao carregar contas:", err)
       } finally {

@@ -26,7 +26,7 @@ interface ExportPdfDialogProps {
   onOpenChange: (open: boolean) => void
   title: string
   subtitle?: string
-  data: any[]
+  data: Record<string, string | number | boolean | null | undefined>[]
   columns: ExportColumn[]
   fileName?: string
 }
@@ -96,12 +96,12 @@ export function ExportPdfDialog({
                 ${data.map(item => `
                   <tr>
                     ${columns.map(col => {
-                      const capitalize = (s: any) => typeof s === 'string' && s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+                      const capitalize = (s: string | number | boolean | null | undefined) => typeof s === 'string' && s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
                       let val = item[col.key];
                       const className = col.type === 'currency' ? 'class="currency"' : '';
                       
                       if (col.type === 'currency') {
-                        val = formatCurrency(val);
+                        val = formatCurrency(Number(val || 0));
                       } else if (typeof val === 'boolean') {
                         val = val ? 'Recorrente' : 'Não Recorrente';
                       } else {

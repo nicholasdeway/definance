@@ -7,8 +7,13 @@ import {
   Plus,
   Trash2,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Calendar as CalendarIcon
 } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import {
     Accordion,
     AccordionContent,
@@ -57,6 +62,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                 valor: Number(d.valor) || 0,
                 parcelasTotal: d.parcelasTotal ? Number(d.parcelasTotal) : 0,
                 parcelasPagas: d.parcelasPagas ? Number(d.parcelasPagas) : 0,
+                vencimento: d.vencimento || "",
                 extras: d.extras?.map(e => ({
                     ...e,
                     valor: Number(e.valor) || 0
@@ -84,7 +90,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
         const newId = generateId()
         setDebts(prev => [
             ...prev,
-            { id: newId, descricao: "", valor: 0, parcelado: false, parcelasTotal: 0, parcelasPagas: 0, extras: [] },
+            { id: newId, descricao: "", valor: 0, parcelado: false, parcelasTotal: 0, parcelasPagas: 0, vencimento: "", extras: [] },
         ])
         setExpandedValue(newId)
     }
@@ -142,6 +148,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                         !debt.descricao || 
                         !debt.valor || 
                         debt.valor === 0 ||
+                        !debt.vencimento ||
                         (debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0))
                     )
 
@@ -257,6 +264,46 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                             )}
                                         />
                                     </div>
+
+                                    <div className="space-y-1.5">
+                                        <FieldLabel 
+                                            label="Vencimento / Início" 
+                                            required 
+                                            isEmpty={!debt.vencimento} 
+                                            wasAttempted={wasAttempted} 
+                                        />
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "w-full justify-start text-left font-normal bg-background h-9 px-3",
+                                                        !debt.vencimento && "text-muted-foreground",
+                                                        wasAttempted && !debt.vencimento && "border-destructive/50"
+                                                    )}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4 text-primary opacity-70" />
+                                                    <span className="text-sm">
+                                                        {debt.vencimento ? format(parseISO(debt.vencimento), "dd/MM/yyyy") : "Selecione a data"}
+                                                    </span>
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={debt.vencimento ? parseISO(debt.vencimento) : undefined}
+                                                    onSelect={(date) => {
+                                                        if (date) {
+                                                            updateDebt(debt.id, "vencimento", format(date, "yyyy-MM-dd"))
+                                                        }
+                                                    }}
+                                                    locale={ptBR}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
                                     <div className="flex items-center justify-between pt-2">
                                         <Label className="text-[9px] font-medium text-primary/70 uppercase">Parcelada?</Label>
                                         <Switch checked={debt.parcelado} onCheckedChange={(checked) => updateDebt(debt.id, "parcelado", checked)} />

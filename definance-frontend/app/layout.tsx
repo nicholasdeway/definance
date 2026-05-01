@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Definance - Gestão Financeira Pessoal',
+  title: 'Definance - Gestão Financeira Inteligente',
   description: 'Controle total da sua vida financeira. Organize seus gastos, entenda seu dinheiro e tome decisões melhores.',
   icons: {
     icon: '/logo.png',

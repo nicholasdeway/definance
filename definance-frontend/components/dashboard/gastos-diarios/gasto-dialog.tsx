@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { PremiumModal } from "@/components/ui/premium-modal"
 import { useCategories } from "@/lib/category-context"
-import { ShoppingBag, Loader2, Save, Plus } from "lucide-react"
+import { ShoppingBag, Loader2, Save, Plus, Calendar as CalendarIcon } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
 
@@ -146,17 +150,36 @@ export const GastoDialog = ({
               <Label htmlFor="data" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                 Data
               </Label>
-              <Input
-                id="data"
-                type="date"
-                value={formData.data}
-                onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                className={cn(
-                  "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
-                  isMobile ? "h-8 text-[10px] px-1" : "h-12 px-5"
-                )}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                      isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
+                      !formData.data && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className={cn("shrink-0 text-primary opacity-50", isMobile ? "h-3.3 w-3.3 mr-1.5" : "h-4 w-4 mr-2")} />
+                    <span className="truncate">
+                      {formData.data ? format(parseISO(formData.data), "dd/MM/yy") : "Selecionar data"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.data ? parseISO(formData.data) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setFormData({ ...formData, data: format(date, "yyyy-MM-dd") })
+                      }
+                    }}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

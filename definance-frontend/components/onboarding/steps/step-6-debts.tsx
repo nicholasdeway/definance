@@ -1,9 +1,14 @@
-import { Info, Plus, Trash2, CreditCard, Landmark, AlertCircle } from "lucide-react"
+import { Info, Plus, Trash2, CreditCard, Landmark, AlertCircle, Calendar as CalendarIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import {
   Accordion,
   AccordionContent,
@@ -39,6 +44,7 @@ export const Step6Debts = () => {
         parcelado: false,
         parcelasTotal: 0,
         parcelasPagas: 0,
+        vencimento: "",
       },
     ])
     setExpandedValue(newId)
@@ -85,6 +91,7 @@ export const Step6Debts = () => {
           const hasError = wasAttempted && (
             (!debt.descricao || debt.descricao.trim().length === 0) ||
             (!debt.valor || debt.valor === 0) ||
+            !debt.vencimento ||
             (debt.parcelado && (!debt.parcelasTotal || debt.parcelasTotal === 0))
           )
 
@@ -200,6 +207,45 @@ export const Step6Debts = () => {
                         wasAttempted && (!debt.valor || debt.valor === 0) && "border-destructive/50"
                       )}
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <FieldLabel 
+                      label="Vencimento / Início" 
+                      required 
+                      isEmpty={!debt.vencimento} 
+                      wasAttempted={wasAttempted} 
+                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal bg-background h-9 px-3",
+                            !debt.vencimento && "text-muted-foreground",
+                            wasAttempted && !debt.vencimento && "border-destructive/50"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 text-primary opacity-70" />
+                          <span className="text-sm">
+                            {debt.vencimento ? format(parseISO(debt.vencimento), "dd/MM/yyyy") : "Selecione a data"}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={debt.vencimento ? parseISO(debt.vencimento) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              updateDebt(debt.id, "vencimento", format(date, "yyyy-MM-dd"))
+                            }
+                          }}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex items-center justify-between pt-2">
                     <Label htmlFor={`debt-parc-${debt.id}`} className="text-xs font-semibold text-primary/80 uppercase">

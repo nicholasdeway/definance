@@ -6,7 +6,6 @@ using definance_backend.Features.Onboarding.DTOs;
 using definance_backend.Features.Bills.Repositories;
 using definance_backend.Domain.Entities;
 using System.Collections.Generic;
-
 using definance_backend.Features.Incomes.Repositories;
 using System.Linq;
 
@@ -452,7 +451,7 @@ namespace definance_backend.Features.Onboarding.Services
         private async Task SyncVehiclesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
         {
             var toDelete = existingBills.Where(b => 
-                b.Category == "Veículos" && 
+                b.Category == "Veículo" && 
                 b.Status == "Pendente" && 
                 (
                     (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
@@ -493,7 +492,7 @@ namespace definance_backend.Features.Onboarding.Services
                                 UserId = userId,
                                 Name = $"IPVA {ano.Ano} - {v.Nome} ({parcelaCount}/{ano.Parcelas.Count})",
                                 Amount = parcela.Valor,
-                                Category = "Veículos",
+                                Category = "Veículo",
                                 BillType = "Variável",
                                 DueDay = dueDay,
                                 DueDate = dueDate,
@@ -514,7 +513,7 @@ namespace definance_backend.Features.Onboarding.Services
                         UserId = userId,
                         Name = $"Financiamento - {v.Nome}",
                         Amount = v.ValorParcela.Value,
-                        Category = "Veículos",
+                        Category = "Veículo",
                         BillType = "Fixa",
                         DueDay = null,
                         Status = "Pendente",
@@ -539,7 +538,7 @@ namespace definance_backend.Features.Onboarding.Services
                         UserId = userId,
                         Name = $"Seguro - {v.Nome}",
                         Amount = v.ValorSeguro.Value,
-                        Category = "Veículos",
+                        Category = "Veículo",
                         BillType = "Fixa",
                         DueDay = dueDay,
                         DueDate = dueDate,
@@ -560,7 +559,7 @@ namespace definance_backend.Features.Onboarding.Services
                             UserId = userId,
                             Name = $"{extra.Descricao} ({v.Nome})",
                             Amount = extra.Valor,
-                            Category = "Veículos",
+                            Category = "Veículo",
                             BillType = "Fixa",
                             DueDay = null,
                             Status = "Pendente",
@@ -578,7 +577,7 @@ namespace definance_backend.Features.Onboarding.Services
                         UserId = userId,
                         Name = $"Multas - {v.Nome}",
                         Amount = v.Multas,
-                        Category = "Veículos",
+                        Category = "Veículo",
                         BillType = "Variável",
                         DueDay = null,
                         Status = "Pendente",
@@ -683,8 +682,9 @@ namespace definance_backend.Features.Onboarding.Services
             var toDelete = existingBills.Where(b => 
                 b.Category == "Dívidas" && 
                 b.Status == "Pendente" && 
+                b.Description != null && 
                 (
-                    (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
+                    (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)") ||
                     b.Description.Contains("Dívida")
                 )
             ).Select(b => b.Id).ToList();
@@ -701,6 +701,12 @@ namespace definance_backend.Features.Onboarding.Services
             {
                 if (d.Valor <= 0) continue;
 
+                DateTime? baseDueDate = null;
+                if (!string.IsNullOrEmpty(d.Vencimento) && DateTime.TryParse(d.Vencimento, out var dt))
+                {
+                    baseDueDate = dt.ToUniversalTime();
+                }
+
                 if (d.Parcelado && d.ParcelasTotal > 0)
                 {
                     int total = d.ParcelasTotal.Value;
@@ -711,6 +717,16 @@ namespace definance_backend.Features.Onboarding.Services
                     for (int i = 1; i <= restantes; i++)
                     {
                         int numeroParcela = pagas + i;
+                        
+                        DateTime? installmentDate = null;
+                        int? dueDay = null;
+                        
+                        if (baseDueDate.HasValue)
+                        {
+                            installmentDate = baseDueDate.Value.AddMonths(i - 1);
+                            dueDay = installmentDate.Value.Day;
+                        }
+
                         newBills.Add(new Bill
                         {
                             Id = Guid.NewGuid(),
@@ -719,8 +735,8 @@ namespace definance_backend.Features.Onboarding.Services
                             Amount = valorParcela,
                             Category = "Dívidas",
                             BillType = "Fixa",
-                            DueDay = null,
-                            DueDate = null,
+                            DueDay = dueDay,
+                            DueDate = installmentDate,
                             Status = "Pendente",
                             IsRecurring = false,
                             Description = $"Dívida Parcelada ({numeroParcela}/{total}) (Sincronizado Perfil)"
@@ -737,7 +753,8 @@ namespace definance_backend.Features.Onboarding.Services
                         Amount = d.Valor,
                         Category = "Dívidas",
                         BillType = "Variável",
-                        DueDay = null,
+                        DueDay = baseDueDate?.Day,
+                        DueDate = baseDueDate,
                         Status = "Pendente",
                         IsRecurring = false,
                         Description = "Dívida única (Sincronizado Perfil)"
