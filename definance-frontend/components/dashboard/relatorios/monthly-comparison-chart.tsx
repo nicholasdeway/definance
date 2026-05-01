@@ -6,11 +6,17 @@ import { formatCurrency } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { EmptyChart } from "./empty-chart"
 
+export interface MonthlyComparisonData {
+  month: string
+  receitas: number
+  despesas: number
+}
+
 interface MonthlyComparisonChartProps {
-  data: any[]
+  data: MonthlyComparisonData[]
   discreetMode: boolean
   cursorFill: string
-  formatMonth: (month: any) => string
+  formatMonth: (month: string) => string
 }
 
 export const MonthlyComparisonChart = ({
@@ -19,6 +25,22 @@ export const MonthlyComparisonChart = ({
   cursorFill,
   formatMonth
 }: MonthlyComparisonChartProps) => {
+  // Função para formatar o valor do eixo Y
+  const formatYAxisTick = (value: number): string => {
+    if (Math.abs(value) >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`
+    return formatCurrency(value)
+  }
+
+  // Função para o formatter do Tooltip
+  const tooltipFormatter = (value: number | string | undefined | readonly (number | string)[], name?: string | number) => {
+    const finalValue = Array.isArray(value) ? value[0] : value
+    return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
+  }
+
+  // Função para o labelFormatter do Tooltip
+  const tooltipLabelFormatter = (label: unknown): string => {
+    return formatMonth(String(label ?? ""))
+  }
   return (
     <Card className="border-border/50">
       <CardHeader>
@@ -42,7 +64,7 @@ export const MonthlyComparisonChart = ({
                 <YAxis 
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                   axisLine={{ stroke: "var(--border)" }}
-                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={formatYAxisTick}
                 />
                 <Tooltip
                   cursor={{ fill: cursorFill }}
@@ -52,8 +74,8 @@ export const MonthlyComparisonChart = ({
                     borderRadius: "8px",
                   }}
                   labelStyle={{ color: "var(--card-foreground)" }}
-                  labelFormatter={formatMonth}
-                  formatter={(value: any) => [formatCurrency(Number(value || 0)), ""]}
+                  labelFormatter={tooltipLabelFormatter}
+                  formatter={tooltipFormatter}
                 />
                 <Bar dataKey="receitas" fill="var(--chart-1)" radius={[4, 4, 0, 0]} name="Receitas" />
                 <Bar dataKey="despesas" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name="Despesas" />

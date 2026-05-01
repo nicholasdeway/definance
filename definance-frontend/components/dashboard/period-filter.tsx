@@ -1,6 +1,19 @@
 "use client"
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Button } from "@/components/ui/button"
+import { Calendar as CalendarIcon, Filter } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { CalendarDays } from "lucide-react"
 
@@ -84,19 +97,67 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
 
       {value.type === "custom" && (
         <div className="flex items-center gap-1.5 flex-1 sm:w-auto mt-0 sm:mt-0">
-          <Input 
-            type="date" 
-            value={value.startDate || ""} 
-            onChange={(e) => updateState({ startDate: e.target.value })}
-            className="flex-1 sm:w-[160px] h-9 text-[11px] sm:text-sm px-2"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg transition-all",
+                  !value.startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="shrink-0 text-primary opacity-50 h-3 w-3 mr-1.5" />
+                <span className="truncate">
+                  {value.startDate ? format(parseISO(value.startDate), "dd/MM/yy") : "Início"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+              <Calendar
+                mode="single"
+                selected={value.startDate ? parseISO(value.startDate) : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    updateState({ startDate: format(date, "yyyy-MM-dd") })
+                  }
+                }}
+                locale={ptBR}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
           <span className="text-muted-foreground text-[10px] shrink-0">até</span>
-          <Input 
-            type="date" 
-            value={value.endDate || ""} 
-            onChange={(e) => updateState({ endDate: e.target.value })}
-            className="flex-1 sm:w-[160px] h-9 text-[11px] sm:text-sm px-2"
-          />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg transition-all",
+                  !value.endDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="shrink-0 text-primary opacity-50 h-3 w-3 mr-1.5" />
+                <span className="truncate">
+                  {value.endDate ? format(parseISO(value.endDate), "dd/MM/yy") : "Fim"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="end">
+              <Calendar
+                mode="single"
+                selected={value.endDate ? parseISO(value.endDate) : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    updateState({ endDate: format(date, "yyyy-MM-dd") })
+                  }
+                }}
+                locale={ptBR}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 

@@ -6,8 +6,13 @@ import { formatCurrency } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { EmptyChart } from "./empty-chart"
 
+export interface CategoryAnalysisData {
+  categoria: string
+  valor: number
+}
+
 interface CategoryAnalysisChartProps {
-  data: any[]
+  data: CategoryAnalysisData[]
   discreetMode: boolean
   cursorFill: string
 }
@@ -17,6 +22,11 @@ export const CategoryAnalysisChart = ({
   discreetMode,
   cursorFill
 }: CategoryAnalysisChartProps) => {
+  // Função para o formatter do Tooltip - Tratando todas as possibilidades do Recharts
+  const tooltipFormatter = (value: number | string | undefined | readonly (number | string)[], name?: string | number) => {
+    const finalValue = Array.isArray(value) ? value[0] : value
+    return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
+  }
   return (
     <Card className="border-border/50">
       <CardHeader>
@@ -35,7 +45,7 @@ export const CategoryAnalysisChart = ({
                   type="number"
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                   axisLine={{ stroke: "var(--border)" }}
-                  tickFormatter={(value) => `R$ ${value}`}
+                  tickFormatter={(value) => formatCurrency(value)}
                 />
                 <YAxis 
                   dataKey="categoria"
@@ -51,9 +61,9 @@ export const CategoryAnalysisChart = ({
                     border: "1px solid var(--border)",
                     borderRadius: "8px",
                   }}
-                  formatter={(value: any) => [formatCurrency(Number(value || 0)), "Valor"]}
+                  formatter={tooltipFormatter}
                 />
-                <Bar dataKey="valor" fill="var(--primary)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="valor" fill="var(--primary)" radius={[0, 4, 4, 0]} name="Valor" />
               </BarChart>
             </ResponsiveContainer>
           ) : (

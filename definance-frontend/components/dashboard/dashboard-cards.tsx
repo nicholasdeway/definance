@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Wallet, ArrowDownLeft, ArrowUpRight, CreditCard, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatCurrency } from "@/lib/currency"
 
 interface DashboardCardsProps {
   data: {
@@ -87,14 +88,7 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
               {card.isCount ? (
                 card.value
               ) : (
-                <>
-                  <span className="sm:hidden">
-                    {`R$ ${card.value.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`}
-                  </span>
-                  <span className="hidden sm:inline">
-                    {`R$ ${card.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-                  </span>
-                </>
+                formatCurrency(card.value)
               )}
             </div>
             <p className="hidden sm:block text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wide opacity-60">

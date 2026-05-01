@@ -7,6 +7,7 @@ import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Loader2, PieChart as PieIcon } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 
 export interface CategoryData {
   categoria: string
@@ -43,6 +44,18 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Função para formatar o valor do eixo Y
+  const formatYAxisTick = (value: number): string => {
+    if (Math.abs(value) >= 1000) return `R$ ${(value / 1000).toFixed(0)}k`
+    return formatCurrency(value)
+  }
+
+  // Função para o formatter do Tooltip - Tratando todas as possibilidades do Recharts
+  const tooltipFormatter = (value: number | string | undefined | readonly (number | string)[], name?: string | number) => {
+    const finalValue = Array.isArray(value) ? value[0] : value
+    return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
+  }
 
   const total = categoryData.reduce((sum, item) => sum + item.valor, 0)
 
@@ -96,14 +109,14 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
                       fontWeight: "bold"
                     }}
                     itemStyle={{ color: "var(--foreground)" }}
-                    formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Total"]}
+                    formatter={tooltipFormatter}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Total</span>
                 <span className="text-sm font-black text-card-foreground">
-                  {total > 1000 ? `${(total/1000).toFixed(1)}k` : `R$ ${total.toFixed(0)}`}
+                  {total > 1000 ? `R$ ${(total/1000).toFixed(1)}k` : formatCurrency(total)}
                 </span>
               </div>
             </div>
@@ -161,23 +174,19 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
                   tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => {
-                    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`
-                    return value.toString()
-                  }}
+                  tickFormatter={formatYAxisTick}
                 />
                 <Tooltip
                   cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)', strokeWidth: 2 }}
                   contentStyle={{
-                    backgroundColor: "rgba(var(--card-rgb), 0.9)",
-                    backdropFilter: "blur(8px)",
+                    backgroundColor: "var(--card)",
                     border: "1px solid var(--border)",
                     borderRadius: "12px",
                     fontSize: "11px",
                     fontWeight: "bold",
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
-                  formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR")}`, ""]}
+                  formatter={tooltipFormatter}
                 />
                 <Area
                   type="monotone"

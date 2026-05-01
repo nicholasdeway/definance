@@ -39,6 +39,7 @@ interface Receita {
   diaSemana?: string
   descricao?: string | null
   observacoes?: string | null
+  rawDate?: Date
 }
 
 export interface IncomeApiResponse {
@@ -157,7 +158,8 @@ export default function ReceitasPage() {
             recorrente: inc.isRecurring,
             isSynced: isBaseType,
             descricao: inc.description ?? null,
-            observacoes: inc.notes ?? null
+            observacoes: inc.notes ?? null,
+            rawDate: new Date(inc.date)
           }
         })
 
@@ -245,7 +247,8 @@ export default function ReceitasPage() {
                     dataReal: itemDate.toISOString(),
                     hora: "00:00",
                     recorrente: true,
-                    isSynced: true
+                    isSynced: true,
+                    rawDate: itemDate
                   }
                 })
               })
@@ -388,7 +391,8 @@ export default function ReceitasPage() {
               dataReal: response.date,
               hora: savedDate.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
               recorrente: response.isRecurring,
-              isSynced: false
+              isSynced: false,
+              rawDate: savedDate
             }
             
             // Verifica se o item salvo pertence ao período que o usuário está visualizando agora
@@ -576,7 +580,7 @@ export default function ReceitasPage() {
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Entradas"
         subtitle={`Deseja exportar as ${filteredReceitas.length} entradas listadas no PDF?`}
-        data={filteredReceitas}
+        data={filteredReceitas as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Tipo", key: "tipo" },

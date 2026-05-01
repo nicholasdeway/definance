@@ -78,7 +78,9 @@ export const AnalysisStats = ({
             <CardContent className="px-3 sm:px-6 pt-0">
               <div className={cn(
                 "text-lg sm:text-2xl font-bold tracking-tight transition-all duration-500",
-                card.color === "text-primary" ? "text-primary" : (card.title === "Total Despesas" ? "text-card-foreground" : "text-destructive"),
+                card.title === "Saldo Líquido" 
+                  ? (card.value >= 0 ? "text-primary" : "text-destructive")
+                  : (card.title === "Total Despesas" ? "text-card-foreground" : card.color),
                 (loading || discreetMode) && "discreet-mode-blur"
               )}>
                 {formatCurrency(card.value)}

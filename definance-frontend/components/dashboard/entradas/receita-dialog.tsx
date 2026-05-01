@@ -5,13 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { Switch } from "@/components/ui/switch"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { PremiumModal } from "@/components/ui/premium-modal"
 import { useCategories } from "@/lib/category-context"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
-import { TrendingUp, Loader2, Save, Plus } from "lucide-react"
+import { TrendingUp, Loader2, Save, Plus, Calendar as CalendarIcon } from "lucide-react"
 import { toCents } from "@/lib/currency"
 
 export interface ReceitaFormState {
@@ -146,14 +150,19 @@ export const ReceitaDialog = ({
 
           <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6">
             {/* Valor */}
-            <div className="flex-1 space-y-0.5">
-              <Label htmlFor="valor" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Valor</Label>
+            <div className="flex-1 space-y-0.5 sm:space-y-2">
+              <Label htmlFor="valor" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Valor
+              </Label>
               <CurrencyInput
                 id="valor"
                 value={formData.valor}
                 onChange={(val) => setFormData({ ...formData, valor: val })}
                 placeholder="0,00"
-                className="h-8 md:h-12 text-xs md:text-2xl font-black bg-primary/5 border-primary/10 text-primary rounded-lg md:rounded-2xl pl-9 md:pl-12 pr-1 md:pr-5 focus:ring-primary/20"
+                className={cn(
+                  "font-bold bg-primary/5 border-primary/10 text-primary rounded-lg md:rounded-2xl focus:ring-primary/20",
+                  isMobile ? "h-8 text-xs pl-9 pr-1" : "h-12 text-lg pl-12 pr-5"
+                )}
                 required
               />
             </div>
@@ -162,14 +171,36 @@ export const ReceitaDialog = ({
             <div className="flex-1 flex gap-2 md:gap-6">
               <div className="flex-1 space-y-0.5">
                 <Label htmlFor="data" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Data</Label>
-                <Input
-                  id="data"
-                  type="date"
-                  value={formData.data}
-                  onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                  className="h-8 md:h-12 text-[10px] bg-muted/20 border-white/5 rounded-lg md:rounded-2xl px-1 md:px-5 transition-all"
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
+                        !formData.data && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className={cn("shrink-0 text-primary opacity-50", isMobile ? "h-3.3 w-3.3 mr-1.5" : "h-4 w-4 mr-2")} />
+                      <span className="truncate">
+                        {formData.data ? format(parseISO(formData.data), "dd/MM/yy") : "Selecionar data"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.data ? parseISO(formData.data) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setFormData({ ...formData, data: format(date, "yyyy-MM-dd") })
+                        }
+                      }}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="w-[70px] md:w-[120px] space-y-0.5">
                 <Label htmlFor="hora" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Hora</Label>

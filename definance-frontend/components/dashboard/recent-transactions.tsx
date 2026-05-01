@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { ArrowDownLeft, ArrowUpRight, ArrowRight, Wallet, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { formatCurrency } from "@/lib/currency"
+import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
 
 export interface Transaction {
   id: string
@@ -80,11 +82,7 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                     t.tipo === "receita" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
                   )}>
-                    {t.tipo === "receita" ? (
-                      <ArrowDownLeft className="h-3.5 w-3.5" />
-                    ) : (
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    )}
+                    <CategoryIcon name={t.categoria} className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-card-foreground group-hover:text-primary transition-colors truncate">{t.nome}</p>
@@ -98,7 +96,7 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
                     "text-[13px] font-semibold tracking-tight whitespace-nowrap tabular-nums",
                     t.tipo === "receita" ? "text-primary" : "text-card-foreground"
                   )}>
-                    {t.tipo === "receita" ? "+" : "-"} R$ {Math.abs(t.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {t.tipo === "receita" ? "+" : "-"} {formatCurrency(Math.abs(t.valor))}
                   </span>
                 </div>
               </div>

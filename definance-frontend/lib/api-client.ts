@@ -14,7 +14,6 @@ const processQueue = (error: Error | null) => {
     if (error) {
       prom.reject(error)
     } else {
-      // Re-executa a requisição original (cookies já foram atualizados)
       apiClient(prom.endpoint, prom.options)
         .then(prom.resolve)
         .catch(prom.reject)
@@ -22,6 +21,9 @@ const processQueue = (error: Error | null) => {
   })
   failedQueue = []
 }
+
+// Cache de promessas em voo para evitar requisições duplicadas simultâneas
+const pendingRequests = new Map<string, Promise<any>>()
 
 export async function apiClient<T>(
   endpoint: string,
@@ -47,8 +49,17 @@ export async function apiClient<T>(
     defaultOptions.credentials = "include"
   }
 
-  try {
-    const response = await fetch(`${API_URL}${endpoint}`, defaultOptions)
+  // Só deduplicamos requisições GET
+  const cacheKey = `${options.method || 'GET'}:${endpoint}`
+  const isGet = !options.method || options.method.toUpperCase() === 'GET'
+
+  if (isGet && pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey) as Promise<T>
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, defaultOptions)
 
     if (!response.ok) {
       // Interceptador de 401 para Refresh Token
@@ -116,11 +127,17 @@ export async function apiClient<T>(
     }
 
     return response.json()
-  } catch (error) {
-    // Tratamento de erros de rede ou outros
-    if (error instanceof Error && error.message === "Não autenticado") {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Não autenticado") {
+        throw error
+      }
       throw error
+    } finally {
+      if (isGet) pendingRequests.delete(cacheKey)
     }
-    throw error
-  }
+  })()
+
+  if (isGet) pendingRequests.set(cacheKey, fetchPromise)
+  
+  return fetchPromise
 }

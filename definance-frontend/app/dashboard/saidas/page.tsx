@@ -34,7 +34,8 @@ const emptyForm: ExpenseFormState = {
   nome: "",
   valor: "",
   categoria: "",
-  data: "",
+  data: new Date().toISOString().split('T')[0],
+  hora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
   tipo: "Variável",
   status: "Pendente",
   descricao: "",
@@ -114,6 +115,7 @@ export default function DespesasPage() {
           billId: e.billId ?? null,
           descricao: e.description ?? null,
           observacoes: e.notes ?? null,
+          rawDate: e.date ? new Date(e.date) : undefined
         }))
 
         setDespesas(mapped)
@@ -153,13 +155,18 @@ export default function DespesasPage() {
   const despesasPendentes = despesas.filter(d => d.status === "Pendente").reduce((sum, d) => sum + d.valor, 0)
 
   const openAddDialog = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+      data: new Date().toISOString().split('T')[0],
+      hora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
+    })
     setIsOpen(true)
   }
 
   const openEditDialog = (despesa: Despesa) => {
-    const parts = despesa.data.split("/")
-    const inputDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : ""
+    const dateObj = despesa.rawDate ? new Date(despesa.rawDate) : new Date()
+    const inputDate = dateObj.toISOString().split('T')[0]
+    const inputTime = dateObj.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
 
     setForm({
       id: despesa.id,
@@ -167,6 +174,7 @@ export default function DespesasPage() {
       valor: formatCurrency(despesa.valor),
       categoria: despesa.categoria,
       data: inputDate,
+      hora: inputTime,
       tipo: despesa.tipo,
       status: despesa.status,
       descricao: despesa.descricao || "",
@@ -179,16 +187,15 @@ export default function DespesasPage() {
     if (!form.nome || !form.valor) return
 
     const amount = parseCurrencyInput(form.valor)
-    const now = new Date()
-    let dateParsed = now.toISOString()
+    let dateParsed = new Date().toISOString()
     
-    if (form.data) {
+    if (form.data && form.hora) {
       const [y, m, d] = form.data.split('-').map(Number)
-      const selectedDate = new Date(y, m - 1, d)
-      selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())
+      const [h, min] = form.hora.split(':').map(Number)
+      const selectedDate = new Date(y, m - 1, d, h, min)
       
       const pad = (n: number) => n.toString().padStart(2, '0')
-      dateParsed = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}:${pad(selectedDate.getSeconds())}`
+      dateParsed = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}:00`
     }
 
     const payload = {
@@ -361,7 +368,7 @@ export default function DespesasPage() {
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Despesas"
         subtitle={`Deseja exportar as ${despesas.length} despesas listadas no PDF?`}
-        data={despesas}
+        data={despesas as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Categoria", key: "categoria" },
