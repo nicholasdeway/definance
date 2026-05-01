@@ -368,7 +368,7 @@ export default function DespesasPage() {
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Despesas"
         subtitle={`Deseja exportar as ${despesas.length} despesas listadas no PDF?`}
-        data={despesas}
+        data={despesas as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Categoria", key: "categoria" },

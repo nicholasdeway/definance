@@ -580,7 +580,7 @@ export default function ReceitasPage() {
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Entradas"
         subtitle={`Deseja exportar as ${filteredReceitas.length} entradas listadas no PDF?`}
-        data={filteredReceitas}
+        data={filteredReceitas as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Tipo", key: "tipo" },

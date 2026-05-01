@@ -601,7 +601,7 @@ export default function ContasPage() {
         data={contas.map(c => ({
           ...c,
           statusLabel: c.status === 'paga' ? 'Paga' : c.status === 'atrasada' ? 'Atrasada' : 'A Vencer'
-        }))}
+        })) as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Vencimento", key: "vencimento" },
