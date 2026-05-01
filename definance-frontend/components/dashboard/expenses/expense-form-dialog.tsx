@@ -19,10 +19,14 @@ import {
 } from "@/components/ui/collapsible"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { PremiumModal } from "@/components/ui/premium-modal"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { useCategories } from "@/lib/category-context"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn, capitalize } from "@/lib/utils"
-import { ArrowDownCircle, Loader2, Save, Plus, ChevronDown } from "lucide-react"
+import { ArrowDownCircle, Loader2, Save, Plus, ChevronDown, Calendar as CalendarIcon } from "lucide-react"
 
 export interface ExpenseFormState {
   id?: string
@@ -30,6 +34,7 @@ export interface ExpenseFormState {
   valor: string
   categoria: string
   data: string
+  hora: string
   tipo: string
   status: string
   descricao: string
@@ -104,27 +109,63 @@ export function ExpenseFormDialog({
                 onChange={(value) => onFormChange({ ...form, valor: value })}
                 placeholder="0,00"
                 className={cn(
-                  "font-black bg-primary/5 border-primary/10 text-primary rounded-lg md:rounded-2xl focus:ring-primary/20",
-                  isMobile ? "h-8 text-xs pl-9 pr-1" : "h-12 text-2xl pl-12 pr-5"
+                  "font-bold bg-primary/5 border-primary/10 text-primary rounded-lg md:rounded-2xl focus:ring-primary/20",
+                  isMobile ? "h-8 text-xs pl-9 pr-1" : "h-12 text-lg pl-12 pr-5"
                 )}
               />
             </div>
 
-            {/* Data */}
-            <div className="flex-1 space-y-0.5 sm:space-y-2">
-              <Label htmlFor="expense-data" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
-                Data
-              </Label>
-              <Input
-                id="expense-data"
-                type="date"
-                value={form.data}
-                onChange={(e) => onFormChange({ ...form, data: e.target.value })}
-                className={cn(
-                  "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
-                  isMobile ? "h-8 text-[10px] px-1" : "h-12 px-5"
-                )}
-              />
+            {/* Data e Hora */}
+            <div className="flex-1 flex gap-2 md:gap-6">
+              <div className="flex-1 space-y-0.5 sm:space-y-2">
+                <Label htmlFor="expense-data" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                  Data
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
+                        !form.data && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className={cn("shrink-0 text-primary opacity-50", isMobile ? "h-3.3 w-3.3 mr-1.5" : "h-4 w-4 mr-2")} />
+                      <span className="truncate">
+                        {form.data ? format(parseISO(form.data), "dd/MM/yy") : "Selecionar"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.data ? parseISO(form.data) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          onFormChange({ ...form, data: format(date, "yyyy-MM-dd") })
+                        }
+                      }}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="w-[70px] md:w-[120px] space-y-0.5 sm:space-y-2">
+                <Label htmlFor="expense-hora" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Hora</Label>
+                <Input
+                  id="expense-hora"
+                  type="time"
+                  value={form.hora}
+                  onChange={(e) => onFormChange({ ...form, hora: e.target.value })}
+                  className={cn(
+                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                    isMobile ? "h-8 text-[10px] px-1" : "h-12 px-5"
+                  )}
+                  required
+                />
+              </div>
             </div>
           </div>
 

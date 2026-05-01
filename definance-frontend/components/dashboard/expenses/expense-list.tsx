@@ -29,6 +29,7 @@ export interface Despesa {
   billId?: string | null
   descricao?: string | null
   observacoes?: string | null
+  rawDate?: Date
 }
 
 interface ExpenseListProps {

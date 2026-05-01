@@ -6,9 +6,19 @@ import { formatCurrency } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { EmptyChart } from "./empty-chart"
 
+export interface IncomeDetailData {
+  tipo: string
+  valor: number
+}
+
+export interface CategoryDetailData {
+  categoria: string
+  valor: number
+}
+
 interface CompositionChartsProps {
-  incomeAnalysis: any[]
-  categoryAnalysis: any[]
+  incomeAnalysis: IncomeDetailData[]
+  categoryAnalysis: CategoryDetailData[]
   discreetMode: boolean
   chartColors: string[]
 }
@@ -19,6 +29,11 @@ export const CompositionCharts = ({
   discreetMode,
   chartColors
 }: CompositionChartsProps) => {
+  // Função para o formatter do Tooltip - Tratando todas as possibilidades do Recharts
+  const tooltipFormatter = (value: number | string | undefined | readonly (number | string)[], name?: string | number) => {
+    const finalValue = Array.isArray(value) ? value[0] : value
+    return formatCurrency(Number(finalValue || 0))
+  }
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Detalhamento da Composição</h2>
@@ -50,7 +65,7 @@ export const CompositionCharts = ({
                       ))}
                     </Pie>
                     <Tooltip 
-                      formatter={(value: any) => formatCurrency(Number(value || 0))} 
+                      formatter={tooltipFormatter} 
                       contentStyle={{
                         backgroundColor: "var(--card)",
                         border: "1px solid var(--border)",
@@ -94,7 +109,7 @@ export const CompositionCharts = ({
                       ))}
                     </Pie>
                     <Tooltip 
-                      formatter={(value: any) => formatCurrency(Number(value || 0))} 
+                      formatter={tooltipFormatter} 
                       contentStyle={{
                         backgroundColor: "var(--card)",
                         border: "1px solid var(--border)",

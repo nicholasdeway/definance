@@ -11,7 +11,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useState, useEffect } from "react"
-import { CheckCircle2, Loader2, Calendar } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { cn } from "@/lib/utils"
+import { CheckCircle2, Loader2, Calendar as CalendarIcon } from "lucide-react"
 
 interface ConfirmPayDialogProps {
   open: boolean
@@ -58,16 +64,38 @@ export function ConfirmPayDialog({
         {!hasDate && (
           <div className="py-4 space-y-3">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" />
+              <CalendarIcon className="h-4 w-4 text-primary" />
               Esta conta não possui vencimento. Informe um para continuar:
             </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              required
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-xl h-12 transition-all px-5",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="shrink-0 text-primary opacity-50 h-4 w-4 mr-2" />
+                  <span className="truncate">
+                    {selectedDate ? format(parseISO(selectedDate), "dd/MM/yy") : "Selecionar data de vencimento"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate ? parseISO(selectedDate) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      setSelectedDate(format(date, "yyyy-MM-dd"))
+                    }
+                  }}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 

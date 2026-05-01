@@ -371,7 +371,7 @@ export default function GastosDiariosPage() {
         onOpenChange={setIsExportDialogOpen}
         title="Gastos Diários Rápidos"
         subtitle={`Deseja exportar os ${gastos.length} lançamentos rápidos para PDF?`}
-        data={gastos}
+        data={gastos as any}
         columns={[
           { header: "Descrição", key: "descricao" },
           { header: "Valor", key: "valor", type: "currency" },

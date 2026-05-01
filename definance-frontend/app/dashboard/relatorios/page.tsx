@@ -354,7 +354,7 @@ export default function RelatoriosPage() {
           { item: "Saldo Líquido", valor: data?.saldoFinal || 0 },
           ...(data?.categoryAnalysis || []).map(c => ({ item: `Despesa: ${c.categoria}`, valor: c.valor })),
           ...(data?.incomeAnalysis || []).map(i => ({ item: `Receita: ${i.tipo}`, valor: i.valor }))
-        ]}
+        ] as any}
         columns={[
           { header: "Descrição", key: "item" },
           { header: "Valor", key: "valor", type: "currency" },

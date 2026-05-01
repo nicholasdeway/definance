@@ -32,6 +32,12 @@ export function RegisterForm() {
     e.preventDefault()
     setError("")
     
+    // Validação rigorosa de e-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Por favor, insira um e-mail válido (ex: seu@email.com)")
+      return
+    }
     const hasMinLength = formData.password.length >= 8
     const hasUpperCase = /[A-Z]/.test(formData.password)
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)

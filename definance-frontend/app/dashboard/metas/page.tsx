@@ -253,7 +253,7 @@ export default function MetasPage() {
           alvo: m.targetAmount,
           reservaMensal: m.monthlyReserve,
           concluida: m.isCompleted ? "Sim" : "Não",
-        }))}
+        })) as any}
         columns={[
           { header: "Nome", key: "nome" },
           { header: "Categoria", key: "categoria" },

@@ -89,6 +89,7 @@ namespace definance_backend.Features.Onboarding.DTOs
         public bool Parcelado { get; set; }
         public int? ParcelasTotal { get; set; }
         public int? ParcelasPagas { get; set; }
+        public string? Vencimento { get; set; }
         public List<ExtraExpenseDto> Extras { get; set; } = new();
     }
 

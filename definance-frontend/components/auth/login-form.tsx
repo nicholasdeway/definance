@@ -15,8 +15,8 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
   const router = useRouter()
   const { login, loginWithGoogle } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [identifier, setIdentifier] = useState("admin@definance.com")
-  const [password, setPassword] = useState("!@#Admin123")
+  const [identifier, setIdentifier] = useState("")
+  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
 
@@ -66,7 +66,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
             <Input
               id="identifier"
               type="text"
-              placeholder="admin@definance.com"
+              placeholder="seu@email.com ou (00) 00000-0000"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required

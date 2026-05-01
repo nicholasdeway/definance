@@ -31,6 +31,7 @@ export interface Debt {
   parcelado: boolean
   parcelasTotal?: number
   parcelasPagas?: number
+  vencimento?: string
   extras?: ExtraExpense[]
 }
 

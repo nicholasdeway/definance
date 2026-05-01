@@ -267,6 +267,7 @@ export default function HistoricoPage() {
         valor: (t.valor * 100).toFixed(0),
         categoria: t.categoria,
         data: t.rawDate.toISOString().split("T")[0],
+        hora: t.rawDate.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
         tipo: t.status === "Pago" ? "Variável" : "Variável",
         status: t.status || "Pendente",
         descricao: t.descricao || "",

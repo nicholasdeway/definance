@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  TrendingUp
+  TrendingUp,
+  AlertCircle
 } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { type ContaItem } from "./bill-item"
@@ -51,6 +52,7 @@ export function BillDetailsModal({
       icon={
         isPaid ? <CheckCircle2 className="h-8 w-8 text-primary" /> : 
         isOverdue ? <AlertTriangle className="h-8 w-8 text-destructive" /> : 
+        !conta.rawDueDate ? <AlertCircle className="h-8 w-8 text-amber-500 animate-pulse" /> :
         <Clock className="h-8 w-8 text-yellow-500" />
       }
     >
@@ -68,6 +70,7 @@ export function BillDetailsModal({
              "h-12 w-12 md:h-16 md:w-16 rounded-full flex items-center justify-center mb-3 md:mb-4 shadow-xl border-2",
              isPaid ? "bg-primary/10 text-primary border-primary/20" : 
              isOverdue ? "bg-destructive/10 text-destructive border-destructive/20" : 
+             !conta.rawDueDate ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
              "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
            )}>
              <TrendingUp className="h-6 w-6 md:h-8 md:w-8" />
@@ -91,7 +94,7 @@ export function BillDetailsModal({
                isOverdue ? "border-destructive/30 text-destructive bg-destructive/5" : 
                "border-yellow-500/30 text-yellow-500 bg-yellow-500/5"
              )}>
-               {isPaid ? "Paga" : isOverdue ? "Atrasada" : "A Vencer"}
+                {isPaid ? "Paga" : isOverdue ? "Atrasada" : !conta.rawDueDate ? "Ajustar" : "A Vencer"}
              </Badge>
              <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-muted/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
                {conta.tipo}
@@ -104,9 +107,14 @@ export function BillDetailsModal({
           <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-white/5 space-y-0.5 md:space-y-1">
             <div className="flex items-center gap-2 text-muted-foreground mb-0.5 md:mb-1">
               <Calendar className="h-3 md:h-3.5 w-3 md:w-3.5" />
-              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">Vencimento</span>
+               <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">Vencimento</span>
             </div>
-            <p className="text-xs md:text-sm font-semibold">{conta.vencimento}</p>
+            <p className={cn(
+              "text-xs md:text-sm font-semibold",
+              !conta.rawDueDate && "text-amber-500"
+            )}>
+              {conta.rawDueDate ? conta.vencimento : "Ajustar data"}
+            </p>
           </div>
 
           <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-white/5 space-y-0.5 md:space-y-1">

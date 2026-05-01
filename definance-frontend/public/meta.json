@@ -1,9 +1,9 @@
 {
   "name": "Definance",
   "short_name": "Definance",
-  "description": "Gestão Financeira Pessoal",
+  "description": "Gestão Financeira Inteligente",
   "version": "1.0.0",
-  "author": "Definance Team",
+  "author": "Nicholas Deway",
   "icons": [
     {
       "src": "/logo.png",
