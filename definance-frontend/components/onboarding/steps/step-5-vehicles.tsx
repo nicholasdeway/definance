@@ -446,7 +446,7 @@ export const Step5Vehicles = () => {
                             <Input
                               type="text"
                               inputMode="numeric"
-                              placeholder="0"
+                              placeholder="Ex: 12"
                               value={v.parcelasTotal || ""}
                               onChange={(e) => updateVehicle(v.id, "parcelasTotal", Number(e.target.value.replace(/\D/g, "")))}
                               className="h-8 bg-white/[0.03] border-primary/10 text-sm font-bold"
@@ -457,7 +457,7 @@ export const Step5Vehicles = () => {
                             <Input
                               type="text"
                               inputMode="numeric"
-                              placeholder="0"
+                              placeholder="Ex: 2 (opcional)"
                               value={v.parcelasPagas || ""}
                               onChange={(e) => updateVehicle(v.id, "parcelasPagas", Number(e.target.value.replace(/\D/g, "")))}
                               className="h-8 bg-white/[0.03] border-primary/10 text-sm font-bold"

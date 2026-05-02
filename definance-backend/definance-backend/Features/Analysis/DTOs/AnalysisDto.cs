@@ -7,6 +7,7 @@ namespace definance_backend.Features.Analysis.DTOs
         public decimal TotalReceitas { get; set; }
         public decimal TotalDespesas { get; set; }
         public decimal TotalAtrasadas { get; set; }
+        public int ContasPendentes { get; set; }
         public decimal SaldoFinal { get; set; }
         public List<MonthlyAnalysisDto> MonthlyComparison { get; set; } = new();
         public List<CategoryAnalysisDto> CategoryAnalysis { get; set; } = new();

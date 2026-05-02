@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/currency"
 import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
+import { useCategories } from "@/lib/category-context"
 
 interface TransactionItemProps {
   transaction: {
@@ -44,8 +45,13 @@ export const TransactionItem = ({
   onEdit,
   onDelete
 }: TransactionItemProps) => {
+  const { categories } = useCategories()
   const isIncome = transaction.tipo === "receita"
   const isMobile = useIsMobile()
+
+  // Busca o ícone oficial da categoria
+  const realCategory = categories.find(c => c.name === transaction.categoria)
+  const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : transaction.categoria
 
   const dataExibicao = isMobile 
     ? transaction.data.split(" • ")[0].replace(/ de /g, "/") 
@@ -63,7 +69,7 @@ export const TransactionItem = ({
           "flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-background flex-shrink-0 border border-border/50 shadow-sm transition-colors",
           isIncome ? "text-primary border-primary/20 bg-primary/5" : "text-destructive border-destructive/20 bg-destructive/5"
         )}>
-          <CategoryIcon name={transaction.categoria} className="h-4 w-4 sm:h-5 sm:w-5" />
+          <CategoryIcon name={categoryIcon} className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         
         <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-0">

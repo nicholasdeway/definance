@@ -44,7 +44,8 @@ export function GastoItem({ gasto, isInitialLoad, discreetMode, onEdit, onDelete
   const isMobile = useIsMobile()
 
   // Busca a categoria real do banco para pegar o ícone e a cor
-  const category = categories.find(c => c.name === gasto.categoria)
+  const realCategory = categories.find(c => c.name === gasto.categoria)
+  const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : gasto.categoria
 
   // Formata data reduzida se possível (ex: 27/04)
   const dataExibicao = gasto.data
@@ -62,8 +63,8 @@ export function GastoItem({ gasto, isInitialLoad, discreetMode, onEdit, onDelete
           "text-destructive border-destructive/20 bg-destructive/5"
         )}>
           <CategoryIcon 
-            name={category?.icon} 
-            color={category?.color} 
+            name={categoryIcon} 
+            color={realCategory?.color} 
             className="h-4 w-4 sm:h-5 sm:w-5"
             fallback="MoreHorizontal" 
           />

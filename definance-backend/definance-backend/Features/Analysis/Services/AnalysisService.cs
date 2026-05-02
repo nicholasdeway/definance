@@ -42,18 +42,20 @@ namespace definance_backend.Features.Analysis.Services
             var totalReceitasTask = _analysisRepository.GetTotalIncomesAsync(userId, start, end);
             var totalDespesasTask = _analysisRepository.GetTotalExpensesAsync(userId, start, end);
             var totalAtrasadasTask = _analysisRepository.GetTotalOverdueBillsAsync(userId);
+            var totalPendingCountTask = _analysisRepository.GetPendingBillsCountAsync(userId, start, end);
             var monthlyComparisonTask = _analysisRepository.GetMonthlyComparisonAsync(userId, chartStart, end);
             var categoryAnalysisTask = _analysisRepository.GetCategoryAnalysisAsync(userId, start, end);
             var incomeAnalysisTask = _analysisRepository.GetIncomeAnalysisAsync(userId, start, end);
             var balanceEvolutionTask = _analysisRepository.GetBalanceEvolutionAsync(userId, chartStart, end);
 
-            await Task.WhenAll(totalReceitasTask, totalDespesasTask, totalAtrasadasTask, monthlyComparisonTask, categoryAnalysisTask, incomeAnalysisTask, balanceEvolutionTask);
+            await Task.WhenAll(totalReceitasTask, totalDespesasTask, totalAtrasadasTask, totalPendingCountTask, monthlyComparisonTask, categoryAnalysisTask, incomeAnalysisTask, balanceEvolutionTask);
 
             return new AnalysisDto
             {
                 TotalReceitas = await totalReceitasTask,
                 TotalDespesas = await totalDespesasTask,
                 TotalAtrasadas = await totalAtrasadasTask,
+                ContasPendentes = await totalPendingCountTask,
                 SaldoFinal = (await totalReceitasTask) - (await totalDespesasTask),
                 MonthlyComparison = (await monthlyComparisonTask).ToList(),
                 CategoryAnalysis = (await categoryAnalysisTask).ToList(),

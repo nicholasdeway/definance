@@ -272,7 +272,7 @@ export const Step6Debts = () => {
                                 id={`debt-parcelas-total-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="12"
+                                placeholder="Ex: 12"
                                 value={debt.parcelasTotal || ""}
                                 onChange={(e) => updateDebt(debt.id, "parcelasTotal", Number(e.target.value.replace(/\D/g, "")))}
                                 className={cn(
@@ -287,7 +287,7 @@ export const Step6Debts = () => {
                                 id={`debt-parcelas-pagas-${debt.id}`}
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="3"
+                                placeholder="Ex: 2 (opcional)"
                                 value={debt.parcelasPagas || ""}
                                 onChange={(e) => updateDebt(debt.id, "parcelasPagas", Number(e.target.value.replace(/\D/g, "")))}
                                 className="h-9 bg-background text-sm"

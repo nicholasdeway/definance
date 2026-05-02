@@ -22,6 +22,7 @@ import {
 import { cn, capitalize } from "@/lib/utils"
 import { formatCurrency } from "@/lib/currency"
 import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
+import { useCategories } from "@/lib/category-context"
 
 export interface ContaItem {
   id: string
@@ -58,9 +59,14 @@ export const BillItem = ({
   onPay,
   onShowDetails
 }: BillItemProps) => {
+  const { categories } = useCategories()
   const isMobile = useIsMobile()
   const isPaid = conta.status === "paga"
   const isOverdue = conta.status === "atrasada"
+
+  // Busca a categoria real para pegar o ícone configurado no sistema
+  const realCategory = categories.find(c => c.name === conta.categoria)
+  const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : conta.categoria
 
   // Formata data reduzida (DD/MM/YYYY -> DD/MM/YY)
   const dataExibicao = conta.vencimento !== "—" 
@@ -141,7 +147,7 @@ export const BillItem = ({
             isOverdue ? "text-destructive border-destructive/20 bg-destructive/5" : 
             "text-amber-500 border-amber-500/20 bg-amber-500/5"
           )}>
-            <CategoryIcon name={conta.categoria} className="h-4 w-4 sm:h-5 sm:w-5" />
+            <CategoryIcon name={categoryIcon} className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           
           <div className="min-w-0 flex-1 flex flex-col justify-center">
