@@ -127,10 +127,26 @@ export async function apiClient<T>(
     }
 
     return response.json()
-    } catch (error) {
+    } catch (error: any) {
+      // 1. Interceptar erros de rede diretos (o famoso 'Failed to fetch')
+      if (
+        error.name === 'TypeError' && 
+        (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('failed'))
+      ) {
+        throw new Error("Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente em instantes.")
+      }
+
+      // 1.5 Interceptar erros de proxy do Next.js (quando o backend está offline)
+      if (error instanceof Error && (error.message.includes("Internal Server Error") || error.message.includes("Bad Gateway") || error.message.includes("Service Unavailable"))) {
+        throw new Error("Não foi possível comunicar com o servidor no momento. Tente novamente em instantes.")
+      }
+
+      // 2. Se já for um erro que nós tratamos (com mensagem amigável), só repassa
       if (error instanceof Error && error.message === "Não autenticado") {
         throw error
       }
+
+      // 3. Caso contrário, repassa o erro original ou uma mensagem genérica
       throw error
     } finally {
       if (isGet) pendingRequests.delete(cacheKey)

@@ -11,6 +11,6 @@ namespace definance_backend.Features.Bills.Services
         Task<BillDto> CreateBillAsync(Guid userId, CreateUpdateBillDto dto);
         Task<BillDto> UpdateBillAsync(Guid userId, Guid billId, CreateUpdateBillDto dto);
         Task<(BillDto Bill, ExpenseDto Expense)> PayBillAsync(Guid userId, Guid billId, DateTime? paymentDate = null);
-        Task DeleteBillAsync(Guid userId, Guid billId);
+        Task DeleteBillAsync(Guid userId, Guid billId, bool deleteAllInstallments = false);
     }
 }

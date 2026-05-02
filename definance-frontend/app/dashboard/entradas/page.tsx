@@ -451,9 +451,14 @@ export default function ReceitasPage() {
       try {
         setIsDeleting(true)
         await apiClient(`/api/incomes/${deleteDialog.item.id}`, { method: "DELETE" })
-        setReceitas(receitas.filter(r => r.id !== deleteDialog.item!.id))
-        setDeleteDialog({ open: false, item: null })
+        
+        if (deleteDialog.item.recorrente) {
+          setReceitas(receitas.filter(r => r.nome !== deleteDialog.item!.nome || !r.recorrente))
+        } else {
+          setReceitas(receitas.filter(r => r.id !== deleteDialog.item!.id))
+        }
         window.dispatchEvent(new CustomEvent("finance-update"))
+        setDeleteDialog({ open: false, item: null })
       } catch (e) {
         console.error("Erro ao deletar entrada", e)
       } finally {
@@ -572,6 +577,11 @@ export default function ReceitasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteReceita}
         itemName={deleteDialog.item?.nome}
+        description={
+          deleteDialog.item?.recorrente
+            ? `Esta conta é recorrente. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as entradas futuras também serão apagadas.`
+            : undefined
+        }
         loading={isDeleting}
       />
 

@@ -55,6 +55,50 @@ namespace definance_backend.Features.Analysis.Repositories
             return await conn.ExecuteScalarAsync<decimal>(sql, new { UserId = userId });
         }
 
+        public async Task<int> GetPendingBillsCountAsync(Guid userId, DateTime startDate, DateTime endDate)
+        {
+            int month = startDate.Month;
+            int year = startDate.Year;
+
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM bills
+                WHERE user_id = @UserId 
+                  AND TRIM(status) = 'Pendente'
+                  AND (
+                      -- Caso 1: Conta do mês selecionado que vence hoje ou no futuro
+                      (
+                          EXTRACT(MONTH FROM due_date) = @Month 
+                          AND EXTRACT(YEAR FROM due_date) = @Year
+                          AND date_trunc('day', due_date::timestamp) >= CURRENT_DATE
+                      )
+                      -- Caso 2: Conta sem data definida
+                      OR (due_date IS NULL)
+                      -- Caso 3: Conta antiga recorrente que projeta para o mês selecionado
+                      OR (
+                          is_recurring = true
+                          AND (
+                              EXTRACT(YEAR FROM due_date) < @Year 
+                              OR (EXTRACT(YEAR FROM due_date) = @Year AND EXTRACT(MONTH FROM due_date) < @Month)
+                          )
+                          -- Projeta a data para o mês alvo de forma segura (usando dia 28 para evitar erros de calendário) e verifica se não venceu
+                          AND make_date(
+                              @Year, 
+                              @Month, 
+                              LEAST(EXTRACT(DAY FROM due_date)::int, 28)
+                          ) >= CURRENT_DATE
+                      )
+                  );
+            ";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            return await conn.ExecuteScalarAsync<int>(sql, new { 
+                UserId = userId, 
+                Month = month,
+                Year = year
+            });
+        }
+
         public async Task<IEnumerable<MonthlyAnalysisDto>> GetMonthlyComparisonAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
             const string sql = @"

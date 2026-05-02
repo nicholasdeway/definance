@@ -106,12 +106,12 @@ namespace definance_backend.Features.Bills.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteBill(Guid id)
+        public async Task<IActionResult> DeleteBill(Guid id, [FromQuery] bool deleteAllInstallments = false)
         {
             try
             {
                 var userId = GetUserId();
-                await _billService.DeleteBillAsync(userId, id);
+                await _billService.DeleteBillAsync(userId, id, deleteAllInstallments);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

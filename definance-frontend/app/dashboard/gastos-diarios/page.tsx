@@ -290,12 +290,12 @@ export default function GastosDiariosPage() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
-                className="flex-1 h-9 bg-muted/20 border-border/50 text-xs truncate placeholder:text-[10px] sm:placeholder:text-xs"
+                className="flex-1 h-10 bg-muted/20 border-border/50 text-xs truncate rounded-xl placeholder:text-muted-foreground/50 placeholder:text-xs sm:placeholder:text-sm"
                 disabled={isSaving}
               />
               <Button 
                 onClick={handleAddGasto} 
-                className="bg-primary/80 hover:bg-primary h-9 w-9 p-0 shrink-0 shadow-lg shadow-primary/20" 
+                className="bg-primary/80 hover:bg-primary h-10 w-10 p-0 shrink-0 shadow-lg shadow-primary/20 rounded-xl" 
                 disabled={isSaving}
                 size="icon"
               >
@@ -314,16 +314,20 @@ export default function GastosDiariosPage() {
       </Card>
 
       <div ref={listRef} className="space-y-4 md:space-y-6">
-        <FilterBar 
-          search={search}
-          onSearchChange={setSearch}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          categories={todasCategoriasParaFiltro}
-          selectedCategories={selectedCategories}
-          onCategoriesChange={setSelectedCategories}
-          placeholder="Buscar gasto ou palavra-chave..."
-        />
+        <div className="flex justify-end w-full">
+          <div className="w-full lg:max-w-[520px]">
+            <FilterBar 
+              search={search}
+              onSearchChange={setSearch}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              categories={todasCategoriasParaFiltro}
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+              placeholder="Buscar gasto ou palavra-chave..."
+            />
+          </div>
+        </div>
 
         <GastoList 
           title="Hoje" 

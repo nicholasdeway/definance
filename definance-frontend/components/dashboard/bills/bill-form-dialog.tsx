@@ -24,6 +24,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { useCategories } from "@/lib/category-context"
+import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
 import { CreditCard, Loader2, Save, Plus, ChevronDown, Calendar as CalendarIcon, AlertCircle } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
@@ -37,6 +38,9 @@ export interface BillFormState {
   tipo: string
   dueDate: string
   isRecorrente: boolean
+  isParcelado?: boolean
+  parcelasTotal?: number
+  parcelasPagas?: number
   descricao: string
   observacoes: string
 }
@@ -81,6 +85,10 @@ export function BillFormDialog({
 
     if (!form.categoria) {
       newErrors.categoria = "Selecione a categoria"
+    }
+
+    if (form.isParcelado && (!form.parcelasTotal || form.parcelasTotal <= 0)) {
+      newErrors.parcelasTotal = "Obrigatório"
     }
 
     setErrors(newErrors)
@@ -282,23 +290,122 @@ export function BillFormDialog({
             </div>
           </div>
 
-          {/* Recorrência */}
-          <div className="space-y-0.5 sm:space-y-2">
-            <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Recorrência</Label>
-            <div className={cn(
-              "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm",
-              isMobile ? "h-8 px-1.5" : "h-12 px-5"
-            )}>
-              <span className={isMobile ? "text-[9px] font-medium text-muted-foreground" : "text-sm font-medium text-muted-foreground"}>
-                {isMobile ? "Repete todo mês?" : "Esta conta se repete todo mês?"}
-              </span>
-              <Switch
-                id="bill-recorrente"
-                className={isMobile ? "scale-[0.6] origin-right" : "scale-100"}
-                checked={form.isRecorrente}
-                onCheckedChange={(checked) => onFormChange({ ...form, isRecorrente: checked })}
-              />
+          {/* Configuração de Pagamento */}
+          <div className="flex flex-col gap-2 sm:gap-4">
+            <div className="space-y-0.5 sm:space-y-2">
+              <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Configuração de Pagamento</Label>
+              <div className="flex flex-col gap-2">
+                <div className={cn(
+                  "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm",
+                  isMobile ? "h-8 px-1.5" : "h-12 px-5",
+                  form.isRecorrente && "border-primary/30"
+                )}>
+                  <span className={isMobile ? "text-[9px] font-medium text-muted-foreground" : "text-sm font-medium text-muted-foreground"}>
+                    {isMobile ? "Repete todo mês?" : "Esta conta se repete todo mês?"}
+                  </span>
+                  <Switch
+                    id="bill-recorrente"
+                    className={isMobile ? "scale-[0.6] origin-right" : "scale-100"}
+                    checked={form.isRecorrente}
+                    onCheckedChange={(checked) => {
+                      onFormChange({ ...form, isRecorrente: checked, isParcelado: checked ? false : form.isParcelado })
+                    }}
+                    disabled={form.isParcelado}
+                  />
+                </div>
+
+                {!isEditing && (
+                  <div className={cn(
+                    "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm transition-all",
+                    isMobile ? "h-8 px-1.5" : "h-12 px-5",
+                    form.isParcelado && "border-primary/30 bg-primary/5"
+                  )}>
+                    <span className={isMobile ? "text-[9px] font-medium text-muted-foreground" : "text-sm font-medium text-muted-foreground"}>
+                      {isMobile ? "É uma conta parcelada?" : "Essa conta é parcelada?"}
+                    </span>
+                    <Switch
+                      id="bill-parcelado"
+                      className={isMobile ? "scale-[0.6] origin-right" : "scale-100"}
+                      checked={form.isParcelado || false}
+                      onCheckedChange={(checked) => {
+                        onFormChange({ 
+                          ...form, 
+                          isParcelado: checked, 
+                          isRecorrente: checked ? false : form.isRecorrente,
+                          parcelasTotal: checked ? form.parcelasTotal || 1 : undefined,
+                          parcelasPagas: checked ? form.parcelasPagas || 0 : undefined,
+                        })
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Campos de Parcelamento */}
+            {form.isParcelado && !isEditing && (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex-1 space-y-0.5 sm:space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-primary/80">Total de Parcelas</Label>
+                      {errors.parcelasTotal && <span className="text-[8px] md:text-[10px] font-bold text-destructive animate-pulse uppercase">{errors.parcelasTotal}</span>}
+                    </div>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Ex: 12"
+                      value={form.parcelasTotal || ""}
+                      onChange={(e) => {
+                        const val = Number(e.target.value.replace(/\D/g, ""));
+                        onFormChange({ ...form, parcelasTotal: val > 0 ? val : undefined });
+                        if (errors.parcelasTotal) handleFieldChange("parcelasTotal", val);
+                      }}
+                      className={cn(
+                        "bg-primary/5 border-primary/20 rounded-lg md:rounded-2xl text-primary font-bold transition-all",
+                        isMobile ? "h-8 text-[10px] px-2" : "h-12 px-5",
+                        errors.parcelasTotal ? "border-destructive/50 ring-1 ring-destructive/20" : ""
+                      )}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-0.5 sm:space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-primary/80">Parcelas Pagas</Label>
+                    </div>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Ex: 2 (opcional)"
+                      value={form.parcelasPagas || ""}
+                      onChange={(e) => {
+                        const val = Number(e.target.value.replace(/\D/g, ""));
+                        onFormChange({ ...form, parcelasPagas: val >= 0 ? val : 0 });
+                      }}
+                      className={cn(
+                        "bg-primary/5 border-primary/20 rounded-lg md:rounded-2xl text-primary font-bold transition-all",
+                        isMobile ? "h-8 text-[10px] px-2" : "h-12 px-5"
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Dica Visual de Parcelamento */}
+                {!!form.parcelasTotal && !!parseCurrencyInput(form.valor) && (
+                  <div className="grid grid-cols-2 gap-3 rounded-xl border border-primary/10 bg-primary/5 p-3 mt-1 animate-in zoom-in-95 duration-300">
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-70">Restantes</p>
+                      <p className="text-sm font-bold text-foreground">{Math.max(0, (form.parcelasTotal || 0) - (form.parcelasPagas || 0))}x</p>
+                    </div>
+                    <div className="space-y-0.5 border-l border-primary/10 pl-3">
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-70">Saldo Devedor</p>
+                      <p className="text-sm font-bold text-primary">
+                        {formatCurrency(Math.max(0, (form.parcelasTotal || 0) - (form.parcelasPagas || 0)) * parseCurrencyInput(form.valor))}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Outros (Apenas Desktop) */}
