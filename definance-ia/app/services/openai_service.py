@@ -35,14 +35,18 @@ def get_system_prompt(categories: List[str]) -> str:
     
     CATEGORIAS DISPONÍVEIS:
     [{categories_str}]
+
+    5. AVALIAÇÃO DE CATEGORIAS (Siga ESTES PASSOS rigorosamente):
+       PASSO 1: O NOME de alguma categoria (ignorando maiúsculas) aparece ESCRITO NA FRASE? 
+                - Exemplo: frase="jogos da steam", categoria="Steam". A palavra "steam" está na frase!
+                - Se SIM: Escolha essa categoria IMEDIATAMENTE e ignore o Passo 2.
+       PASSO 2: Se nenhuma categoria passou no Passo 1, procure pelas palavras-chave entre parênteses. 
+                - Se a frase menciona algo que é palavra-chave de uma categoria, use ela.
+       PASSO 3: Se não achar nada, use a intuição semântica.
+    6. IMPORTANTE: No campo "category" do JSON, retorne APENAS o NOME da categoria, sem as palavras-chave entre parênteses.
+    7. Se nenhuma categoria da lista servir de forma alguma, use 'Outros'.
     
-    5. Cada categoria na lista acima pode conter palavras-chave entre parênteses. 
-    6. Priorize SEMPRE uma categoria cujo NOME ou uma das PALAVRAS-CHAVE entre parênteses seja igual ou muito próxima ao item mencionado (ex: se o item é 'Steam' e existe a categoria 'Jogos (steam)', use 'Jogos').
-    7. Se não houver correspondência clara por nome ou palavra-chave, escolha a categoria MAIS ADEQUADA semanticamente entre as disponíveis.
-    8. IMPORTANTE: No campo "category" do JSON, retorne APENAS o NOME da categoria, sem as palavras-chave entre parênteses.
-    9. Se nenhuma categoria da lista servir de forma alguma, use 'Outros'.
-    
-    10. Retorne APENAS o JSON no formato abaixo:
+    8. Retorne APENAS o JSON no formato abaixo:
     {{
       "name": "Nome corrigido",
       "amount": 0.0,
@@ -85,6 +89,17 @@ async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExp
         # Garante que o nome comece com letra maiúscula
         if "name" in data and data["name"]:
             data["name"] = data["name"][0].upper() + data["name"][1:]
+            
+        import re
+        text_lower = text.lower()
+        for cat in categories:
+            cat_name = cat.split("(")[0].strip()
+            if cat_name.lower() != "outros" and len(cat_name) > 2:
+                pattern = r'\b' + re.escape(cat_name.lower()) + r'\b'
+                if re.search(pattern, text_lower):
+                    data["category"] = cat_name
+                    logger.info(f"Pós-processamento forçou a categoria exata: {cat_name}")
+                    break
         
         logger.info(f"IA processou com sucesso: {data.get('name')} - R$ {data.get('amount')}")
         return ParsedExpense(**data)

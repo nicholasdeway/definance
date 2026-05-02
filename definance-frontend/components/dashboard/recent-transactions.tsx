@@ -8,6 +8,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/currency"
 import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
+import { useCategories } from "@/lib/category-context"
 
 export interface Transaction {
   id: string
@@ -27,6 +28,7 @@ interface RecentTransactionsProps {
 const ITEMS_PER_PAGE = 8
 
 export function RecentTransactions({ transactions, loading }: RecentTransactionsProps) {
+  const { categories } = useCategories()
   const [currentPage, setCurrentPage] = React.useState(1)
   
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE)
@@ -82,7 +84,10 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                     t.tipo === "receita" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
                   )}>
-                    <CategoryIcon name={t.categoria} className="h-4 w-4" />
+                    <CategoryIcon 
+                      name={(categories.find(c => c.name === t.categoria)?.icon && categories.find(c => c.name === t.categoria)?.icon !== "MoreHorizontal") ? categories.find(c => c.name === t.categoria)?.icon : t.categoria} 
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-card-foreground group-hover:text-primary transition-colors truncate">{t.nome}</p>

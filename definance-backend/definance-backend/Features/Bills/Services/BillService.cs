@@ -49,6 +49,43 @@ namespace definance_backend.Features.Bills.Services
 
         public async Task<BillDto> CreateBillAsync(Guid userId, CreateUpdateBillDto dto)
         {
+            if (dto.IsParcelado && dto.ParcelasTotal.HasValue && dto.ParcelasTotal > 0)
+            {
+                var newBills = new List<Bill>();
+                int total = dto.ParcelasTotal.Value;
+                int pagas = dto.ParcelasPagas ?? 0;
+                int restantes = total - pagas;
+                
+                DateTime baseDueDate = dto.DueDate ?? DateTime.UtcNow;
+
+                for (int i = 1; i <= restantes; i++)
+                {
+                    int numeroParcela = pagas + i;
+                    DateTime installmentDate = baseDueDate.AddMonths(i - 1);
+                    
+                    newBills.Add(new Bill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Name = $"{dto.Name} ({numeroParcela}/{total})",
+                        Amount = dto.Amount, // Assumimos que Amount é o valor da parcela individual
+                        Category = dto.Category,
+                        BillType = dto.BillType,
+                        DueDay = installmentDate.Day,
+                        DueDate = installmentDate,
+                        Status = dto.Status,
+                        IsRecurring = false, // Parcelas não são recorrentes infinitas
+                        Description = string.IsNullOrEmpty(dto.Description) 
+                            ? $"Conta Parcelada ({numeroParcela}/{total})" 
+                            : $"{dto.Description} ({numeroParcela}/{total})",
+                        Notes = dto.Notes
+                    });
+                }
+
+                await _billRepository.CreateBatchAsync(newBills);
+                return MapToDto(newBills.First());
+            }
+
             var bill = new Bill
             {
                 Id          = Guid.NewGuid(),
@@ -207,7 +244,7 @@ namespace definance_backend.Features.Bills.Services
             return (MapToDto(bill), expenseDto);
         }
 
-        public async Task DeleteBillAsync(Guid userId, Guid billId)
+        public async Task DeleteBillAsync(Guid userId, Guid billId, bool deleteAllInstallments = false)
         {
             var bill = await _billRepository.GetByIdAsync(billId);
 
@@ -216,6 +253,32 @@ namespace definance_backend.Features.Bills.Services
 
             if (bill.UserId != userId)
                 throw new UnauthorizedAccessException("Esta conta não pertence a este usuário.");
+
+            // Se for parcelada e a flag estiver ativa
+            if (deleteAllInstallments && System.Text.RegularExpressions.Regex.IsMatch(bill.Name, @"\(\d+/\d+\)$"))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(bill.Name, @"^(.*?) \(\d+/\d+\)$");
+                if (match.Success)
+                {
+                    var baseName = match.Groups[1].Value.Trim();
+                    
+                    // Busca todas as contas do usuário
+                    var allBills = await _billRepository.GetByUserIdAsync(userId);
+                    
+                    // Filtra as parcelas pendentes com o mesmo nome base
+                    var installmentsToDelete = allBills.Where(b => 
+                        b.Status != "Pago" && // Não apaga as que já foram pagas
+                        System.Text.RegularExpressions.Regex.IsMatch(b.Name, $@"^{System.Text.RegularExpressions.Regex.Escape(baseName)} \(\d+/\d+\)$")
+                    ).ToList();
+
+                    foreach(var inst in installmentsToDelete)
+                    {
+                        await _onboardingService.SyncDeleteBillWithProfileAsync(userId, inst);
+                        await _billRepository.DeleteAsync(inst.Id);
+                    }
+                    return;
+                }
+            }
 
             // Sincroniza exclusão com o Perfil Financeiro se necessário
             await _onboardingService.SyncDeleteBillWithProfileAsync(userId, bill);

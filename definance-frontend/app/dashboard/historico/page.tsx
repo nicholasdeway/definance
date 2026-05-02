@@ -25,6 +25,7 @@ import { toast } from "sonner"
 import { ReceitaDialog, type ReceitaFormState } from "@/components/dashboard/entradas/receita-dialog"
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { TransactionDetailsModal } from "@/components/dashboard/historico/transaction-details-modal"
+import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -98,6 +99,7 @@ export default function HistoricoPage() {
   // Estados para Detalhes e Edição
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false)
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false)
   const [editingIncome, setEditingIncome] = useState<ReceitaFormState | null>(null)
@@ -150,7 +152,7 @@ export default function HistoricoPage() {
           const dateObj = safeParseDate(e.date);
           return {
             id: e.id,
-            nome: e.name,
+            nome: e.name ? e.name.charAt(0).toUpperCase() + e.name.slice(1) : "Sem nome",
             valor: e.amount,
             tipo: "despesa" as const,
             categoria: formatSpecialCategory(e.category),
@@ -168,7 +170,15 @@ export default function HistoricoPage() {
         all.push(...incomesData.map(i => {
           const dateObj = safeParseDate(i.date);
           const name = i.name?.toLowerCase()
-          const formattedName = (name === "clt" || name === "pj") ? name.toUpperCase() : i.name
+          
+          let formattedName = i.name;
+          if (name === "mesada") formattedName = "Mesada / Auxílio";
+          else if (name === "clt") formattedName = "CLT";
+          else if (name === "pj") formattedName = "PJ";
+          else if (name === "autonomo") formattedName = "Autônomo";
+          else if (name === "freelancer") formattedName = "Freelancer";
+          else formattedName = i.name ? i.name.charAt(0).toUpperCase() + i.name.slice(1) : i.name;
+
           return {
             id: i.id,
             nome: formattedName,
@@ -360,6 +370,7 @@ export default function HistoricoPage() {
               variant="outline" 
               size="sm" 
               className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              onClick={() => setIsExportDialogOpen(true)}
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Exportar</span>
@@ -641,6 +652,26 @@ export default function HistoricoPage() {
           setItemToDelete(selectedTransaction)
           setIsDeleteDialogOpen(true)
         }}
+      />
+
+      <ExportPdfDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        title="Relatório de Transações"
+        subtitle={`Deseja exportar as ${filteredTransactions.length} transações filtradas no PDF?`}
+        data={filteredTransactions.map(t => ({
+          ...t,
+          tipoLabel: t.tipo === 'receita' ? 'Receita' : 'Despesa',
+          valorFormatted: formatCurrency(t.valor)
+        })) as any}
+        columns={[
+          { header: "Nome", key: "nome" },
+          { header: "Data", key: "data" },
+          { header: "Categoria", key: "categoria" },
+          { header: "Tipo", key: "tipoLabel" },
+          { header: "Valor", key: "valor", type: "currency" },
+        ]}
+        fileName={`historico-${period.month}-${period.year}`}
       />
 
       {/* Modais de Edição */}

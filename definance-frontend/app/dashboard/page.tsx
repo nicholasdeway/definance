@@ -18,6 +18,7 @@ interface AnalysisResponse {
   totalReceitas: number
   totalDespesas: number
   totalAtrasadas: number
+  contasPendentes: number
   saldoFinal: number
   monthlyComparison: MonthlyData[]
   categoryAnalysis: CategoryData[]
@@ -111,7 +112,7 @@ export default function DashboardPage() {
     if (expensesData) {
       const mappedExpenses: Transaction[] = expensesData.map(exp => ({
         id: exp.id,
-        nome: exp.name,
+        nome: exp.name ? exp.name.charAt(0).toUpperCase() + exp.name.slice(1) : "Sem nome",
         valor: exp.amount,
         tipo: (exp.transactionType?.toLowerCase() === "entrada" || exp.transactionType?.toLowerCase() === "receita") ? "receita" : "despesa",
         categoria: exp.category || "Outros",
@@ -122,15 +123,28 @@ export default function DashboardPage() {
     }
 
     if (incomesData) {
-      const mappedIncomes: Transaction[] = incomesData.map(inc => ({
-        id: inc.id,
-        nome: inc.name,
-        valor: inc.amount,
-        tipo: "receita",
-        categoria: inc.category || "Receita",
-        data: new Date(inc.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) + " • " + new Date(inc.date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        rawDate: new Date(inc.date)
-      }))
+      const mappedIncomes: Transaction[] = incomesData.map(inc => {
+        // Formatação amigável para nomes de fontes de renda comuns
+        let displayNome = inc.name;
+        const lowerName = inc.name.toLowerCase();
+        
+        if (lowerName === "mesada") displayNome = "Mesada / Auxílio";
+        else if (lowerName === "clt") displayNome = "CLT";
+        else if (lowerName === "pj") displayNome = "PJ";
+        else if (lowerName === "autonomo") displayNome = "Autônomo";
+        else if (lowerName === "freelancer") displayNome = "Freelancer";
+        else displayNome = inc.name.charAt(0).toUpperCase() + inc.name.slice(1);
+
+        return {
+          id: inc.id,
+          nome: displayNome,
+          valor: inc.amount,
+          tipo: "receita",
+          categoria: inc.type || inc.category || "Receita",
+          data: new Date(inc.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) + " • " + new Date(inc.date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+          rawDate: new Date(inc.date)
+        }
+      })
       movements.push(...mappedIncomes)
     }
 
@@ -144,9 +158,9 @@ export default function DashboardPage() {
       saldoAtual: analysis.saldoFinal,
       totalRecebido: analysis.totalReceitas,
       totalGasto: analysis.totalDespesas,
-      contasAVencer: overdueCount
+      contasAVencer: analysis.contasPendentes
     }
-  }, [analysis, overdueCount])
+  }, [analysis])
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">

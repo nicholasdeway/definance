@@ -38,7 +38,10 @@ const emptyForm: BillFormState = {
   categoria: "",
   tipo: "Fixa",
   dueDate: "",
-  isRecorrente: true,
+  isRecorrente: false,
+  isParcelado: false,
+  parcelasTotal: undefined,
+  parcelasPagas: undefined,
   descricao: "",
   observacoes: "",
 }
@@ -308,6 +311,7 @@ export default function ContasPage() {
     try {
       setIsSaving(true)
       const amount = parseCurrencyInput(form.valor)
+      const formattedName = form.nome.trim().charAt(0).toUpperCase() + form.nome.trim().slice(1)
       
       let dueDate = null
       let dueDay = null
@@ -321,13 +325,16 @@ export default function ContasPage() {
       }
 
       const payload = {
-        name: form.nome,
+        name: formattedName,
         amount,
         category: form.categoria === "Outros" ? (form.outroCategoria || "Outros") : (form.categoria || "Outros"),
         billType: form.tipo,
         dueDate,
         dueDay,
         isRecurring: form.isRecorrente,
+        isParcelado: form.isParcelado,
+        parcelasTotal: form.parcelasTotal,
+        parcelasPagas: form.parcelasPagas,
         status: "Pendente",
         description: form.descricao || null,
         notes: form.observacoes || null,
@@ -385,8 +392,28 @@ export default function ContasPage() {
     if (!deleteDialog.item) return
     try {
       setIsDeleting(true)
-      await apiClient(`/api/bills/${deleteDialog.item.id}`, { method: "DELETE" })
-      setContas((prev) => prev.filter((c) => c.id !== deleteDialog.item!.id))
+      const isParcelada = /\(\d+\/\d+\)$/.test(deleteDialog.item.nome);
+      
+      await apiClient(`/api/bills/${deleteDialog.item.id}${isParcelada ? '?deleteAllInstallments=true' : ''}`, { method: "DELETE" })
+      
+      if (isParcelada) {
+        // Como excluímos várias, é mais seguro recarregar a página/lista
+        window.dispatchEvent(new CustomEvent("finance-update"))
+        // Simular um reload simples limpando e refazendo (ideal seria refetch, mas o CustomEvent já deve acionar algo global, porém a lista local precisa de refresh. O jeito mais simples aqui é dar reload ou confiar no effect, mas como o state contas tá aí, vamos filtrar as que começam com o mesmo base)
+        const match = deleteDialog.item.nome.match(/^(.*?) \(\d+\/\d+\)$/);
+        if (match) {
+          const baseName = match[1];
+          setContas((prev) => prev.filter((c) => {
+            if (c.status === "paga") return true; // não deleta as pagas
+            return !c.nome.startsWith(`${baseName} (`);
+          }));
+        } else {
+          setContas((prev) => prev.filter((c) => c.id !== deleteDialog.item!.id))
+        }
+      } else {
+        setContas((prev) => prev.filter((c) => c.id !== deleteDialog.item!.id))
+      }
+      
       setDeleteDialog({ open: false, item: null })
       window.dispatchEvent(new CustomEvent("finance-update"))
     } catch (err) {
@@ -581,6 +608,13 @@ export default function ContasPage() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDelete}
         itemName={deleteDialog.item?.nome}
+        description={
+          deleteDialog.item?.isRecorrente
+            ? `Esta conta é recorrente. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as contas futuras também serão apagadas.`
+            : deleteDialog.item && /\(\d+\/\d+\)$/.test(deleteDialog.item.nome)
+            ? `Esta conta faz parte de um parcelamento. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as parcelas pendentes referentes aos próximos meses também serão apagadas.`
+            : undefined
+        }
         loading={isDeleting}
       />
 

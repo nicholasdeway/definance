@@ -1,9 +1,10 @@
 "use client"
  
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Wallet, ArrowDownLeft, ArrowUpRight, CreditCard, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
+import { Wallet, ArrowDownLeft, ArrowUpRight, CreditCard, TrendingUp, TrendingDown, Loader2, ArrowUpRight as LinkIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/currency"
+import Link from "next/link"
 
 interface DashboardCardsProps {
   data: {
@@ -37,6 +38,7 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
       icon: Wallet,
       color: "text-primary",
       isPrimary: true,
+      href: "/dashboard/historico"
     },
     {
       title: "Total Recebido",
@@ -44,6 +46,7 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
       value: data.totalRecebido,
       icon: ArrowDownLeft,
       color: "text-primary",
+      href: "/dashboard/entradas"
     },
     {
       title: "Total Gasto",
@@ -51,6 +54,7 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
       value: data.totalGasto,
       icon: ArrowUpRight,
       color: "text-destructive",
+      href: "/dashboard/saidas"
     },
     {
       title: "Contas a Vencer",
@@ -58,44 +62,50 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
       value: data.contasAVencer,
       icon: CreditCard,
       color: "text-orange-500",
-      isCount: true
+      isCount: true,
+      href: "/dashboard/contas"
     },
   ]
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card 
-          key={card.title} 
-          className={cn(
-            "border-border/50 bg-card overflow-hidden group hover:border-primary/20 transition-all py-3 sm:py-6 gap-0 sm:gap-6",
-            card.isPrimary && "bg-gradient-to-br from-primary/10 via-card to-card border-primary/20"
-          )}
-        >
-          <CardHeader className="flex flex-row items-center justify-between px-3 sm:px-6 pb-0 sm:pb-2">
-            <CardTitle className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
-              {card.label}
-            </CardTitle>
-            <div className={cn("p-1 sm:p-1.5 rounded-lg bg-muted/50 transition-colors group-hover:bg-muted", card.color)}>
-              <card.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6 pt-0">
-            <div className={cn(
-              "text-lg sm:text-2xl font-bold tracking-tight text-card-foreground transition-all duration-500",
-              discreetMode && "discreet-mode-blur"
-            )}>
-              {card.isCount ? (
-                card.value
-              ) : (
-                formatCurrency(card.value)
-              )}
-            </div>
-            <p className="hidden sm:block text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wide opacity-60">
-              {card.isCount ? (card.value === 1 ? "Fatura pendente" : "Faturas pendentes") : "Este mês"}
-            </p>
-          </CardContent>
-        </Card>
+        <Link key={card.title} href={card.href} className="block group">
+          <Card 
+            className={cn(
+              "border-border/50 bg-card overflow-hidden transition-all py-3 sm:py-6 gap-0 sm:gap-6 cursor-pointer relative",
+              "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 duration-300",
+              card.isPrimary && "bg-gradient-to-br from-primary/10 via-card to-card border-primary/20"
+            )}
+          >
+            <CardHeader className="flex flex-row items-center justify-between px-3 sm:px-6 pb-0 sm:pb-2">
+              <CardTitle className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                {card.label}
+              </CardTitle>
+              <div className={cn("p-1 sm:p-1.5 rounded-lg bg-muted/50 transition-all group-hover:scale-110", card.color)}>
+                <card.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6 pt-0">
+              <div className={cn(
+                "text-lg sm:text-2xl font-bold tracking-tight text-card-foreground transition-all duration-500",
+                discreetMode && "discreet-mode-blur"
+              )}>
+                {card.isCount ? (
+                  card.value
+                ) : (
+                  formatCurrency(card.value)
+                )}
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="hidden sm:block text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
+                  {card.isCount ? (card.value === 1 ? "Fatura pendente" : "Faturas pendentes") : "Este mês"}
+                </p>
+                <LinkIcon className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   )

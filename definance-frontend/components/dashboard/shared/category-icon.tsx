@@ -71,6 +71,8 @@ const iconMap: Record<string, any> = {
   "Autônomo": Icons.User,
   "Freelancer": Icons.Laptop,
   "Mesada": Icons.GraduationCap,
+  "Mesada / Auxílio": Icons.GraduationCap,
+  "Mesada / Auxílio (Estudantes)": Icons.GraduationCap,
   "Bônus": Icons.Coins,
   "Presente": Icons.Gift,
   "Doação": Icons.Heart,
@@ -110,10 +112,11 @@ const iconMap: Record<string, any> = {
 }
 
 export function CategoryIcon({ name, color, fallback = "MoreHorizontal", className, ...props }: CategoryIconProps) {
-  // Tenta encontrar pelo nome exato, depois em caixa alta (para PJ, CLT, etc), depois pelo mapeador padrão, e por fim usa o fallback
+  const caseInsensitiveMatch = name ? Object.keys(iconMap).find(k => k.toLowerCase() === name.toLowerCase()) : null;
+  
   const IconComponent = (name && (
     iconMap[name] || 
-    iconMap[name.toUpperCase()] || 
+    (caseInsensitiveMatch && iconMap[caseInsensitiveMatch]) || 
     (Icons as any)[name]
   )) || iconMap[fallback]
 

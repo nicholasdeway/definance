@@ -19,6 +19,8 @@ import {
 } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { type ContaItem } from "./bill-item"
+import { CategoryIcon } from "@/components/dashboard/shared/category-icon"
+import { useCategories } from "@/lib/category-context"
 
 interface BillDetailsModalProps {
   open: boolean
@@ -37,8 +39,13 @@ export function BillDetailsModal({
   onDelete,
   onPay
 }: BillDetailsModalProps) {
+  const { categories } = useCategories()
   const isMobile = useIsMobile()
   if (!conta) return null
+
+  // Busca o ícone oficial da categoria
+  const realCategory = categories.find(c => c.name === conta.categoria)
+  const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : conta.categoria
 
   const isPaid = conta.status === "paga"
   const isOverdue = conta.status === "atrasada"
@@ -73,7 +80,7 @@ export function BillDetailsModal({
              !conta.rawDueDate ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
              "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
            )}>
-             <TrendingUp className="h-6 w-6 md:h-8 md:w-8" />
+             <CategoryIcon name={categoryIcon} className="h-6 w-6 md:h-8 md:w-8" />
            </div>
 
            <h3 className="text-[10px] md:text-sm font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1 text-center">
