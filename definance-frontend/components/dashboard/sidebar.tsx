@@ -39,7 +39,8 @@ import {
   Shield,
   Landmark,
   Tags,
-  History
+  History,
+  Share2
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 
@@ -143,6 +144,12 @@ export function DashboardSidebar() {
                   <Link href="/dashboard/perfil" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" />
                     Perfil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/conectar-aplicativos" className="flex items-center gap-2 cursor-pointer">
+                    <Share2 className="h-4 w-4" />
+                    Conectar Aplicativos
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

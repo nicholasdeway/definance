@@ -73,22 +73,22 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
         <Link key={card.title} href={card.href} className="block group">
           <Card 
             className={cn(
-              "border-border/50 bg-card overflow-hidden transition-all py-3 sm:py-6 gap-0 sm:gap-6 cursor-pointer relative",
+              "border-border/50 bg-card overflow-hidden transition-all py-2.5 sm:py-6 cursor-pointer relative h-full",
               "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 duration-300",
               card.isPrimary && "bg-gradient-to-br from-primary/10 via-card to-card border-primary/20"
             )}
           >
-            <CardHeader className="flex flex-row items-center justify-between px-3 sm:px-6 pb-0 sm:pb-2">
-              <CardTitle className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+            <CardHeader className="flex flex-row items-center justify-between px-3 sm:px-6 pb-0.5 sm:pb-2 pt-0">
+              <CardTitle className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 {card.label}
               </CardTitle>
               <div className={cn("p-1 sm:p-1.5 rounded-lg bg-muted/50 transition-all group-hover:scale-110", card.color)}>
-                <card.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <card.icon className="h-3 w-3 sm:h-4 sm:w-4" />
               </div>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6 pt-0">
+            <CardContent className="px-3 sm:px-6 pt-0 pb-0">
               <div className={cn(
-                "text-lg sm:text-2xl font-bold tracking-tight text-card-foreground transition-all duration-500",
+                "text-base sm:text-2xl font-bold tracking-tight text-card-foreground transition-all duration-500",
                 discreetMode && "discreet-mode-blur"
               )}>
                 {card.isCount ? (
@@ -97,7 +97,7 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
                   formatCurrency(card.value)
                 )}
               </div>
-              <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center justify-between mt-0 sm:mt-1">
                 <p className="hidden sm:block text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60">
                   {card.isCount ? (card.value === 1 ? "Fatura pendente" : "Faturas pendentes") : "Este mês"}
                 </p>
