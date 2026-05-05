@@ -15,5 +15,6 @@ namespace definance_backend.Features.Onboarding.Services
         Task SyncDebtsAsync(Guid userId);
         Task SyncDeleteBillWithProfileAsync(Guid userId, definance_backend.Domain.Entities.Bill bill);
         Task<OnboardingSubmissionDto?> GetProgressAsync(Guid userId);
+        Task<GettingStartedStatusDto> GetGettingStartedStatusAsync(Guid userId);
     }
 }

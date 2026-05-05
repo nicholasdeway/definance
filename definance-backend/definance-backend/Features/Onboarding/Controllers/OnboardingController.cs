@@ -134,5 +134,20 @@ namespace definance_backend.Features.Onboarding.Controllers
                 return StatusCode(500, new { message = "Erro ao recuperar progresso." });
             }
         }
+
+        [HttpGet("getting-started-status")]
+        public async Task<IActionResult> GetGettingStartedStatus()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                var status = await _onboardingService.GetGettingStartedStatusAsync(userId);
+                return Ok(status);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }
