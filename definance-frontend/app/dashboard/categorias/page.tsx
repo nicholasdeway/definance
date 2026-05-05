@@ -65,6 +65,7 @@ export default function CategoriasPage() {
         await updateCategory(editingCategory.id, data)
       } else {
         await createCategory(data)
+        window.dispatchEvent(new CustomEvent("onboarding:update"))
       }
       setIsDialogOpen(false)
     } finally {
@@ -79,6 +80,7 @@ export default function CategoriasPage() {
       const success = await deleteCategory(deleteDialog.item.id)
       if (success) {
         setDeleteDialog({ open: false, item: null })
+        window.dispatchEvent(new CustomEvent("onboarding:update"))
       }
     } finally {
       setIsDeleting(false)

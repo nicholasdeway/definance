@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Spinner } from "@/components/ui/spinner"
 
+import { GettingStarted } from "@/components/dashboard/getting-started"
+
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
@@ -46,6 +48,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {children}
           </CategoryProvider>
         </main>
+        <GettingStarted />
         <footer className="py-6 flex justify-center mt-auto">
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50 text-center px-4">
             Plataforma Definance - Gestão Financeira &copy; 2026

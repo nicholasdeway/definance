@@ -1,13 +1,15 @@
 using System;
-using System.Text.Json;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Text.Json;
 using definance_backend.Features.Auth.Repositories;
 using definance_backend.Features.Onboarding.DTOs;
 using definance_backend.Features.Bills.Repositories;
 using definance_backend.Domain.Entities;
-using System.Collections.Generic;
 using definance_backend.Features.Incomes.Repositories;
-using System.Linq;
+using definance_backend.Features.Categories.Repositories;
+using definance_backend.Features.Expenses.Repositories;
 
 namespace definance_backend.Features.Onboarding.Services
 {
@@ -16,12 +18,21 @@ namespace definance_backend.Features.Onboarding.Services
         private readonly IUserRepository _userRepository;
         private readonly IBillRepository _billRepository;
         private readonly IIncomeRepository _incomeRepository;
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IExpenseRepository _expenseRepository;
 
-        public OnboardingService(IUserRepository userRepository, IBillRepository billRepository, IIncomeRepository incomeRepository)
+        public OnboardingService(
+            IUserRepository userRepository, 
+            IBillRepository billRepository, 
+            IIncomeRepository incomeRepository,
+            ICategoryRepository categoryRepository,
+            IExpenseRepository expenseRepository)
         {
             _userRepository = userRepository;
             _billRepository = billRepository;
             _incomeRepository = incomeRepository;
+            _categoryRepository = categoryRepository;
+            _expenseRepository = expenseRepository;
         }
 
         public async Task CompleteOnboardingAsync(Guid userId, OnboardingSubmissionDto dto)
@@ -804,6 +815,32 @@ namespace definance_backend.Features.Onboarding.Services
             };
 
             return JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+        }
+
+        public async Task<GettingStartedStatusDto> GetGettingStartedStatusAsync(Guid userId)
+        {
+            // 1. Verificar categorias customizadas
+            var categories = await _categoryRepository.GetByUserIdAsync(userId);
+            bool hasCustomCategories = categories.Any(c => !c.IsSystem);
+
+            // 2. Verificar qualquer transação
+            // Verificamos Expenses e Incomes (Expenses cobre Gastos Diários também)
+            var expenses = await _expenseRepository.GetByUserIdAsync(userId);
+            var incomes = await _incomeRepository.GetByUserIdAsync(userId);
+            
+            bool hasTransactions = expenses.Any() || incomes.Any();
+
+            int completedSteps = 0;
+            if (hasCustomCategories) completedSteps++;
+            if (hasTransactions) completedSteps++;
+
+            return new GettingStartedStatusDto
+            {
+                HasCategories = hasCustomCategories,
+                HasTransactions = hasTransactions,
+                CompletedStepsCount = completedSteps,
+                TotalStepsCount = 2
+            };
         }
     }
 }
