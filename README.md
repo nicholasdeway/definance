@@ -55,7 +55,7 @@ E o sistema entende, processa e organiza essas informações para você.
 O projeto é construído com uma arquitetura de microserviços, focada em escalabilidade, organização e evolução independente dos módulos, utilizando:
 
 * Backend: .NET / C# / ASP.NET Core  
-* Frontend: TypeScript  
+* Frontend: TypeScript, React e Next
 * Banco de dados: PostgreSQL (via Supabase)  
 * Módulo de IA: Python com FastAPI  
 * Integração com IA: Groq API  
