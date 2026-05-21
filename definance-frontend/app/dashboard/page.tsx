@@ -22,6 +22,7 @@ interface AnalysisResponse {
   saldoFinal: number
   monthlyComparison: MonthlyData[]
   categoryAnalysis: CategoryData[]
+  incomeAnalysis: Array<{ tipo: string; valor: number }>
 }
 
 interface ExpenseApiResponse {
@@ -109,10 +110,29 @@ export default function DashboardPage() {
   const transactions = React.useMemo(() => {
     const movements: Transaction[] = []
 
+    const formatName = (name: string) => {
+      if (!name) return "Sem nome"
+      
+      // Lista de siglas que devem ser sempre maiúsculas
+      const acronyms = ["CLT", "PJ", "MEI", "FGTS", "INSS", "IRPF"]
+      let formatted = name
+      
+      acronyms.forEach(acronym => {
+        const regex = new RegExp(`\\b${acronym}\\b`, "gi")
+        formatted = formatted.replace(regex, acronym)
+      })
+      
+      if (formatted === name) {
+        return name.charAt(0).toUpperCase() + name.slice(1)
+      }
+      
+      return formatted
+    }
+
     if (expensesData) {
       const mappedExpenses: Transaction[] = expensesData.map(exp => ({
         id: exp.id,
-        nome: exp.name ? exp.name.charAt(0).toUpperCase() + exp.name.slice(1) : "Sem nome",
+        nome: formatName(exp.name),
         valor: exp.amount,
         tipo: (exp.transactionType?.toLowerCase() === "entrada" || exp.transactionType?.toLowerCase() === "receita") ? "receita" : "despesa",
         categoria: exp.category || "Outros",
@@ -124,16 +144,14 @@ export default function DashboardPage() {
 
     if (incomesData) {
       const mappedIncomes: Transaction[] = incomesData.map(inc => {
-        // Formatação amigável para nomes de fontes de renda comuns
         let displayNome = inc.name;
         const lowerName = inc.name.toLowerCase();
         
+        // Mantém as substituições amigáveis originais
         if (lowerName === "mesada") displayNome = "Mesada / Auxílio";
-        else if (lowerName === "clt") displayNome = "CLT";
-        else if (lowerName === "pj") displayNome = "PJ";
         else if (lowerName === "autonomo") displayNome = "Autônomo";
         else if (lowerName === "freelancer") displayNome = "Freelancer";
-        else displayNome = inc.name.charAt(0).toUpperCase() + inc.name.slice(1);
+        else displayNome = formatName(inc.name);
 
         return {
           id: inc.id,
@@ -164,7 +182,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+      <div className="flex flex-col gap-4 mb-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <LayoutDashboard className="h-6 w-6 text-primary" />
@@ -173,7 +191,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground text-xs sm:text-sm">Bem-vindo de volta! Aqui está o resumo das suas finanças.</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full">
           <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
@@ -200,6 +218,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-3 min-w-0">
           <DashboardCharts 
             categoryData={analysis?.categoryAnalysis || []} 
+            incomeData={analysis?.incomeAnalysis?.map(i => ({ categoria: i.tipo, valor: i.valor })) || []}
             monthlyData={analysis?.monthlyComparison || []}
             loading={loading}
           />

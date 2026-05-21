@@ -31,6 +31,7 @@ export interface User {
   role: string
   createdAt: string
   hasCompletedOnboarding: boolean
+  isWhatsAppConnected: boolean
 }
 
 export interface RegisterData {
@@ -168,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Usuário LOGADO tentando acessar login/register
     if (user && (pathname === "/login" || pathname === "/register")) {
-      const target = user.hasCompletedOnboarding ? "/dashboard" : "/onboarding"
+      const target = (user.hasCompletedOnboarding && user.isWhatsAppConnected) ? "/dashboard" : "/onboarding"
       if ((pathname as string) !== target) {
         router.push(target)
       }
@@ -183,16 +184,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // 3. Usuário LOGADO sem onboarding tentando acessar rota privada
-    if (user && !isPublicRoute && !user.hasCompletedOnboarding) {
+    // 3. Usuário LOGADO sem onboarding (ou sem WhatsApp) tentando acessar rota privada
+    if (user && !isPublicRoute && (!user.hasCompletedOnboarding || !user.isWhatsAppConnected)) {
       if (pathname !== "/onboarding") {
         router.push("/onboarding")
       }
       return
     }
 
-    // 4. Usuário LOGADO com onboarding completo tentando acessar /onboarding
-    if (user && pathname?.startsWith("/onboarding") && user.hasCompletedOnboarding) {
+    // 4. Usuário LOGADO com tudo completo tentando acessar /onboarding
+    if (user && pathname?.startsWith("/onboarding") && user.hasCompletedOnboarding && user.isWhatsAppConnected) {
       if (pathname !== "/dashboard") {
         router.push("/dashboard")
       }

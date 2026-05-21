@@ -28,38 +28,42 @@ export const CategoryAnalysisChart = ({
     return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
   }
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-base text-card-foreground">Despesas por Categoria</CardTitle>
+        <CardTitle className="text-base text-card-foreground font-bold">Despesas por Categoria</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col justify-between">
         <div className={cn(
-          "h-[300px] transition-all duration-300",
+          "h-[300px] w-full overflow-hidden transition-[filter] duration-300",
           discreetMode && "discreet-mode-blur"
         )}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={data} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
+              <BarChart data={data} layout="vertical" margin={{ left: -20, right: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" horizontal={false} />
                 <XAxis 
                   type="number"
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
                   tickFormatter={(value) => formatCurrency(value)}
                 />
                 <YAxis 
                   dataKey="categoria"
                   type="category"
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
-                  width={80}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={100}
                 />
                 <Tooltip
                   cursor={{ fill: cursorFill }}
                   contentStyle={{
                     backgroundColor: "var(--card)",
                     border: "1px solid var(--border)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
+                    fontSize: "12px",
+                    fontWeight: "bold"
                   }}
                   formatter={tooltipFormatter}
                 />
@@ -67,9 +71,13 @@ export const CategoryAnalysisChart = ({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart message="Nenhuma despesa categorizada neste período." />
+            <div className="flex h-full items-center justify-center">
+              <EmptyChart message="Nenhuma despesa categorizada neste período." />
+            </div>
           )}
         </div>
+        {/* Spacer para alinhar com a legenda do gráfico vizinho */}
+        <div className="mt-4 h-4" />
       </CardContent>
     </Card>
   )

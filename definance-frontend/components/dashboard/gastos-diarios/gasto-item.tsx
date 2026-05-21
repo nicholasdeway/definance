@@ -122,7 +122,7 @@ export function GastoItem({ gasto, isInitialLoad, discreetMode, onEdit, onDelete
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+          <DropdownMenuContent align="end" className="w-48 rounded-xl border-border/50 bg-popover/95 backdrop-blur-xl">
             <DropdownMenuItem onClick={() => onDetails(gasto)} className="gap-2 cursor-pointer text-xs font-medium">
               <Info className="h-3.5 w-3.5" />
               Ver Detalhes

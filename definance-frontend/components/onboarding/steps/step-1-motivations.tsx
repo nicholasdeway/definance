@@ -45,14 +45,14 @@ export const Step1Motivations = () => {
                   ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10" 
                   : isInvalid
                     ? "border-destructive/30 bg-destructive/5"
-                    : "border-white/5 bg-white/5 hover:border-primary/20 hover:bg-primary/5"
+                    : "border-border/50 bg-muted/20 hover:border-primary/20 hover:bg-primary/5 dark:border-white/5 dark:bg-white/5"
               )}
             >
               <div className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                 isSelected 
                   ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
-                  : "bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+                  : "bg-muted dark:bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
               )}>
                 <type.icon className="h-5 w-5" />
               </div>

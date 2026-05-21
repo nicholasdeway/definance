@@ -163,7 +163,7 @@ export function ExportPdfDialog({
               handleExport();
             }}
             disabled={loading}
-            className="flex-1 bg-primary/70 text-primary-foreground hover:bg-primary/90 cursor-pointer"
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary/90 cursor-pointer"
           >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Download PDF

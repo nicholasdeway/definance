@@ -20,6 +20,7 @@ namespace definance_backend.Features.Analysis.DTOs
         public string Month { get; set; }
         public decimal Receitas { get; set; }
         public decimal Despesas { get; set; }
+        public DateTime RawDate { get; set; }
     }
 
     public class CategoryAnalysisDto
@@ -33,6 +34,7 @@ namespace definance_backend.Features.Analysis.DTOs
     {
         public string Month { get; set; }
         public decimal Saldo { get; set; }
+        public DateTime RawDate { get; set; }
     }
 
     public class IncomeAnalysisDto

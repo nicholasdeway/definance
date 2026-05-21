@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Wallet, BarChart3, Sparkles, Bell } from "lucide-react"
 
+import { SpotlightCard } from "@/components/ui/spotlight-card"
+
 const benefits = [
   {
     icon: Wallet,
@@ -39,7 +41,11 @@ export function BenefitsSection() {
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {benefits.map((benefit) => (
-            <Card key={benefit.title} className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg">
+            <SpotlightCard 
+              key={benefit.title} 
+              className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg"
+              spotlightColor="rgba(0, 229, 255, 0.15)"
+            >
               <CardHeader>
                 <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <benefit.icon className="h-6 w-6 text-primary" />
@@ -51,7 +57,7 @@ export function BenefitsSection() {
                   {benefit.description}
                 </CardDescription>
               </CardContent>
-            </Card>
+            </SpotlightCard>
           ))}
         </div>
       </div>

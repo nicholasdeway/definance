@@ -55,6 +55,14 @@ namespace definance_backend.Features.Incomes.Repositories
             {
                 sql += " AND date >= @StartDate AND date <= @EndDate";
             }
+            else if (month.HasValue && year.HasValue)
+            {
+                sql += @" AND (
+                    (EXTRACT(MONTH FROM date) = @Month AND EXTRACT(YEAR FROM date) = @Year)
+                    OR
+                    (is_recurring = true AND date < make_date(@Year, @Month, 1))
+                )";
+            }
             else
             {
                 if (month.HasValue)

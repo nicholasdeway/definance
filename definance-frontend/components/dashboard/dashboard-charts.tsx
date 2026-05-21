@@ -22,6 +22,7 @@ export interface MonthlyData {
 
 interface DashboardChartsProps {
   categoryData: CategoryData[]
+  incomeData?: CategoryData[] // Usaremos a mesma interface CategoryData para simplificar
   monthlyData: MonthlyData[]
   loading?: boolean
 }
@@ -35,15 +36,23 @@ const CHART_COLORS = [
   "var(--chart-6)",
 ]
 
-export function DashboardCharts({ categoryData, monthlyData, loading }: DashboardChartsProps) {
+export function DashboardCharts({ categoryData, incomeData = [], monthlyData, loading }: DashboardChartsProps) {
   const { discreetMode } = useSettings()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
   const [mounted, setMounted] = useState(false)
+  const [activeTab, setActiveTab] = useState<"gastos" | "receitas">("gastos")
   
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Se não houver dados de gastos mas houver de receitas, começa na aba de receitas
+  useEffect(() => {
+    if (mounted && categoryData.length === 0 && incomeData.length > 0) {
+      setActiveTab("receitas")
+    }
+  }, [mounted, categoryData.length, incomeData.length])
 
   // Função para formatar o valor do eixo Y
   const formatYAxisTick = (value: number): string => {
@@ -57,7 +66,8 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
     return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
   }
 
-  const total = categoryData.reduce((sum, item) => sum + item.valor, 0)
+  const currentPieData = activeTab === "gastos" ? categoryData : incomeData
+  const total = currentPieData.reduce((sum, item) => sum + item.valor, 0)
 
   if (loading || !mounted) {
     return (
@@ -69,14 +79,41 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
 
   return (
     <Card className="border-border/50 bg-card h-full flex flex-col">
-      <CardHeader className="py-4">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">Análise de Gastos</CardTitle>
+      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+          Análise de {activeTab === "gastos" ? "Gastos" : "Receitas"}
+        </CardTitle>
+        
+        <div className="flex bg-muted/20 p-0.5 rounded-lg border border-border/50">
+          <button
+            onClick={() => setActiveTab("gastos")}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-bold rounded-md transition-all",
+              activeTab === "gastos" 
+                ? "bg-background text-primary shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Gastos
+          </button>
+          <button
+            onClick={() => setActiveTab("receitas")}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-bold rounded-md transition-all",
+              activeTab === "receitas" 
+                ? "bg-background text-primary shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Receitas
+          </button>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
-        {categoryData.length === 0 ? (
+      <CardContent className="space-y-6 flex-1 flex flex-col justify-between pt-2">
+        {currentPieData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center bg-muted/5 rounded-xl border border-dashed border-border/50">
             <PieIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
-            <p className="text-xs font-medium text-muted-foreground">Sem dados de categorias este mês</p>
+            <p className="text-xs font-medium text-muted-foreground">Sem dados de {activeTab} este mês</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-6 md:flex-row">
@@ -87,7 +124,7 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={currentPieData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -96,7 +133,7 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
                     dataKey="valor"
                     nameKey="categoria"
                   >
-                    {categoryData.map((_, index) => (
+                    {currentPieData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
                     ))}
                   </Pie>
@@ -122,7 +159,7 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
             </div>
             
             <div className="flex-1 w-full space-y-2.5">
-              {categoryData.slice(0, 5).map((item, index) => (
+              {currentPieData.slice(0, 5).map((item, index) => (
                 <div key={item.categoria} className="flex items-center gap-2 group">
                   <div
                     className="h-2 w-2 rounded-full shrink-0"
@@ -136,7 +173,7 @@ export function DashboardCharts({ categoryData, monthlyData, loading }: Dashboar
                     "text-[11px] font-bold text-card-foreground transition-opacity duration-300 shrink-0 tabular-nums",
                     discreetMode && "discreet-mode-blur"
                   )}>
-                    {((item.valor / total) * 100).toFixed(0)}%
+                    {total > 0 ? ((item.valor / total) * 100).toFixed(0) : 0}%
                   </span>
                 </div>
               ))}

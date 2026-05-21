@@ -8,8 +8,8 @@ namespace definance_backend.Domain.Entities
         public decimal TargetAmount { get; set; }
         public decimal CurrentAmount { get; set; }
         public string Category { get; set; } = "Outros";
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public decimal MonthlyReserve { get; set; }
         public int ReserveDay { get; set; }
         public bool IsCompleted { get; set; }

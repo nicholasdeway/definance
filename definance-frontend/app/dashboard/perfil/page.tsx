@@ -24,7 +24,6 @@ export default function PerfilPage() {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
   })
 
   // Sincronizar estado local com os dados do usuário do AuthProvider
@@ -34,45 +33,28 @@ export default function PerfilPage() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
-        phone: formatPhoneNumber(user.phone || ""),
       })
     }
   }, [user])
 
-  function formatPhoneNumber(value: string) {
-    if (!value) return ""
-    const digits = value.replace(/\D/g, "")
-    const len = digits.length
-    
-    if (len <= 2) return digits
-    if (len <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
-  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Limpar formatação antes de enviar
-    const cleanPhone = profile.phone.replace(/\D/g, "")
-
     const result = await updateProfile({
       firstName: profile.firstName,
       lastName: profile.lastName,
-      phone: isGoogleAccount ? null : cleanPhone,
     })
 
     if (result.success) {
       toast.success("Perfil atualizado com sucesso!")
     } else {
       toast.error(result.message || "Erro ao atualizar perfil")
-      
-      // Restaurar dados originais do contexto se a atualização falhar
       if (user) {
         setProfile({
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          phone: user.phone ? formatPhoneNumber(user.phone) : "",
         })
       }
     }
@@ -111,7 +93,7 @@ export default function PerfilPage() {
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit for raw image
+    if (file.size > 5 * 1024 * 1024) {
       toast.error("A imagem deve ter no máximo 5MB.")
       return
     }
@@ -191,7 +173,6 @@ export default function PerfilPage() {
             isGoogleAccount={isGoogleAccount}
             isActionLoading={isActionLoading}
             onSubmit={handleUpdateProfile}
-            formatPhoneNumber={formatPhoneNumber}
           />
 
           {!isGoogleAccount && (

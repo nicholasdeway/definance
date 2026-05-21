@@ -35,14 +35,14 @@ export function PremiumModal({
       <DialogContent 
         showCloseButton={false}
         className={cn(
-          "!max-w-[1100px] w-[95vw] min-h-[auto] md:min-h-[600px] p-0 overflow-hidden border border-white/5 bg-[#0a0a0a] shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] rounded-[1.5rem] md:rounded-[2.5rem] outline-none",
+          "!max-w-[1100px] w-[95vw] min-h-[auto] md:min-h-[600px] p-0 overflow-hidden border border-border/50 bg-card shadow-2xl rounded-[1.5rem] md:rounded-[2.5rem] outline-none",
           className
         )}
       >
 
         <div className="flex flex-col md:flex-row h-full min-h-[auto] md:min-h-[600px]">
           {/* Header Section - Agora integrado no layout horizontal */}
-          <div className="w-full md:w-[380px] bg-primary/5 p-4 md:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden group">
+          <div className="w-full md:w-[380px] bg-primary/5 p-4 md:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-border/50 relative overflow-hidden group">
             {/* Efeito de luz sutil no fundo do header */}
             <div className="absolute -top-24 -left-24 h-48 w-48 bg-primary/10 rounded-full blur-[80px] group-hover:bg-primary/20 transition-all duration-700" />
             
@@ -63,7 +63,7 @@ export function PremiumModal({
               </div>
             </div>
 
-            <div className="hidden md:block pt-8 border-t border-white/5">
+            <div className="hidden md:block pt-8 border-t border-border/50">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
                 Definance Gestão Financeira
               </p>
@@ -79,7 +79,7 @@ export function PremiumModal({
             </div>
           </div>
         </div>
-        <DialogClose className="fixed right-4 top-4 h-7 w-7 rounded-full flex items-center justify-center bg-card hover:bg-muted text-foreground transition-all active:scale-90 border border-white/10 z-[100] cursor-pointer shadow-xl">
+        <DialogClose className="fixed right-4 top-4 h-7 w-7 rounded-full flex items-center justify-center bg-card hover:bg-muted text-foreground transition-all active:scale-90 border border-border/50 z-[100] cursor-pointer shadow-xl">
           <X className="h-3.5 w-3.5" />
         </DialogClose>
       </DialogContent>

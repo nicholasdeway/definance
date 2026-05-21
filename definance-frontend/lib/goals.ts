@@ -6,8 +6,8 @@ export interface Goal {
   targetAmount: number
   currentAmount: number
   category: string
-  startDate: string
-  endDate: string
+  startDate?: string | null
+  endDate?: string | null
   monthlyReserve: number
   reserveDay: number
   isCompleted: boolean
@@ -18,14 +18,20 @@ export interface CreateUpdateGoalDto {
   name: string
   targetAmount: number
   category: string
-  startDate: string
-  endDate: string
+  startDate?: string | null
+  endDate?: string | null
   monthlyReserve: number
   reserveDay: number
 }
 
 export interface DepositGoalDto {
   amount: number
+}
+
+export interface GoalHistoryItem {
+  amount: number
+  date: string
+  name: string
 }
 
 export const goalsApi = {
@@ -51,8 +57,11 @@ export const goalsApi = {
       body: JSON.stringify(data)
     }),
 
-  deleteGoal: (id: string) =>
-    apiClient<void>(`/api/goals/${id}`, {
+  deleteGoal: (id: string, deleteTransactions: boolean = false) =>
+    apiClient<void>(`/api/goals/${id}?deleteTransactions=${deleteTransactions}`, {
       method: "DELETE"
-    })
+    }),
+
+  getGoalHistory: (id: string) =>
+    apiClient<GoalHistoryItem[]>(`/api/goals/${id}/history`)
 }

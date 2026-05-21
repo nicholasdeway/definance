@@ -97,7 +97,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Alimentação, Lazer..."
               className={cn(
-                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                 isMobile ? "h-9 text-[11px] px-3" : "h-12 text-lg px-5"
               )}
             />
@@ -109,7 +109,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
               <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                 Tipo de Uso
               </Label>
-              <div className={cn("flex p-1 bg-muted/20 rounded-lg md:rounded-2xl gap-1 border border-white/5", isMobile ? "h-9" : "h-12")}>
+              <div className={cn("flex p-1 bg-muted/20 rounded-lg md:rounded-2xl gap-1 border border-border/50", isMobile ? "h-9" : "h-12")}>
                 {(["Saída", "Entrada", "Ambos"] as const).map((t) => (
                   <button
                     key={t}
@@ -118,8 +118,8 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                       "flex-1 font-bold rounded-md md:rounded-xl transition-all cursor-pointer",
                       isMobile ? "text-[10px]" : "text-xs",
                       type === t 
-                        ? "bg-background text-white shadow-lg" 
-                        : "text-muted-foreground hover:text-white/60"
+                        ? "bg-background text-foreground shadow-sm border border-border/50" 
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {t === "Saída" ? "Despesa" : t === "Entrada" ? "Receita" : "Ambos"}
@@ -139,7 +139,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                 onChange={setLimit}
                 placeholder="0,00"
                 className={cn(
-                  "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                  "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                   isMobile ? "h-9 text-[11px] pl-9" : "h-12 text-lg pl-12"
                 )}
               />
@@ -159,14 +159,14 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddKeyword())}
                 placeholder="Ex: ifood, uber..."
                 className={cn(
-                  "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl flex-1",
+                  "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl flex-1",
                   isMobile ? "h-9 text-[11px] px-3" : "h-11 text-sm px-4"
                 )}
               />
               <Button 
                 variant="outline" 
                 onClick={handleAddKeyword}
-                className={cn("rounded-lg md:rounded-2xl border-white/10 bg-white/5 font-bold hover:bg-white/10", isMobile ? "h-9 px-3 text-[10px]" : "h-11 px-5 text-xs")}
+                className={cn("rounded-lg md:rounded-2xl border-border/50 bg-muted/20 font-bold hover:bg-muted/40", isMobile ? "h-9 px-3 text-[10px]" : "h-11 px-5 text-xs")}
               >
                 Add
               </Button>
@@ -191,9 +191,9 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
           </div>
 
           {/* Cores */}
-          <div className="space-y-2 md:space-y-3 pt-2 md:pt-4 border-t border-white/5">
+          <div className="space-y-2 md:space-y-3 pt-2 md:pt-4 border-t border-border/50">
             <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Identidade Visual</Label>
-            <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/10 border border-white/5 rounded-xl md:rounded-2xl">
+            <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/10 border border-border/50 rounded-xl md:rounded-2xl">
               <div className="flex flex-wrap gap-2.5 flex-1">
                 {PRESET_COLORS.map((c) => (
                   <button
@@ -208,7 +208,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                   />
                 ))}
               </div>
-              <div className="h-6 w-[1px] bg-white/10 mx-1" />
+              <div className="h-6 w-[1px] bg-border mx-1" />
               <div className="relative h-8 w-8 shrink-0">
                 <input 
                   type="color"
@@ -216,18 +216,18 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                   onChange={(e) => setColor(e.target.value)}
                   className="absolute inset-0 h-full w-full bg-transparent cursor-pointer border-none opacity-0"
                 />
-                <div className="h-full w-full rounded-lg border border-white/20 shadow-inner" style={{ backgroundColor: color }} />
+                <div className="h-full w-full rounded-lg border border-border/50 shadow-inner" style={{ backgroundColor: color }} />
               </div>
             </div>
           </div>
         </div>
 
         {/* Rodapé */}
-        <div className="pt-4 md:pt-6 border-t border-white/5 flex items-center justify-end gap-3 md:gap-4">
+        <div className="pt-4 md:pt-6 border-t border-border/50 flex items-center justify-end gap-3 md:gap-4">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] h-9 md:h-12 text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] h-9 md:h-12 text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted border border-border/50"
           >
             Cancelar
           </Button>

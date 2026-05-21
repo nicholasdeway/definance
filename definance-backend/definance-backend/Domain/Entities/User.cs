@@ -33,5 +33,8 @@ namespace definance_backend.Domain.Entities
         public bool IsActive { get; set; } = true;
         public bool HasCompletedOnboarding { get; set; } = false;
         public string? OnboardingData { get; set; }
+
+        public bool IsWhatsAppConnected { get; set; } = false;
+        public ICollection<WhatsAppPairing>? WhatsAppPairings { get; set; }
     }
 }

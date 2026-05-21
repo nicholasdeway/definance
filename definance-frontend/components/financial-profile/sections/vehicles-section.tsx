@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { DatePicker } from "@/components/ui/date-picker"
 import { cn, generateId } from "@/lib/utils"
 import { useOnboarding } from "@/components/onboarding/hooks/use-onboarding"
 import { vehicleTypes } from "@/components/onboarding/constants"
@@ -454,19 +455,21 @@ export const VehiclesSection = ({ onSavingStateChange }: { onSavingStateChange?:
                                   />
                                 </div>
                                 <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
-                                  <Input
-                                    type="date"
-                                    value={parcela.vencimento}
-                                    onChange={(e) => updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "vencimento", e.target.value)}
-                                    className="h-8 bg-background text-xs w-full"
-                                    required
-                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <DatePicker
+                                      date={parcela.vencimento}
+                                      onChange={(date) => updateIpvaInstallment(v.id, ipvaYear.id, parcela.id, "vencimento", date)}
+                                      size="sm"
+                                      className="h-8 bg-background text-xs w-full"
+                                      placeholder="Vencimento"
+                                    />
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => removeIpvaInstallment(v.id, ipvaYear.id, parcela.id)}
-                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+                                    className="p-1 text-muted-foreground hover:text-destructive transition-colors shrink-0"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
                               </div>
@@ -563,7 +566,7 @@ export const VehiclesSection = ({ onSavingStateChange }: { onSavingStateChange?:
                           <Button 
                             type="button"
                             size="sm" 
-                            className="h-8 text-xs bg-primary/70 text-primary-foreground hover:bg-primary/80" 
+                            className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary/80" 
                             onClick={() => handleAddNewExtra(v.id)}
                           >
                             Salvar Gasto
@@ -672,11 +675,11 @@ export const VehiclesSection = ({ onSavingStateChange }: { onSavingStateChange?:
                           </div>
                           <div className="space-y-1.5">
                             <FieldLabel label="Data de vencimento" required />
-                            <Input
-                              type="date"
-                              value={v.vencimentoSeguro || ""}
-                              onChange={(e) => updateVehicle(v.id, "vencimentoSeguro", e.target.value)}
+                            <DatePicker
+                              date={v.vencimentoSeguro || ""}
+                              onChange={(date) => updateVehicle(v.id, "vencimentoSeguro", date)}
                               className="h-8 bg-background text-sm"
+                              placeholder="Vencimento"
                             />
                           </div>
                           <div className="flex items-center gap-2 pt-1 sm:col-span-2">
@@ -704,7 +707,7 @@ export const VehiclesSection = ({ onSavingStateChange }: { onSavingStateChange?:
                       type="button" 
                       disabled={isSaving || hasIpvaError}
                       onClick={handleSave}
-                      className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary/80 font-bold"
+                      className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary/80 font-bold"
                     >
                       {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Veículo"}
                     </Button>

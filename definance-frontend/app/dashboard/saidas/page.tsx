@@ -110,6 +110,7 @@ export default function DespesasPage() {
           valor: e.amount,
           categoria: e.category,
           data: new Date(e.date).toLocaleDateString("pt-BR"),
+          hora: new Date(e.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
           tipo: e.expenseType,
           status: e.status,
           billId: e.billId ?? null,
@@ -227,6 +228,7 @@ export default function DespesasPage() {
           valor: response.amount,
           categoria: response.category,
           data: new Date(response.date).toLocaleDateString("pt-BR"),
+          hora: new Date(response.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
           tipo: response.expenseType,
           status: response.status,
           descricao: response.description ?? null,
@@ -292,7 +294,7 @@ export default function DespesasPage() {
 
         <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >

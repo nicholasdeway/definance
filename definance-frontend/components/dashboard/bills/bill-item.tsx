@@ -104,7 +104,7 @@ export const BillItem = ({
               <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+          <DropdownMenuContent align="end" className="w-48 rounded-xl border-border/50 bg-popover/95 backdrop-blur-xl">
             {!isPaid && (
               <DropdownMenuItem onClick={() => onPay(conta)} className="gap-2 cursor-pointer text-xs font-bold text-primary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -125,7 +125,7 @@ export const BillItem = ({
             </DropdownMenuItem>
             {conta.isSynced && (
               <>
-                <div className="h-px bg-white/5 my-1" />
+                <div className="h-px bg-muted/30 my-1" />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer text-xs">
                     <TrendingUp className="h-4 w-4" />
@@ -235,7 +235,7 @@ export const BillItem = ({
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border-border/50 bg-popover/95 backdrop-blur-xl">
                   {!isPaid && (
                     <DropdownMenuItem onClick={() => onPay(conta)} className="gap-2 cursor-pointer text-xs font-bold text-primary">
                       <CheckCircle2 className="h-3.5 w-3.5" />
@@ -256,7 +256,7 @@ export const BillItem = ({
                   </DropdownMenuItem>
                   {conta.isSynced && (
                     <>
-                      <div className="h-px bg-white/5 my-1" />
+                      <div className="h-px bg-muted/30 my-1" />
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard/perfil-financeiro" className="flex items-center gap-2 text-primary font-bold cursor-pointer text-xs">
                           <TrendingUp className="h-4 w-4" />

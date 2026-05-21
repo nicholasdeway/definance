@@ -94,7 +94,7 @@ export const Step3MonthlyIncome = () => {
          <motion.div 
            initial={{ opacity: 0, scale: 0.98 }}
            animate={{ opacity: 1, scale: 1 }}
-           className="flex flex-col items-center justify-center p-8 sm:p-9 text-center border border-dashed rounded-2xl sm:rounded-[2rem] border-white/10 bg-white/5"
+           className="flex flex-col items-center justify-center p-8 sm:p-9 text-center border border-dashed rounded-2xl sm:rounded-[2rem] border-border dark:border-white/10 bg-muted/20 dark:bg-white/5"
          >
             <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-3.5">
               <Coins className="h-5 sm:h-6 w-5 sm:w-6 text-primary/60" />
@@ -133,14 +133,14 @@ export const Step3MonthlyIncome = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className={cn(
-                "rounded-2xl sm:rounded-[1.8rem] border bg-white/[0.02] overflow-hidden transition-all duration-300 relative",
+                "rounded-2xl sm:rounded-[1.8rem] border bg-muted/10 dark:bg-white/[0.02] overflow-hidden transition-all duration-300 relative",
                 hasError 
                   ? "border-destructive/20 bg-destructive/[0.01]" 
-                  : "border-white/5 shadow-sm sm:shadow-lg sm:shadow-black/5"
+                  : "border-border/50 dark:border-white/5 shadow-sm sm:shadow-lg shadow-foreground/[0.03] dark:shadow-black/5"
               )}
             >
               {/* Header Compacto/Premium */}
-              <div className="bg-white/[0.02] sm:bg-white/[0.03] p-3.5 sm:p-4 flex items-center justify-between border-b border-white/5">
+              <div className="bg-muted/[0.08] dark:bg-white/[0.03] p-3.5 sm:p-4 flex items-center justify-between border-b border-border/50 dark:border-white/5">
                 <div className="flex items-center gap-3 sm:gap-3.5">
                    <div className="flex h-9 sm:h-11 w-9 sm:w-11 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
                       <typeInfo.icon className="h-4.5 sm:h-5.5 w-4.5 sm:w-5.5" />
@@ -181,14 +181,14 @@ export const Step3MonthlyIncome = () => {
                       value={inc.valor ? Math.round(Number(inc.valor) * 100).toString() : ""}
                       onChange={(value) => updateIncomeValue(typeInfo.value, value)}
                       className={cn(
-                        "h-10 sm:h-11 bg-white/[0.03] sm:bg-white/[0.04] border-white/10 sm:border-2 sm:border-white/5 text-sm sm:text-base font-bold sm:font-black rounded-xl sm:rounded-2xl transition-all focus:bg-white/[0.05]",
+                        "h-10 sm:h-11 bg-muted/30 dark:bg-white/[0.04] border-border/50 sm:border-2 dark:border-white/5 text-sm sm:text-base font-bold sm:font-black rounded-xl sm:rounded-2xl transition-all focus:bg-muted/40 dark:focus:bg-white/[0.05]",
                         wasAttempted && (!inc.valor || inc.valor === 0) && "border-destructive/30 bg-destructive/[0.02]"
                       )}
                    />
                  </div>
 
                  {/* Seletor de Frequência */}
-                 <div className="space-y-2 sm:space-y-2.5 pt-3 sm:pt-4 border-t border-white/5">
+                 <div className="space-y-2 sm:space-y-2.5 pt-3 sm:pt-4 border-t border-border dark:border-white/5">
                    <FieldLabel 
                      label="Frequência" 
                      required 
@@ -207,8 +207,8 @@ export const Step3MonthlyIncome = () => {
                                className={cn(
                                   "text-center text-[10px] sm:text-[10.5px] py-2 sm:py-3 px-1 rounded-xl sm:rounded-xl border font-bold sm:font-black transition-all duration-200",
                                   isSelected 
-                                    ? "bg-primary/70 text-primary-foreground border-primary shadow-md sm:shadow-lg shadow-primary/10" 
-                                    : "bg-white/[0.03] border-transparent text-muted-foreground hover:bg-white/[0.06] cursor-pointer"
+                                    ? "bg-primary text-primary-foreground border-primary shadow-md sm:shadow-lg shadow-primary/20" 
+                                    : "bg-muted dark:bg-white/[0.03] border-border/50 dark:border-transparent text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/[0.06] cursor-pointer"
                                )}
                             >
                                {freq.label.split(' (')[0]}
@@ -223,7 +223,7 @@ export const Step3MonthlyIncome = () => {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-primary/[0.02] border border-primary/10 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-4 space-y-3 sm:space-y-3.5"
+                      className="bg-primary/5 dark:bg-primary/[0.02] border border-primary/20 dark:border-primary/10 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-4 space-y-3 sm:space-y-3.5"
                     >
                        <div className="flex items-center gap-2 sm:gap-2">
                           <CalendarDays className="h-3.5 sm:h-3.5 w-3.5 sm:w-3.5 text-primary/70" />
@@ -250,7 +250,7 @@ export const Step3MonthlyIncome = () => {
                                value={inc.diaSemana || ""}
                                onValueChange={(value) => updateIncome(typeInfo.value, "diaSemana", value)}
                              >
-                               <SelectTrigger className="w-full h-9 bg-white/[0.04] border-primary/10 text-[11px] font-bold rounded-lg">
+                               <SelectTrigger className="w-full h-9 bg-muted/30 dark:bg-white/[0.04] border-primary/10 text-[11px] font-bold rounded-lg">
                                  <SelectValue placeholder="Escolha o dia" />
                                </SelectTrigger>
                                <SelectContent>
@@ -267,7 +267,7 @@ export const Step3MonthlyIncome = () => {
                                  <Button
                                    variant="outline"
                                    className={cn(
-                                     "w-full h-9 justify-start text-left font-bold text-[11px] bg-white/[0.04] border-primary/10 rounded-lg hover:bg-white/[0.06] transition-all",
+                                     "w-full h-9 justify-start text-left font-bold text-[11px] bg-muted/30 dark:bg-white/[0.04] border-border/50 dark:border-primary/10 rounded-lg hover:bg-muted/50 dark:hover:bg-white/[0.06] transition-all",
                                      !inc.diasRecebimento && "text-muted-foreground",
                                      wasAttempted && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "") && "border-destructive/30"
                                    )}

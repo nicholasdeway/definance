@@ -67,14 +67,14 @@ export const IncomeTypeSection = () => {
                   ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10"
                   : isInvalid
                     ? "border-destructive/30 bg-destructive/5"
-                    : "border-white/5 bg-white/5 hover:border-primary/20 hover:bg-primary/5"
+                    : "border-border/50 bg-muted/20 hover:border-primary/20 hover:bg-primary/5"
               )}
             >
               <div className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                 isSelected
                   ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                  : "bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+                  : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
               )}>
                 <type.icon className="h-4 w-4" />
               </div>
@@ -101,12 +101,12 @@ export const IncomeTypeSection = () => {
         })}
       </div>
 
-      <div className="flex items-center justify-end pt-6 border-t border-white/5 mt-4">
+      <div className="flex items-center justify-end pt-6 border-t border-border/50 mt-4">
         <Button 
           type="button" 
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary text-xs cursor-pointer"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary text-xs cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Seleção"}
         </Button>

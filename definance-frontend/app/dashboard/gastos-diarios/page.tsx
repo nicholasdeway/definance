@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -10,7 +11,8 @@ import {
   CalendarDays,
   CalendarFold,
   ListChecks,
-  Loader2
+  Loader2,
+  Mic
 } from "lucide-react"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { useSettings } from "@/lib/settings-context"
@@ -21,6 +23,9 @@ import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
 import { apiClient } from "@/lib/api-client"
 import { toast } from "sonner"
+import { useSpeechToText } from "@/hooks/use-speech-to-text"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
 // Standardized Components
 import { GastoStats } from "@/components/dashboard/gastos-diarios/gasto-stats"
@@ -63,6 +68,8 @@ interface QuickExpenseApiResponse {
 export default function GastosDiariosPage() {
   const { discreetMode } = useSettings()
   const { categories: dynamicCategories } = useCategories()
+  const isMobile = useIsMobile()
+  const { isListening, transcript, startListening, stopListening } = useSpeechToText()
 
   const todasCategoriasParaFiltro = useMemo(() => {
     return Array.from(new Set(
@@ -102,6 +109,32 @@ export default function GastosDiariosPage() {
 
   const [dayFilter, setDayFilter] = useState<"all" | "hoje" | "ontem">("all")
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Escuta por novos gastos adicionados globalmente (ex: via FAB)
+  useEffect(() => {
+    const handleExpenseAdded = () => {
+      fetchGastos()
+    }
+
+    window.addEventListener("expense-added", handleExpenseAdded)
+    return () => window.removeEventListener("expense-added", handleExpenseAdded)
+  }, [])
+
+  // Auto-submit apenas no mobile quando para de ouvir e tem conteúdo
+  useEffect(() => {
+    if (isMobile && !isListening && transcript && transcript.trim().length > 3) {
+      const timer = setTimeout(() => {
+        handleAddGasto()
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isListening, isMobile])
+
+  useEffect(() => {
+    if (transcript) {
+      setInputValue(transcript)
+    }
+  }, [transcript])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialLoad(false), 600)
@@ -160,6 +193,7 @@ export default function GastosDiariosPage() {
       setInputValue("")
       toast.success("Gasto registrado com sucesso!")
       window.dispatchEvent(new CustomEvent("finance-update"))
+      window.dispatchEvent(new CustomEvent("expense-added"))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao processar gasto."
       toast.error(errorMessage)
@@ -290,13 +324,49 @@ export default function GastosDiariosPage() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
-                className="flex-1 h-10 bg-muted/20 border-border/50 text-xs truncate rounded-xl placeholder:text-muted-foreground/50 placeholder:text-xs sm:placeholder:text-sm"
+                className={cn(
+                  "flex-1 h-10 bg-muted/20 border-border/50 text-xs truncate rounded-xl placeholder:text-muted-foreground/50 placeholder:text-xs sm:placeholder:text-sm transition-all",
+                  isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
+                )}
                 disabled={isSaving}
               />
+              
+              <Button
+                type="button"
+                onPointerDown={isMobile ? (e) => {
+                  e.preventDefault()
+                  startListening()
+                } : undefined}
+                onPointerUp={isMobile ? (e) => {
+                  e.preventDefault()
+                  stopListening()
+                } : undefined}
+                onClick={!isMobile ? (isListening ? stopListening : startListening) : undefined}
+                onContextMenu={(e) => e.preventDefault()}
+                className={cn(
+                  "h-10 w-10 p-0 shrink-0 shadow-lg transition-all duration-300 rounded-xl relative overflow-hidden",
+                  isMobile && "touch-none",
+                  isListening 
+                    ? "bg-red-500 hover:bg-red-600 shadow-red-500/20 text-white scale-110" 
+                    : "bg-primary/80 hover:bg-primary text-primary-foreground shadow-primary/20"
+                )}
+                disabled={isSaving}
+              >
+                {isListening && (
+                  <motion.span 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="absolute inset-0 bg-white/20 rounded-full"
+                  />
+                )}
+                <Mic className="h-4 w-4 relative z-10" />
+              </Button>
+
               <Button 
                 onClick={handleAddGasto} 
                 className="bg-primary/80 hover:bg-primary h-10 w-10 p-0 shrink-0 shadow-lg shadow-primary/20 rounded-xl" 
-                disabled={isSaving}
+                disabled={isSaving || isListening}
                 size="icon"
               >
                 {isSaving ? (

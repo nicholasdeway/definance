@@ -122,7 +122,7 @@ export default function CategoriasPage() {
         </div>
         <Button 
           onClick={handleOpenAdd}
-          className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer w-full sm:w-auto"
           size="sm"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -151,7 +151,7 @@ export default function CategoriasPage() {
           </div>
         ) : userCategories.length === 0 ? (
           <div className="py-12 text-center border-2 border-dashed border-border/50 rounded-3xl space-y-3">
-             <p className="text-muted-foreground italic">Você ainda não criou nenhuma categoria personalizada.</p>
+             <p className="text-muted-foreground">Você ainda não criou nenhuma categoria personalizada.</p>
              <Button variant="outline" size="sm" onClick={handleOpenAdd} className="rounded-xl cursor-pointer">Começar agora</Button>
           </div>
         ) : (

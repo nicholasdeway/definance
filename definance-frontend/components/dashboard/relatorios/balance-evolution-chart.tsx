@@ -9,6 +9,8 @@ import { EmptyChart } from "./empty-chart"
 
 export interface BalanceData {
   month: string
+  receitas: number
+  despesas: number
   saldo: number
 }
 
@@ -52,19 +54,23 @@ export const BalanceEvolutionChart = ({
       </CardHeader>
       <CardContent>
         <div className={cn(
-          "h-[300px] transition-all duration-300",
+          "h-[300px] overflow-hidden transition-[filter] duration-300",
           discreetMode && "discreet-mode-blur"
         )}>
           {data && data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
               <AreaChart 
                 data={data}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <defs>
-                  <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                  <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-5)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--chart-5)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
@@ -97,12 +103,22 @@ export const BalanceEvolutionChart = ({
                 />
                 <Area 
                   type="monotone" 
-                  dataKey="saldo" 
-                  stroke="var(--primary)" 
+                  dataKey="receitas" 
+                  stroke="var(--chart-1)" 
                   strokeWidth={3}
                   fillOpacity={1} 
-                  fill="url(#colorSaldo)" 
-                  name="Saldo"
+                  fill="url(#colorReceitas)" 
+                  name="Receitas"
+                  animationDuration={1500}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="despesas" 
+                  stroke="var(--chart-5)" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorDespesas)" 
+                  name="Despesas"
                   animationDuration={1500}
                 />
               </AreaChart>

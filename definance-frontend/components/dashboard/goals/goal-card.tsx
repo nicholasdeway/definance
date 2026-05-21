@@ -22,6 +22,7 @@ interface GoalCardProps {
   onEdit: (meta: Goal) => void
   onDelete: (meta: Goal) => void
   onDeposit: (meta: Goal) => void
+  onViewHistory?: (meta: Goal) => void
 }
 
 type Categoria = {
@@ -45,7 +46,7 @@ function getCat(id: string): Categoria {
   return CATEGORIAS.find((c) => c.id === id) ?? CATEGORIAS[CATEGORIAS.length - 1]
 }
 
-function fmtShort(dateStr: string) {
+function fmtShort(dateStr: string | null | undefined) {
   if (!dateStr) return "—"
   try { return format(parseISO(dateStr), "MMM yyyy", { locale: ptBR }) } catch { return dateStr }
 }
@@ -71,7 +72,7 @@ function diasRestantes(fim: string): number {
   } catch { return 0 }
 }
 
-export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
+export function GoalCard({ meta, onEdit, onDelete, onDeposit, onViewHistory }: GoalCardProps) {
   const { discreetMode } = useSettings()
   
   const cat        = getCat(meta.category)
@@ -79,9 +80,10 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
   const progresso  = meta.targetAmount > 0 ? (meta.currentAmount / meta.targetAmount) * 100 : 0
   const falta      = Math.max(meta.targetAmount - meta.currentAmount, 0)
   const concluida  = meta.isCompleted || meta.currentAmount >= meta.targetAmount
-  const tempoPct   = calcTempoDecorrido(meta.startDate, meta.endDate)
-  const diasLeft   = diasRestantes(meta.endDate)
-  const atrasada   = !concluida && tempoPct > progresso + 10
+  const hasDates   = !!meta.startDate && !!meta.endDate
+  const tempoPct   = hasDates ? calcTempoDecorrido(meta.startDate!, meta.endDate!) : 0
+  const diasLeft   = hasDates ? diasRestantes(meta.endDate!) : 0
+  const atrasada   = hasDates ? (!concluida && tempoPct > progresso + 10) : false
 
   return (
     <Card className={cn(
@@ -108,6 +110,9 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
                     Adicionar valor
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => onViewHistory?.(meta)}>
+                  Detalhes
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(meta)}>Editar</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={() => onDelete(meta)}>
                   Excluir
@@ -134,7 +139,7 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
                 atrasada  && "bg-orange-500/20 text-orange-400"
               )}
             >
-              {concluida ? "Concluída ✓" : atrasada ? "Atenção" : `${diasLeft}d restantes`}
+              {concluida ? "Concluída ✓" : atrasada ? "Atenção" : hasDates ? `${diasLeft}d restantes` : "Meta Flexível"}
             </Badge>
           </div>
           <Progress value={progresso} className="h-2" />
@@ -142,7 +147,7 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
         </div>
 
         {/* Progresso temporal */}
-        {!concluida && (
+        {!concluida && hasDates && (
           <div>
             <Progress 
               value={tempoPct} 
@@ -152,9 +157,9 @@ export function GoalCard({ meta, onEdit, onDelete, onDeposit }: GoalCardProps) {
               )} 
             />
             <div className="mt-0.5 flex justify-between text-[10px] text-muted-foreground">
-              <span>{fmtShort(meta.startDate)}</span>
+              <span>{fmtShort(meta.startDate!)}</span>
               <span className={cn(atrasada && "text-orange-400")}>{tempoPct}% do tempo</span>
-              <span>{fmtShort(meta.endDate)}</span>
+              <span>{fmtShort(meta.endDate!)}</span>
             </div>
           </div>
         )}

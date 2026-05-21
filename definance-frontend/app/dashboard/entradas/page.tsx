@@ -72,6 +72,8 @@ export interface OnboardingProgressIncome {
   }
   diaSemana?: string
   DiaSemana?: string
+  historicoConfiguracoes?: any[]
+  HistoricoConfiguracoes?: any[]
 }
 
 const baseTiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
@@ -141,25 +143,35 @@ export default function ReceitasPage() {
                                inc.name.toLowerCase().startsWith(`${typeLower} (semana`) || 
                                inc.name.toLowerCase().startsWith(`${typeLower} (quinzena`)
 
+          // Lógica de projeção para entradas manuais recorrentes
+          const originalDate = new Date(inc.date)
+          let displayYear = originalDate.getFullYear()
+          let displayMonth = originalDate.getMonth()
+          let displayDay = originalDate.getDate()
+
+          // Se for recorrente e de um mês passado, projetamos para o mês atual mantendo o mesmo dia
+          if (inc.isRecurring && (originalDate.getFullYear() < period.year || (originalDate.getFullYear() === period.year && originalDate.getMonth() + 1 < period.month))) {
+            displayYear = period.year
+            displayMonth = period.month - 1
+          }
+
+          const displayDate = new Date(displayYear, displayMonth, displayDay)
+
           return {
             id: inc.id,
             nome: isBaseType && isStandardName
               ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})`
               : inc.name,
             valor: inc.amount, 
-            tipo: inc.type,
-            data: (() => {
-              const datePart = inc.date.split('T')[0]
-              const [y, m, d] = datePart.split('-').map(Number)
-              return new Date(y, m - 1, d).toLocaleDateString("pt-BR")
-            })(),
-            dataReal: inc.date,
+            tipo: isBaseType ? typeInfo.label : inc.type,
+            data: displayDate.toLocaleDateString("pt-BR"),
+            dataReal: displayDate.toISOString(),
             hora: new Date(inc.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' }),
             recorrente: inc.isRecurring,
-            isSynced: isBaseType,
+            isSynced: isBaseType && isStandardName,
             descricao: inc.description ?? null,
             observacoes: inc.notes ?? null,
-            rawDate: new Date(inc.date)
+            rawDate: displayDate
           }
         })
 
@@ -179,39 +191,61 @@ export default function ReceitasPage() {
                 let effectiveValor = inc.valor || inc.Valor || 0
                 let effectiveFreq = (inc.frequencia || inc.Frequencia || "").toLowerCase()
                 let effectiveDias = inc.diasRecebimento || inc.DiasRecebimento || ""
+                let effectiveDiaSemana = inc.diaSemana || inc.DiaSemana || ""
 
-                if (inc.configuracaoAnterior && inc.configuracaoAnterior.validoAte) {
-                  const validoAte = new Date(inc.configuracaoAnterior.validoAte)
-                  const validUntilMonth = new Date(validoAte.getFullYear(), validoAte.getMonth(), 1)
+                // --- Lógica de Histórico (Cadeia de alterações) ---
+                const hMin = inc.historicoConfiguracoes || []
+                const hMaj = inc.HistoricoConfiguracoes || []
+                const history = (hMin.length > 0 ? hMin : hMaj).length > 0 
+                  ? (hMin.length > 0 ? hMin : hMaj) 
+                  : (inc.configuracaoAnterior ? [inc.configuracaoAnterior] : [])
+                
+                // Procurar a primeira configuração que era válida para este mês (do mais antigo para o mais recente)
+                const configHistorica = [...history]
+                  .sort((a, b) => {
+                    const da = a.validoAte || a.ValidoAte
+                    const db = b.validoAte || b.ValidoAte
+                    return new Date(da).getTime() - new Date(db).getTime()
+                  })
+                  .find(h => {
+                    const vDateStr = (h.validoAte || h.ValidoAte).split('T')[0]
+                    const [vy, vm] = vDateStr.split('-').map(Number)
+                    const validUntilMonth = new Date(vy, vm - 1, 1)
+                    return selectedMonthDate <= validUntilMonth
+                  })
+
+                if (configHistorica) {
+                  effectiveValor = configHistorica.valor || configHistorica.Valor || 0
+                  effectiveFreq = (configHistorica.frequencia || configHistorica.Frequencia || "").toLowerCase()
+                  effectiveDias = configHistorica.diasRecebimento || configHistorica.DiasRecebimento || ""
+                  effectiveDiaSemana = configHistorica.diaSemana || configHistorica.DiaSemana || ""
+                }
+
+                // Se NÃO estamos no período do histórico, verificamos se a nova configuração já começou
+                const isHistoryPeriod = !!configHistorica;
+                
+                if (!isHistoryPeriod) {
+                  const firstDateStr = effectiveFreq === "variavel" ? "" : (effectiveDias.split(',')[0] || "").trim()
+                  const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
                   
-                  if (selectedMonthDate < validUntilMonth) {
-                    effectiveValor = inc.configuracaoAnterior.valor
-                    effectiveFreq = inc.configuracaoAnterior.frequencia.toLowerCase()
-                    effectiveDias = inc.configuracaoAnterior.diasRecebimento || ""
+                  const startDate = baseDateStr ? (() => {
+                    const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
+                    const [y, m, d] = datePart.split('-').map(Number)
+                    return new Date(y, m - 1, d)
+                  })() : null
+                  
+                  if (startDate && selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
+                    return []
                   }
                 }
 
                 const freqInfo = incomeFrequencies.find(f => f.value === effectiveFreq)
-                
-                const isVariable = effectiveFreq === "variavel"
-                const firstDateStr = isVariable ? "" : (effectiveDias.split(',')[0] || "").trim()
-                const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
-                
-                const startDate = baseDateStr ? (() => {
-                  const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
-                  const [y, m, d] = datePart.split('-').map(Number)
-                  return new Date(y, m - 1, d)
-                })() : null
-                
-                if (startDate && selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
-                  return []
-                }
 
                 // Gerar as projeções baseadas na frequência
                 const multiplier = effectiveFreq === "semanal" ? 4 : (effectiveFreq === "quinzenal" ? 2 : 1)
                 const label = typeInfo?.label || incomeTipoValue.toUpperCase()
                 const desc = typeInfo ? ` (${typeInfo.description.split(' ')[0]})` : ""
-                const diaSemana = inc.diaSemana || inc.DiaSemana
+                const diaSemana = effectiveDiaSemana
 
                 return Array.from({ length: multiplier }).map((_, i) => {
                   let itemDate: Date
@@ -225,9 +259,13 @@ export default function ReceitasPage() {
                     const daysToAdd = (targetDay - baseDate.getDay() + 7) % 7
                     itemDate = new Date(baseDate.getTime() + (daysToAdd * 24 * 60 * 60 * 1000))
                   } else {
-                    itemDate = startDate 
-                      ? new Date(startDate.getTime() + (i * (effectiveFreq === "semanal" ? 7 : 15) * 24 * 60 * 60 * 1000))
-                      : new Date(period.year, period.month - 1, 1 + (i * 7))
+                    // Extraímos o dia original da configuração (ex: dia 05)
+                    const firstDateStr = effectiveFreq === "variavel" ? "" : (effectiveDias.split(',')[0] || "").trim()
+                    const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
+                    const startDay = baseDateStr ? parseInt(baseDateStr.split('-')[2]) || 1 : 1
+                    
+                    // Aplicamos o dia ao mês selecionado na tela
+                    itemDate = new Date(period.year, period.month - 1, startDay + (i * (effectiveFreq === "quinzenal" ? 15 : 0)))
                   }
 
                   const suffix = multiplier > 1 
@@ -253,19 +291,16 @@ export default function ReceitasPage() {
                 })
               })
 
-            // 2. Filtrar mappedIncomes (DB) para remover conflitos com as projeções ativas
-            const cleanedMappedIncomes = mappedIncomes.filter(m => {
-               const typeLower = m.tipo.toLowerCase()
-               const isBaseType = incomeTypes.some(t => t.value === typeLower)
-               
-               if (isBaseType && syncedIncomes.some(s => (s as any).tipoValue === typeLower)) {
-                  return false
-               }
-               return true
-            })
+            // 2. Filtrar syncedIncomes (Projeções) para remover se já existir algo no banco para aquele tipo no mês
+            const finalSyncedIncomes = syncedIncomes.filter(s => {
+               const syncedTipo = (s as any).tipoValue;
+               // Se já existe uma entrada no banco com o mesmo tipo (categoria) neste mês, removemos a projeção
+               const hasRealEntry = mappedIncomes.some(m => m.tipo.toLowerCase() === syncedTipo);
+               return !hasRealEntry;
+            });
 
-            setReceitas([...syncedIncomes, ...cleanedMappedIncomes])
-            return
+            setReceitas([...finalSyncedIncomes, ...mappedIncomes])
+            return;
           }
         }
         
@@ -485,7 +520,7 @@ export default function ReceitasPage() {
 
         <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer w-full sm:w-auto"
             onClick={openAddDialog}
             size="sm"
           >

@@ -29,6 +29,7 @@ import { DateRange } from "react-day-picker"
 import { Goal, CreateUpdateGoalDto } from "@/lib/goals"
 import { PremiumModal } from "@/components/ui/premium-modal"
 import { useIsMobile } from "@/components/ui/use-mobile"
+import { Switch } from "@/components/ui/switch"
 
 interface GoalFormDialogProps {
   open: boolean
@@ -63,12 +64,17 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
   const [range, setRange] = useState<DateRange | undefined>(undefined)
   const [monthStart, setMonthStart] = useState<Date>(new Date())
   const [monthEnd, setMonthEnd] = useState<Date>(new Date())
+  const [isFlexible, setIsFlexible] = useState(false)
 
   useEffect(() => {
     if (open) {
       if (meta) {
-        const start = parseISO(meta.startDate)
-        const end   = parseISO(meta.endDate)
+        const flexible = !meta.startDate || !meta.endDate
+        setIsFlexible(flexible)
+        
+        const start = meta.startDate ? parseISO(meta.startDate) : undefined
+        const end   = meta.endDate ? parseISO(meta.endDate) : undefined
+        
         setForm({
           nome: meta.name,
           valorAlvo: toCents(meta.targetAmount).toString(),
@@ -76,36 +82,38 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
           reservaMensal: toCents(meta.monthlyReserve).toString(),
           diaReserva: String(meta.reserveDay),
         })
-        setRange({ from: start, to: end })
-        setMonthStart(start)
-        setMonthEnd(end)
+        setRange(start && end ? { from: start, to: end } : undefined)
+        setMonthStart(start || new Date())
+        setMonthEnd(end || new Date())
       } else {
         setForm(FORM_VAZIO)
         setRange(undefined)
         setMonthStart(new Date())
         setMonthEnd(new Date())
+        setIsFlexible(false)
       }
     }
   }, [open, meta])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.nome || !form.valorAlvo || !range?.from || !range?.to || !form.reservaMensal || !form.diaReserva) return
+    if (!form.nome || !form.valorAlvo) return
+    if (!isFlexible && (!range?.from || !range?.to || !form.reservaMensal || !form.diaReserva)) return
 
     await onSave({
       name: form.nome,
       targetAmount: parseCurrencyInput(form.valorAlvo),
-      startDate: format(range.from, "yyyy-MM-dd"),
-      endDate: format(range.to, "yyyy-MM-dd"),
+      startDate: !isFlexible && range?.from ? format(range.from, "yyyy-MM-dd") : null,
+      endDate: !isFlexible && range?.to ? format(range.to, "yyyy-MM-dd") : null,
       category: form.categoria,
-      monthlyReserve: parseCurrencyInput(form.reservaMensal),
-      reserveDay: parseInt(form.diaReserva) || 5,
+      monthlyReserve: isFlexible ? 0 : parseCurrencyInput(form.reservaMensal),
+      reserveDay: isFlexible ? 5 : (parseInt(form.diaReserva) || 5),
     })
   }
 
-  const isRangeValid = range?.from && range?.to && range.to > range.from;
-  const isReservaValid = form.reservaMensal && form.reservaMensal !== "0" && form.diaReserva;
-  const isFormValid = form.nome && form.valorAlvo && isReservaValid && isRangeValid;
+  const isRangeValid = isFlexible ? true : !!(range?.from && range?.to && range.to > range.from);
+  const isReservaValid = isFlexible ? true : !!(form.reservaMensal && form.reservaMensal !== "0" && form.diaReserva);
+  const isFormValid = !!(form.nome && form.valorAlvo && isReservaValid && isRangeValid);
 
   return (
     <PremiumModal
@@ -128,9 +136,26 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
               className={cn(
-                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                 isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5"
               )}
+            />
+          </div>
+
+          {/* Toggle Meta Flexível */}
+          <div className="flex items-center justify-between p-3.5 md:p-5 rounded-xl md:rounded-2xl border border-border/50 bg-muted/10">
+            <div className="space-y-0.5 md:space-y-1">
+              <Label htmlFor="meta-flexivel" className="text-xs md:text-sm font-bold uppercase tracking-wider text-card-foreground">
+                Meta Flexível
+              </Label>
+              <p className="text-[10px] md:text-xs text-muted-foreground">
+                Sem prazos ou depósitos mensais obrigatórios (ideal para compras pontuais como iPhone ou consertos).
+              </p>
+            </div>
+            <Switch
+              id="meta-flexivel"
+              checked={isFlexible}
+              onCheckedChange={setIsFlexible}
             />
           </div>
 
@@ -153,7 +178,7 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
             </div>
 
             {/* Período */}
-            <div className="flex-1 space-y-0.5 sm:space-y-2">
+            <div className={cn("flex-1 space-y-0.5 sm:space-y-2 transition-all duration-300", isFlexible && "opacity-40 pointer-events-none")}>
               <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">Período</Label>
               <div className="grid grid-cols-2 gap-1.5 md:gap-3">
                 <Popover>
@@ -161,8 +186,9 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={isFlexible}
                       className={cn(
-                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                         isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-4",
                         !range?.from && "text-muted-foreground"
                       )}
@@ -191,8 +217,9 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={isFlexible}
                       className={cn(
-                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        "justify-start text-left font-normal w-full overflow-hidden bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                         isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-4",
                         !range?.to && "text-muted-foreground"
                       )}
@@ -219,7 +246,7 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
             </div>
           </div>
 
-          <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6">
+          <div className={cn("flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6 transition-all duration-300", isFlexible && "opacity-40 pointer-events-none")}>
             {/* Reserva Mensal */}
             <div className="flex-1 space-y-0.5 sm:space-y-2">
               <Label htmlFor="meta-reserva" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80 md:h-10 md:flex md:items-end md:pb-1">
@@ -227,11 +254,12 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
               </Label>
               <CurrencyInput
                 id="meta-reserva"
+                disabled={isFlexible}
                 value={form.reservaMensal}
                 onChange={(value) => setForm({ ...form, reservaMensal: value })}
                 placeholder="0,00"
                 className={cn(
-                  "font-bold bg-muted/20 border-white/5 rounded-lg md:rounded-2xl focus:ring-primary/20",
+                  "font-bold bg-muted/20 border-border/50 rounded-lg md:rounded-2xl focus:ring-primary/20",
                   isMobile ? "h-8 text-xs pl-8 pr-1" : "h-12 text-lg pl-12 pr-5"
                 )}
               />
@@ -248,9 +276,10 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                   type="number"
                   min={1}
                   max={31}
+                  disabled={isFlexible}
                   placeholder="Ex: 5"
                   className={cn(
-                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl px-5 transition-all font-mono no-spinner",
+                    "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl px-5 transition-all font-mono no-spinner",
                     isMobile ? "h-8 text-[11px]" : "h-12"
                   )}
                   value={form.diaReserva}
@@ -271,7 +300,7 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
           </div>
 
           {/* Projeção de Reserva */}
-          {range?.from && range?.to && form.valorAlvo && parseCurrencyInput(form.valorAlvo) > 0 && (() => {
+          {!isFlexible && range?.from && range?.to && form.valorAlvo && parseCurrencyInput(form.valorAlvo) > 0 && (() => {
             const alvo = parseCurrencyInput(form.valorAlvo)
             const diffInMonths = Math.max(1, (range.to.getFullYear() - range.from.getFullYear()) * 12 + (range.to.getMonth() - range.from.getMonth()))
             const sugerido = alvo / diffInMonths
@@ -330,7 +359,7 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
                       isMobile ? "p-2" : "p-4",
                       sel
                         ? "border-primary bg-primary/10 shadow-[0_0_15px_-3px_rgba(var(--primary),0.3)]"
-                        : "border-white/5 bg-muted/10 hover:bg-muted/20 hover:border-white/10"
+                        : "border-border/50 bg-muted/10 hover:bg-muted/20 hover:border-border/50"
                     )}
                   >
                     <div className={cn(
@@ -351,12 +380,12 @@ export function GoalFormDialog({ open, onOpenChange, onSave, meta, saving }: Goa
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
+        <div className="pt-3 md:pt-6 border-t border-border/50 flex items-center justify-end gap-2 md:gap-4">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted/30 transition-all cursor-pointer border border-border/50"
           >
             Cancelar
           </Button>

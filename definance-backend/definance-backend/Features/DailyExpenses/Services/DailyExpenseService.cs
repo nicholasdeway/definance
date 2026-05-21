@@ -6,6 +6,7 @@ using definance_backend.Features.Categories.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text;
+using definance_backend.Features.Shared.Services;
 
 namespace definance_backend.Features.DailyExpenses.Services
 {
@@ -17,6 +18,7 @@ namespace definance_backend.Features.DailyExpenses.Services
         private readonly ILogger<DailyExpenseService> _logger;
         private readonly HttpClient _httpClient;
         private readonly string _aiServiceUrl;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public DailyExpenseService(
             IExpenseRepository expenseRepository, 
@@ -24,7 +26,8 @@ namespace definance_backend.Features.DailyExpenses.Services
             IQuickExpenseParser fallbackParser,
             ILogger<DailyExpenseService> logger,
             HttpClient httpClient,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IDateTimeProvider dateTimeProvider)
         {
             _expenseRepository = expenseRepository;
             _categoryRepository = categoryRepository;
@@ -32,6 +35,7 @@ namespace definance_backend.Features.DailyExpenses.Services
             _logger = logger;
             _httpClient = httpClient;
             _aiServiceUrl = configuration["AiService:Url"] ?? "http://localhost:8000/parse-expense";
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<QuickExpenseResponseDto> CreateQuickExpenseAsync(Guid userId, QuickExpenseRequestDto dto)
@@ -109,18 +113,14 @@ namespace definance_backend.Features.DailyExpenses.Services
 
                 if (aiData != null)
                 {
-                    // Força o fuso horário de Brasília (UTC-3)
-                    DateTime nowInBrazil;
-                    try 
+                    DateTime baseDate = _dateTimeProvider.GetExactAppDateTime();
+                    if (aiData.Date?.ToLower() == "ontem")
                     {
-                        var brazilZone = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
-                        nowInBrazil = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brazilZone);
+                        baseDate = baseDate.AddDays(-1);
                     }
-                    catch 
-                    {
-                        // Fallback caso o ID do fuso seja diferente no OS
-                        nowInBrazil = DateTime.UtcNow.AddHours(-3);
-                    }
+
+                    // Preserva o horário exato da transação (não normaliza para meia-noite)
+                    var normalizedDate = baseDate;
 
                     return new ParsedExpenseResult
                     {
@@ -128,7 +128,7 @@ namespace definance_backend.Features.DailyExpenses.Services
                         Amount = (decimal)aiData.Amount,
                         Category = aiData.Category,
                         TransactionType = aiData.Type ?? "Saída",
-                        Date = aiData.Date?.ToLower() == "ontem" ? nowInBrazil.AddDays(-1) : nowInBrazil
+                        Date = normalizedDate
                     };
                 }
             }

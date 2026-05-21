@@ -101,14 +101,14 @@ export const Step4FixedExpenses = () => {
                 "relative flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 rounded-xl border p-2.5 sm:p-2 text-center sm:text-left transition-all duration-200 cursor-pointer group sm:h-[54px]",
                 isSelected 
                   ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10" 
-                  : "border-white/5 bg-white/5 hover:border-primary/20 hover:bg-primary/5"
+                  : "border-border/50 bg-muted/20 hover:border-primary/20 hover:bg-primary/5 dark:border-white/5 dark:bg-white/5"
               )}
             >
               <div className={cn(
                 "flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                 isSelected 
                   ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
-                  : "bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+                  : "bg-muted dark:bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
               )}>
                 <cat.icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
               </div>
@@ -139,7 +139,7 @@ export const Step4FixedExpenses = () => {
 
       {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
-        <div className="space-y-4 sm:space-y-6 border-t border-white/5 pt-4 sm:pt-6">
+        <div className="space-y-4 sm:space-y-6 border-t border-border dark:border-white/5 pt-4 sm:pt-6">
           {/* Seção 1: Contas com Opção de Empréstimo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3 sm:space-y-4">
@@ -155,7 +155,7 @@ export const Step4FixedExpenses = () => {
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3 sm:p-4"
+                        className="flex items-center gap-3 rounded-2xl border border-border/50 dark:border-white/5 bg-muted/10 dark:bg-white/[0.02] p-3 sm:p-4"
                       >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <cat.icon className="h-5 w-5" />
@@ -174,7 +174,7 @@ export const Step4FixedExpenses = () => {
                             value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
-                              "h-9 sm:h-10 bg-white/[0.03] border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-white/[0.05]",
+                              "h-9 sm:h-10 bg-muted/30 dark:bg-white/[0.03] border-border/50 dark:border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-muted/40 dark:focus:bg-white/[0.05]",
                               wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
                             )}
                           />
@@ -365,9 +365,9 @@ export const Step4FixedExpenses = () => {
         whileTap={{ scale: 0.99 }}
         type="button"
         onClick={addCustomExpense}
-        className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 p-3 sm:p-4 text-xs sm:text-[13px] font-bold text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer mt-2"
+        className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border dark:border-white/10 p-3 sm:p-4 text-xs sm:text-[13px] font-semibold text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer mt-2"
       >
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-primary/20 group-hover:text-primary">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-muted dark:bg-white/5 transition-colors group-hover:bg-primary/20 group-hover:text-primary">
           <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
         </div>
         Adicionar outra despesa fixa

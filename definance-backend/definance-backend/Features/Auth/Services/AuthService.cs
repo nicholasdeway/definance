@@ -245,6 +245,7 @@ namespace definance_backend.Features.Auth.Services
                 PictureUrl = user.PictureUrl,
                 AuthProvider = user.AuthProvider ?? "Local",
                 HasCompletedOnboarding = user.HasCompletedOnboarding,
+                IsWhatsAppConnected = user.IsWhatsAppConnected,
                 CreatedAt = user.CreatedAt
             };
         }
