@@ -204,7 +204,7 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                 variant="default"
                 size="sm"
                 onClick={() => onAction?.("setup")}
-                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer"
+                className="h-7 text-[10px] font-bold px-3 shadow-none active:scale-95 transition-transform bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer"
                 asChild={!onAction}
               >
                 {!onAction ? (

@@ -24,6 +24,7 @@ namespace definance_backend.Features.Onboarding.DTOs
         public string? DiaSemana { get; set; }
         public string? ConfiguradoEm { get; set; }
         public PreviousConfigDto? ConfiguracaoAnterior { get; set; }
+        public List<PreviousConfigDto> HistoricoConfiguracoes { get; set; } = new();
     }
 
     public class PreviousConfigDto

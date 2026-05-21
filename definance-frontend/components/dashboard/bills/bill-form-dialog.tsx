@@ -145,7 +145,7 @@ export function BillFormDialog({
               className={cn(
                 "bg-muted/20 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
                 isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5",
-                errors.nome ? "border-destructive/50 ring-1 ring-destructive/20" : "border-white/5"
+                errors.nome ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border/50"
               )}
             />
           </div>
@@ -188,7 +188,7 @@ export function BillFormDialog({
                       "w-full justify-start text-left font-normal bg-muted/20 rounded-lg md:rounded-2xl transition-all",
                       isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
                       !form.dueDate && "text-muted-foreground",
-                      errors.dueDate ? "border-destructive/50 ring-1 ring-destructive/20" : "border-white/5"
+                      errors.dueDate ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border/50"
                     )}
                   >
                     <CalendarIcon className={cn("shrink-0 text-primary opacity-50", isMobile ? "h-3.3 w-3.3 mr-1.5" : "h-4 w-4 mr-2")} />
@@ -197,7 +197,7 @@ export function BillFormDialog({
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover" align="start">
                   <Calendar
                     mode="single"
                     selected={form.dueDate ? parseISO(form.dueDate) : undefined}
@@ -226,7 +226,7 @@ export function BillFormDialog({
               <div className={cn(
                 "flex items-center justify-between rounded-lg md:rounded-2xl bg-muted/20 shadow-sm overflow-hidden transition-all",
                 isMobile ? "h-8 px-1.5" : "h-12 px-5",
-                errors.categoria ? "border-destructive/50 ring-1 ring-destructive/20" : "border-white/5"
+                errors.categoria ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border/50"
               )}>
                 <span className={cn(
                   "font-medium text-muted-foreground min-w-0 mr-1 truncate",
@@ -244,7 +244,7 @@ export function BillFormDialog({
                   )}>
                     <SelectValue placeholder={isMobile ? "Sel." : "Selecionar"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                  <SelectContent className="rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl">
                     {todasCategorias.sort().map((cat) => (
                       <SelectItem key={cat} value={cat} className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">{cat}</SelectItem>
                     ))}
@@ -257,7 +257,7 @@ export function BillFormDialog({
             <div className="flex-1 space-y-0.5 sm:space-y-2">
               <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Tipo</Label>
               <div className={cn(
-                "flex p-0.5 bg-muted/20 border border-white/5 rounded-lg md:rounded-2xl shadow-sm",
+                "flex p-0.5 bg-muted/20 border border-border/50 rounded-lg md:rounded-2xl shadow-sm",
                 isMobile ? "h-8" : "h-12"
               )}>
                 <button
@@ -268,7 +268,7 @@ export function BillFormDialog({
                     isMobile ? "text-[8px]" : "text-xs",
                     form.tipo === "Fixa"
                       ? "bg-primary text-primary-foreground shadow-lg"
-                      : "text-muted-foreground hover:bg-white/5"
+                      : "text-muted-foreground hover:bg-muted/30"
                   )}
                 >
                   📌 {isMobile ? "FIXA" : "Fixa"}
@@ -281,7 +281,7 @@ export function BillFormDialog({
                     isMobile ? "text-[8px]" : "text-xs",
                     form.tipo === "Variável"
                       ? "bg-primary text-primary-foreground shadow-lg"
-                      : "text-muted-foreground hover:bg-white/5"
+                      : "text-muted-foreground hover:bg-muted/30"
                   )}
                 >
                   🔀 {isMobile ? "VAR." : "Variável"}
@@ -296,7 +296,7 @@ export function BillFormDialog({
               <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Configuração de Pagamento</Label>
               <div className="flex flex-col gap-2">
                 <div className={cn(
-                  "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm",
+                  "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm",
                   isMobile ? "h-8 px-1.5" : "h-12 px-5",
                   form.isRecorrente && "border-primary/30"
                 )}>
@@ -316,7 +316,7 @@ export function BillFormDialog({
 
                 {!isEditing && (
                   <div className={cn(
-                    "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm transition-all",
+                    "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm transition-all",
                     isMobile ? "h-8 px-1.5" : "h-12 px-5",
                     form.isParcelado && "border-primary/30 bg-primary/5"
                   )}>
@@ -418,7 +418,7 @@ export function BillFormDialog({
                 value={form.outroCategoria || ""}
                 onChange={(e) => onFormChange({ ...form, outroCategoria: e.target.value })}
                 className={cn(
-                  "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                  "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                   isMobile ? "h-8 text-[10px] px-2" : "h-12 px-5"
                 )}
               />
@@ -446,7 +446,7 @@ export function BillFormDialog({
                     value={form.descricao}
                     onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
                     className={cn(
-                      "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                      "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                       isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                     )}
                   />
@@ -459,7 +459,7 @@ export function BillFormDialog({
                     value={form.observacoes}
                     onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
                     className={cn(
-                      "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                      "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                       isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                     )}
                   />
@@ -470,12 +470,12 @@ export function BillFormDialog({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
+        <div className="pt-3 md:pt-6 border-t border-border/50 flex items-center justify-end gap-2 md:gap-4">
           <Button
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted/30 transition-all cursor-pointer border border-border/50"
           >
             Cancelar
           </Button>

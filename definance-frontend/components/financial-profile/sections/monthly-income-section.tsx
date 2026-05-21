@@ -37,6 +37,19 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
     lastSavedHashesRef
   } = useOnboarding()
   const { persistStep } = useAutoSave()
+  const { toast } = useToast()
+
+  const baselineMapRef = React.useRef<Record<string, IncomeDetail>>({})
+
+  // Inicializa o baseline para cada tipo de renda individualmente
+  // Captura a primeira versão que encontrar na sessão para cada tipo
+  React.useEffect(() => {
+    incomes.forEach(inc => {
+      if (!baselineMapRef.current[inc.tipo]) {
+        baselineMapRef.current[inc.tipo] = JSON.parse(JSON.stringify(inc))
+      }
+    })
+  }, [incomes])
 
   // Sincronizar array de rendas: Garantir que cada tipo selecionado tenha um objeto de detalhe
   React.useEffect(() => {
@@ -59,7 +72,6 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
   }, [selectedIncomeTypes, setIncomes])
 
   const [isSaving, setIsSaving] = useState(false)
-  const { toast } = useToast()
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -89,12 +101,11 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
     setIsSaving(true);
     onSavingStateChange?.(true);
     try {
-      const previousIncomesRaw = lastSavedHashesRef.current[3]
-      const previousIncomes: IncomeDetail[] = previousIncomesRaw ? JSON.parse(previousIncomesRaw) : []
+      // Usamos o baseline individual por tipo para detectar o que mudou desde o último "Salvar" manual
       
       const incomesWithHistory = incomes.map(income => {
-        const prev = previousIncomes.find((p: any) => p.tipo === income.tipo)
-        
+        const prev = baselineMapRef.current[income.tipo]
+
         // Se algo fundamental mudou (valor, frequencia, diasRecebimento, diaSemana)
         const hasChanged = prev && (
           prev.valor !== income.valor || 
@@ -109,21 +120,45 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
           let validoAte = new Date().toISOString()
           
           if (newStartDateStr) {
-            const newStartDate = new Date(newStartDateStr)
-            // A configuração antiga é válida até o último dia do mês anterior ao novo início
-            const lastDayOfPrevMonth = new Date(newStartDate.getFullYear(), newStartDate.getMonth(), 0)
-            validoAte = lastDayOfPrevMonth.toISOString()
+            try {
+              const datePart = newStartDateStr.includes('T') ? newStartDateStr.split('T')[0] : newStartDateStr
+              const [y, m, d] = datePart.split('-').map(Number)
+              // A configuração antiga é válida até o último dia do mês anterior ao novo início
+              // Criamos a data ao meio-dia para evitar problemas de fuso horário na conversão
+              const lastDayOfPrevMonth = new Date(y, m - 1, 0, 12, 0, 0)
+              validoAte = lastDayOfPrevMonth.toISOString()
+            } catch (e) {
+              console.error("Erro ao processar data para histórico:", e)
+            }
+          }
+
+          const newPreviousConfig = {
+            valor: prev.valor,
+            frequencia: prev.frequencia,
+            diasRecebimento: prev.diasRecebimento,
+            diaSemana: prev.diaSemana,
+            validoAte: validoAte
+          }
+
+          // Mantém o histórico existente e adiciona a nova configuração
+          const hMin = prev.historicoConfiguracoes || []
+          const hMaj = prev.HistoricoConfiguracoes || []
+          const prevHistoryList = hMin.length > 0 ? hMin : hMaj
+          
+          // Filtramos duplicatas (mesmo valor e mesma validade) por segurança
+          const updatedHistory = [...prevHistoryList]
+          const isDuplicate = updatedHistory.some(h => h.validoAte === validoAte && h.valor === newPreviousConfig.valor)
+          
+          if (!isDuplicate) {
+            updatedHistory.push(newPreviousConfig)
           }
 
           return {
             ...income,
             configuradoEm: new Date().toISOString(),
-            configuracaoAnterior: {
-              valor: prev.valor,
-              frequencia: prev.frequencia,
-              diasRecebimento: prev.diasRecebimento,
-              validoAte: validoAte
-            }
+            configuracaoAnterior: newPreviousConfig,
+            historicoConfiguracoes: updatedHistory,
+            HistoricoConfiguracoes: updatedHistory
           }
         }
         return income
@@ -131,10 +166,20 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
 
       const success = await persistStep(3, incomesWithHistory);
       if (success) {
+        await persistStep(2, selectedIncomeTypes);
         await apiClient("/api/onboarding/sync-incomes", { method: "POST" });
-        setIncomes(incomesWithHistory); // Atualiza o estado local com a história para evitar "perder" na próxima comparação
+        
+        // CRITICAL: Atualiza o baseline após um salvamento manual bem-sucedido
+        // Limpamos o mapa para que o useEffect o preencha com o novo estado estável
+        baselineMapRef.current = {}
+        incomesWithHistory.forEach(inc => {
+           baselineMapRef.current[inc.tipo] = JSON.parse(JSON.stringify(inc))
+        })
+
+        setIncomes(incomesWithHistory); 
+        
         window.dispatchEvent(new CustomEvent("finance-update"));
-        toast({ title: "Rendas salvas com sucesso!", variant: "default" });
+        toast({ title: "Perfil financeiro atualizado", description: "Suas rendas e histórico foram sincronizados." });
       } else {
         toast({ title: "Erro ao salvar", description: "Tente novamente mais tarde.", variant: "destructive" });
       }
@@ -204,11 +249,11 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
 
           return (
             <div key={typeInfo.value} className={cn(
-               "rounded-2xl border bg-white/[0.02] overflow-hidden transition-all duration-300 relative",
-               hasError ? "border-destructive/20" : "border-white/5 hover:border-primary/20"
+               "rounded-2xl border bg-background/50 overflow-hidden transition-all duration-300 relative",
+               hasError ? "border-destructive/20" : "border-border/60 hover:border-primary/20"
             )}>
               {/* Mini Header dentro do Card */}
-              <div className="bg-white/[0.02] px-3 py-2.5 border-b border-white/5 flex items-center justify-between">
+              <div className="bg-muted/20 px-3 py-2.5 border-b border-border/60 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                    <typeInfo.icon className="h-3.5 w-3.5 text-primary" />
                    <span className="text-[10px] font-medium text-card-foreground uppercase tracking-wide">{typeInfo.label}</span>
@@ -238,7 +283,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                    {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && inc.frequencia !== IncomeFrequency.VARIAVEL && (
                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/10 w-fit animate-in fade-in slide-in-from-left-2">
                        <span className="text-[10px] font-bold text-primary uppercase">Total Mensal:</span>
-                       <span className="text-xs font-black text-primary">
+                       <span className="text-xs font-bold text-primary">
                          {formatCurrency(inc.frequencia === IncomeFrequency.SEMANAL ? inc.valor * 4 : inc.valor * 2)}
                        </span>
                      </div>
@@ -260,7 +305,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                                 "text-center text-[9px] py-1.5 px-1 rounded-lg border transition-all duration-200",
                                 isSelected
                                   ? "bg-primary/70 text-primary-foreground border-primary shadow-sm"
-                                  : "bg-white/[0.03] border-transparent text-muted-foreground/70 hover:bg-white/[0.06] cursor-pointer"
+                                  : "bg-muted/30 border-transparent text-muted-foreground/70 hover:bg-muted/50 cursor-pointer"
                              )}
                           >
                              {freq.label}
@@ -432,13 +477,13 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
         })}
       </div>
 
-      <div className="flex items-center justify-end pt-4 border-t border-white/5 mt-3">
+      <div className="flex items-center justify-end pt-4 border-t border-border/50 mt-3">
         <Button 
           type="button" 
           size="sm"
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary text-xs cursor-pointer"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary text-xs cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Informações"}
         </Button>

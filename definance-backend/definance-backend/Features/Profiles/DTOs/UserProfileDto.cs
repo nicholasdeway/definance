@@ -12,6 +12,7 @@ namespace definance_backend.Features.Auth.DTOs
         public string? PictureUrl { get; set; }
         public string AuthProvider { get; set; } = "Local";
         public bool HasCompletedOnboarding { get; set; }
+        public bool IsWhatsAppConnected { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

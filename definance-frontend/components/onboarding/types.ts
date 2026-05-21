@@ -7,6 +7,14 @@ export enum IncomeFrequency {
   SEMANAL = "semanal"
 }
 
+export interface PreviousConfig {
+  valor: number
+  frequencia: IncomeFrequency
+  diasRecebimento?: string
+  diaSemana?: string
+  validoAte: string
+}
+
 export interface IncomeDetail {
   id: string
   tipo: string
@@ -15,13 +23,9 @@ export interface IncomeDetail {
   diasRecebimento?: string
   diaSemana?: string
   configuradoEm?: string
-  configuracaoAnterior?: {
-    valor: number
-    frequencia: IncomeFrequency
-    diasRecebimento?: string
-    diaSemana?: string
-    validoAte: string
-  }
+  configuracaoAnterior?: PreviousConfig
+  historicoConfiguracoes?: PreviousConfig[]
+  HistoricoConfiguracoes?: PreviousConfig[]
 }
 
 export interface Debt {

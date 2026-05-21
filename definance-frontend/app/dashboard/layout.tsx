@@ -2,7 +2,7 @@
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { MobileDashboardNav } from "@/components/dashboard/mobile-nav"
+import { MobileNav } from "@/components/dashboard/mobile-nav"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AuthProvider, useAuth } from "@/lib/auth-provider"
 import { CategoryProvider } from "@/lib/category-context"
@@ -11,16 +11,21 @@ import { useEffect } from "react"
 import { Spinner } from "@/components/ui/spinner"
 
 import { GettingStarted } from "@/components/dashboard/getting-started"
+import { QuickExpenseButton } from "@/components/dashboard/quick-expense-button"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login")
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.push("/login")
+      } else if (!user?.isWhatsAppConnected) {
+        router.push("/onboarding")
+      }
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isLoading, isAuthenticated, user, router])
 
   if (isLoading) {
     return (
@@ -33,7 +38,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user?.isWhatsAppConnected) {
     return null
   }
 
@@ -42,13 +47,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <DashboardSidebar />
       <SidebarInset>
         <DashboardHeader />
-        <MobileDashboardNav />
-        <main className="flex-1 p-4 md:p-6 pb-2">
+        <MobileNav />
+        <main className="flex-1 p-4 md:p-6 pb-32 md:pb-8 relative">
           <CategoryProvider>
             {children}
+            <GettingStarted />
+            <QuickExpenseButton />
           </CategoryProvider>
         </main>
-        <GettingStarted />
         <footer className="py-6 flex justify-center mt-auto">
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50 text-center px-4">
             Plataforma Definance - Gestão Financeira &copy; 2026

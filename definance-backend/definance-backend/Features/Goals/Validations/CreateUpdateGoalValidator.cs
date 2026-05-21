@@ -16,15 +16,18 @@ namespace definance_backend.Features.Goals.Validations
 
             RuleFor(x => x.StartDate)
                 .NotEmpty().WithMessage("A data de início é obrigatória.")
-                .GreaterThanOrEqualTo(DateTime.UtcNow.Date).WithMessage("A data de início não pode ser retroativa.");
+                .GreaterThanOrEqualTo(DateTime.UtcNow.Date).WithMessage("A data de início não pode ser retroativa.")
+                .When(x => x.StartDate.HasValue || x.EndDate.HasValue || x.MonthlyReserve > 0);
 
             RuleFor(x => x.EndDate)
                 .NotEmpty().WithMessage("A data de término é obrigatória.")
                 .GreaterThan(x => x.StartDate).WithMessage("A data de término deve ser posterior à data de início.")
-                .GreaterThanOrEqualTo(DateTime.UtcNow.Date).WithMessage("A data de término não pode ser retroativa.");
+                .GreaterThanOrEqualTo(DateTime.UtcNow.Date).WithMessage("A data de término não pode ser retroativa.")
+                .When(x => x.StartDate.HasValue || x.EndDate.HasValue || x.MonthlyReserve > 0);
 
             RuleFor(x => x.ReserveDay)
-                .InclusiveBetween(1, 31).WithMessage("O dia de reserva deve ser entre 1 e 31.");
+                .InclusiveBetween(1, 31).WithMessage("O dia de reserva deve ser entre 1 e 31.")
+                .When(x => x.MonthlyReserve > 0);
         }
     }
 }

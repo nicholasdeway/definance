@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, Star, Loader2, Target, Download } from "lucide-react"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { DeleteGoalDialog } from "@/components/dashboard/goals/delete-goal-dialog"
 import { goalsApi, Goal, CreateUpdateGoalDto } from "@/lib/goals"
 import { useToast } from "@/components/ui/use-toast"
 import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/period-filter"
@@ -15,6 +15,7 @@ import { GoalCard } from "@/components/dashboard/goals/goal-card"
 import { GoalFormDialog } from "@/components/dashboard/goals/goal-form-dialog"
 import { DepositDialog } from "@/components/dashboard/goals/deposit-dialog"
 import { GoalsSummary } from "@/components/dashboard/goals/goals-summary"
+import { GoalHistoryDialog } from "@/components/dashboard/goals/goal-history-dialog"
 
 export default function MetasPage() {
   const [metas, setMetas] = useState<Goal[]>([])
@@ -28,6 +29,7 @@ export default function MetasPage() {
   const [modalForm, setModalForm] = useState<{ open: boolean; meta: Goal | null }>({ open: false, meta: null })
   const [modalDeposito, setModalDeposito] = useState<{ open: boolean; meta: Goal | null }>({ open: false, meta: null })
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: Goal | null }>({ open: false, item: null })
+  const [modalHistory, setModalHistory] = useState<{ open: boolean; meta: Goal | null }>({ open: false, meta: null })
 
   // Fetch metas
   const loadMetas = async () => {
@@ -102,11 +104,11 @@ export default function MetasPage() {
     }
   }
 
-  async function handleDeleteMeta() {
+  async function handleDeleteMeta(deleteTransactions: boolean) {
     if (!deleteDialog.item) return
     try {
       setSaving(true)
-      await goalsApi.deleteGoal(deleteDialog.item.id)
+      await goalsApi.deleteGoal(deleteDialog.item.id, deleteTransactions)
       toast({ title: "Meta excluída." })
       setDeleteDialog({ open: false, item: null })
       loadMetas()
@@ -137,7 +139,7 @@ export default function MetasPage() {
 
         <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto h-9 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer w-full sm:w-auto h-9 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20"
             onClick={() => setModalForm({ open: true, meta: null })}
             size="sm"
           >
@@ -180,14 +182,15 @@ export default function MetasPage() {
           )}
 
           {/* Grid de metas */}
-          <div className="grid gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {metas.map((meta) => (
+          <div className="grid gap-3 sm:gap-6 grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
+             {metas.map((meta) => (
               <GoalCard 
                 key={meta.id} 
                 meta={meta} 
                 onEdit={(m) => setModalForm({ open: true, meta: m })}
                 onDelete={(m) => setDeleteDialog({ open: true, item: m })}
                 onDeposit={(m) => setModalDeposito({ open: true, meta: m })}
+                onViewHistory={(m) => setModalHistory({ open: true, meta: m })}
               />
             ))}
 
@@ -233,7 +236,7 @@ export default function MetasPage() {
         saving={saving}
       />
 
-      <ConfirmDeleteDialog
+      <DeleteGoalDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
         onConfirm={handleDeleteMeta}
@@ -263,6 +266,12 @@ export default function MetasPage() {
           { header: "Concluída", key: "concluida" },
         ]}
         fileName={`metas-${period.month}-${period.year}`}
+      />
+
+      <GoalHistoryDialog 
+        open={modalHistory.open}
+        onOpenChange={(open) => setModalHistory({ ...modalHistory, open })}
+        meta={modalHistory.meta}
       />
     </div>
   )

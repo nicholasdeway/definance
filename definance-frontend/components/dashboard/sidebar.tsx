@@ -73,7 +73,13 @@ export function DashboardSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="flex h-16 justify-center pt-0 pb-0">
         <Link href="/dashboard" className="flex items-center gap-3 px-2">
-          <Logo size={isExpanded ? 26 : 22} withCard variant="muted" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
+            <img 
+              src="/logo1.png" 
+              alt="Logo" 
+              className="h-6 w-auto" 
+            />
+          </div>
           <span className="truncate text-lg md:group-data-[state=expanded]:text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             Definance
           </span>

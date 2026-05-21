@@ -9,6 +9,7 @@ namespace definance_backend.Features.Goals.Services
         Task<GoalDto> CreateGoalAsync(Guid userId, CreateUpdateGoalDto dto);
         Task<GoalDto> UpdateGoalAsync(Guid userId, Guid goalId, CreateUpdateGoalDto dto);
         Task<GoalDto> DepositAsync(Guid userId, Guid goalId, DepositGoalDto dto);
-        Task DeleteGoalAsync(Guid userId, Guid goalId);
+        Task DeleteGoalAsync(Guid userId, Guid goalId, bool deleteTransactions);
+        Task<IEnumerable<GoalHistoryDto>> GetGoalHistoryAsync(Guid userId, Guid goalId);
     }
 }

@@ -7,11 +7,10 @@ import {
   Circle, 
   ListChecks, 
   ChevronRight, 
-  Settings,
-  Sparkles
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGettingStarted } from "@/hooks/use-getting-started"
+import { useSidebar } from "@/components/ui/sidebar"
 import {
   Popover,
   PopoverContent,
@@ -23,7 +22,18 @@ import Link from "next/link"
 
 export function GettingStarted() {
   const { status, isLoading } = useGettingStarted()
+  const { state } = useSidebar()
   const [isOpen, setIsOpen] = React.useState(false)
+  const [isDesktop, setIsDesktop] = React.useState(false)
+
+  const isExpanded = state === "expanded"
+
+  React.useEffect(() => {
+    const checkSize = () => setIsDesktop(window.innerWidth >= 768)
+    checkSize()
+    window.addEventListener("resize", checkSize)
+    return () => window.removeEventListener("resize", checkSize)
+  }, [])
 
   if (isLoading || !status || status.progressPercentage === 100) return null
 
@@ -50,10 +60,22 @@ export function GettingStarted() {
         <motion.div 
           key="getting-started-widget"
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1, 
+            y: 0,
+            // Apenas move para a direita no Desktop se o sidebar estiver aberto
+            left: isDesktop 
+              ? (isExpanded ? "280px" : "80px") 
+              : "24px" // 24px = left-6 no mobile
+          }}
           exit={{ opacity: 0, scale: 0.5, y: 20 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="fixed bottom-6 left-6 z-50"
+          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+          className={cn(
+            "fixed z-50",
+            "bottom-[110px]", // Mobile
+            "md:bottom-6" // Desktop
+          )}
         >
           <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
@@ -61,7 +83,7 @@ export function GettingStarted() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  "relative flex items-center justify-center h-14 w-14 rounded-full bg-card border border-border shadow-2xl transition-all duration-300",
+                  "relative flex items-center justify-center h-12 w-12 md:h-16 md:w-16 rounded-full bg-card border border-border shadow-2xl transition-all duration-300",
                   status.progressPercentage === 100 ? "border-primary/50" : "border-border"
                 )}
               >
@@ -92,11 +114,11 @@ export function GettingStarted() {
 
                 {/* Icon */}
                 <div className="relative z-10 flex items-center justify-center">
-                  <ListChecks className="h-6 w-6 text-foreground" />
+                  <ListChecks className="h-5 w-5 md:h-7 md:w-7 text-foreground" />
                 </div>
 
                 {/* Notification Dot */}
-                <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-card" />
+                <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-primary border-2 border-card" />
               </motion.button>
             </PopoverTrigger>
             
@@ -109,7 +131,7 @@ export function GettingStarted() {
               <div className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <h3 className="font-bold text-base sm:text-lg flex items-center gap-2">
+                    <h3 className="font-bold text-base sm:text-lg flex items-center gap-2 text-foreground">
                       Primeiros Passos
                     </h3>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
@@ -120,7 +142,7 @@ export function GettingStarted() {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setIsOpen(false)}
-                    className="h-8 px-3 rounded-full text-primary hover:bg-primary/10 text-[10px] sm:text-xs font-bold uppercase tracking-wider shrink-0"
+                    className="h-8 px-3 rounded-full text-primary hover:bg-primary/10 text-[10px] sm:text-xs font-bold uppercase tracking-wider shrink-0 cursor-pointer"
                   >
                     Ocultar
                   </Button>
@@ -160,7 +182,7 @@ export function GettingStarted() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
-                          "text-xs sm:text-sm font-semibold leading-tight",
+                          "text-xs sm:text-sm font-semibold leading-tight text-foreground",
                           step.completed && "line-through text-muted-foreground"
                         )}>
                           {step.title}

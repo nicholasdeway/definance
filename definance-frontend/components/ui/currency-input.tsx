@@ -70,8 +70,8 @@ export function CurrencyInput({
     <div className="relative group/input">
       <div className={cn(
         "pointer-events-none absolute left-0 top-0 bottom-0 flex items-center justify-center transition-colors",
-        "w-9 gap-1.5 text-[10px]",
-        "md:w-10 md:gap-2 md:text-[11px]"
+        "w-12 gap-1 text-[10px]",
+        "md:w-13 md:gap-1.5 md:text-[11px]"
       )}>
         <span className="font-bold text-muted-foreground/40 group-focus-within/input:text-primary/60">{prefix}</span>
         <span className="h-3 w-[1px] bg-white/10" />
@@ -83,7 +83,7 @@ export function CurrencyInput({
         value={displayValue}
         onChange={handleChange}
         className={cn(
-          "pl-12 md:pl-14 font-mono font-medium focus:ring-1 focus:ring-primary/20",
+          "pl-10 md:pl-11 font-mono font-medium focus:ring-1 focus:ring-primary/20",
           className
         )}
         placeholder="0,00"

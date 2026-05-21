@@ -72,7 +72,7 @@ export function ConfirmPayDialog({
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-xl h-12 transition-all px-5",
+                    "w-full justify-start text-left font-normal bg-muted/20 border-border/50 rounded-xl h-12 transition-all px-5",
                     !selectedDate && "text-muted-foreground"
                   )}
                 >
@@ -82,7 +82,7 @@ export function ConfirmPayDialog({
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+              <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-[#0a0a0a]" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate ? parseISO(selectedDate) : undefined}

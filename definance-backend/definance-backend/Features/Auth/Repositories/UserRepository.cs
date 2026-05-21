@@ -42,6 +42,7 @@ namespace definance_backend.Features.Auth.Repositories
                     lockout_end             AS ""LockoutEnd"",
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    is_whatsapp_connected   AS ""IsWhatsAppConnected"",
                     onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE LOWER(email) = LOWER(@Email);
@@ -76,6 +77,7 @@ namespace definance_backend.Features.Auth.Repositories
                     lockout_end             AS ""LockoutEnd"",
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    is_whatsapp_connected   AS ""IsWhatsAppConnected"",
                     onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE phone = @Phone
@@ -111,6 +113,7 @@ namespace definance_backend.Features.Auth.Repositories
                     last_login_at,
                     is_active,
                     has_completed_onboarding,
+                    is_whatsapp_connected,
                     onboarding_data
                 )
                 VALUES (
@@ -132,6 +135,7 @@ namespace definance_backend.Features.Auth.Repositories
                     @LastLoginAt,
                     TRUE,
                     @HasCompletedOnboarding,
+                    @IsWhatsAppConnected,
                     @OnboardingData::jsonb
                 )
                 RETURNING
@@ -160,6 +164,7 @@ namespace definance_backend.Features.Auth.Repositories
                 user.LockoutEnd,
                 user.LastLoginAt,
                 user.HasCompletedOnboarding,
+                user.IsWhatsAppConnected,
                 user.OnboardingData
             });
 
@@ -230,6 +235,7 @@ namespace definance_backend.Features.Auth.Repositories
                     lockout_end             = @LockoutEnd,
                     is_active               = @IsActive,
                     has_completed_onboarding = @HasCompletedOnboarding,
+                    is_whatsapp_connected   = @IsWhatsAppConnected,
                     onboarding_data         = @OnboardingData::jsonb,
                     updated_at              = now()
                 WHERE id = @Id;
@@ -257,6 +263,7 @@ namespace definance_backend.Features.Auth.Repositories
                 user.LockoutEnd,
                 user.IsActive,
                 user.HasCompletedOnboarding,
+                user.IsWhatsAppConnected,
                 user.OnboardingData
             });
 
@@ -288,6 +295,7 @@ namespace definance_backend.Features.Auth.Repositories
                     lockout_end             AS ""LockoutEnd"",
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
+                    is_whatsapp_connected   AS ""IsWhatsAppConnected"",
                     onboarding_data         AS ""OnboardingData""
                 FROM users
                 WHERE id = @Id

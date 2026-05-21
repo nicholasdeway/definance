@@ -22,7 +22,12 @@ namespace definance_backend.Features.Analysis.Repositories
             const string sql = @"
                 SELECT COALESCE(SUM(amount), 0)
                 FROM incomes
-                WHERE user_id = @UserId AND date::timestamp >= @StartDate AND date::timestamp <= @EndDate;
+                WHERE user_id = @UserId 
+                  AND (
+                      (date::timestamp >= @StartDate AND date::timestamp <= @EndDate)
+                      OR
+                      (is_recurring = true AND date::timestamp < @StartDate)
+                  );
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
@@ -110,10 +115,16 @@ namespace definance_backend.Features.Analysis.Repositories
                     ) AS month
                 ),
                 income_sums AS (
-                    SELECT date_trunc('month', date::timestamp) as month, sum(amount) as total
-                    FROM incomes
-                    WHERE user_id = @UserId AND date::timestamp >= @StartDate AND date::timestamp <= @EndDate
-                    GROUP BY 1
+                    SELECT 
+                        m.month,
+                        COALESCE(SUM(i.amount), 0) as total
+                    FROM months m
+                    LEFT JOIN incomes i ON i.user_id = @UserId 
+                        AND (
+                            date_trunc('month', i.date::timestamp) = m.month
+                            OR (i.is_recurring = true AND i.date::timestamp < m.month)
+                        )
+                    GROUP BY m.month
                 ),
                 expense_sums AS (
                     SELECT date_trunc('month', date::timestamp) as month, sum(amount) as total
@@ -124,11 +135,12 @@ namespace definance_backend.Features.Analysis.Repositories
                 SELECT
                     to_char(m.month, 'Mon') as Month,
                     COALESCE(i.total, 0) as Receitas,
-                    COALESCE(e.total, 0) as Despesas
+                    COALESCE(e.total, 0) as Despesas,
+                    m.month as RawDate
                 FROM months m
                 LEFT JOIN income_sums i ON m.month = i.month
                 LEFT JOIN expense_sums e ON m.month = e.month
-                ORDER BY m.month;
+                ORDER BY m.month ASC;
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
@@ -155,7 +167,12 @@ namespace definance_backend.Features.Analysis.Repositories
             const string sql = @"
                 SELECT type as Tipo, sum(amount) as Valor
                 FROM incomes
-                WHERE user_id = @UserId AND date::timestamp >= @StartDate AND date::timestamp <= @EndDate
+                WHERE user_id = @UserId 
+                  AND (
+                      (date::timestamp >= @StartDate AND date::timestamp <= @EndDate)
+                      OR
+                      (is_recurring = true AND date::timestamp < @StartDate)
+                  )
                 GROUP BY type
                 ORDER BY Valor DESC;
             ";
@@ -167,23 +184,32 @@ namespace definance_backend.Features.Analysis.Repositories
         public async Task<IEnumerable<BalanceEvolutionDto>> GetBalanceEvolutionAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
             const string sql = @"
-                WITH monthly_net AS (
+                WITH months AS (
+                    SELECT generate_series(
+                        date_trunc('month', @StartDate::timestamp),
+                        date_trunc('month', @EndDate::timestamp),
+                        '1 month'::interval
+                    ) AS month
+                ),
+                monthly_net AS (
                     SELECT
-                        date_trunc('month', date::timestamp) as month,
-                        SUM(amount) as net
-                    FROM (
-                        SELECT date, amount FROM incomes WHERE user_id = @UserId
-                        UNION ALL
-                        SELECT date, -amount FROM expenses WHERE user_id = @UserId
-                    ) combined
-                    GROUP BY 1
+                        m.month,
+                        (
+                            SELECT COALESCE(SUM(amount), 0) FROM incomes 
+                            WHERE user_id = @UserId 
+                            AND (date_trunc('month', date::timestamp) = m.month OR (is_recurring = true AND date::timestamp < m.month))
+                        ) - (
+                            SELECT COALESCE(SUM(amount), 0) FROM expenses 
+                            WHERE user_id = @UserId AND date_trunc('month', date::timestamp) = m.month
+                        ) as net
+                    FROM months m
                 )
                 SELECT
                     to_char(month, 'Mon') as Month,
-                    SUM(net) OVER (ORDER BY month) as Saldo
+                    net as Saldo,
+                    month as RawDate
                 FROM monthly_net
-                WHERE month >= date_trunc('month', @StartDate::timestamp) AND month <= @EndDate
-                ORDER BY month;
+                ORDER BY month ASC;
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);

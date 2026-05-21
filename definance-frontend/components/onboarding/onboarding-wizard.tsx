@@ -19,6 +19,7 @@ import { ValidationErrorBox } from "./components/validation-error-box"
 import { Spinner } from "@/components/ui/spinner"
 
 // Steps
+import { Step0WhatsApp } from "./steps/step-0-whatsapp"
 import { Step1Motivations } from "./steps/step-1-motivations"
 import { Step2IncomeType } from "./steps/step-2-income-type"
 import { Step3MonthlyIncome } from "./steps/step-3-monthly-income"
@@ -28,21 +29,45 @@ import { Step6Debts } from "./steps/step-6-debts"
 
 // Constants
 import { steps } from "./constants"
+import { useAuth } from "@/lib/auth-provider"
 
 function OnboardingWizardContent() {
   const { currentStep, syncStatus, stepErrors, setStepErrors, formTopRef, isLoadingRecovery } = useOnboarding()
+  const { user } = useAuth()
   
   // Initialize Hooks
   useOnboardingRecovery()
   useAutoSave()
   
-  if (isLoadingRecovery) {
+  if (isLoadingRecovery || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Spinner className="h-8 w-8 text-primary" />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
+      </div>
+    )
+  }
+
+  // Se o usuário ainda não conectou o WhatsApp, exibe apenas a Step0
+  if (!user.isWhatsAppConnected) {
+    return (
+      <div className="container flex min-h-screen flex-col items-center justify-center px-4 pt-26 pb-12">
+        <SiteHeader variant="onboarding" />
+        <Card className="w-full max-w-xl border-border/50 bg-card/50 backdrop-blur transition-all duration-700 ease-in-out overflow-hidden">
+          <CardHeader className="p-4 sm:p-6 pb-0 sm:pb-0">
+            <CardTitle className="text-lg sm:text-xl text-card-foreground font-bold">
+              Autenticação Necessária
+            </CardTitle>
+            <CardDescription className="text-[13px] sm:text-sm text-muted-foreground leading-tight">
+              Para prosseguir, vincule seu WhatsApp.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-4">
+            <Step0WhatsApp />
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -123,7 +148,7 @@ function OnboardingWizardContent() {
       </Card>
 
       <footer className="mt-8 text-center text-muted-foreground/60 text-xs">
-        <p>© 2026 Definance • Sistema de Planejamento Financeiro Inteligente</p>
+        <p>© 2026 Definance • Gestão Financeira</p>
         <p className="mt-1 italic">Seus dados estão protegidos e criptografados.</p>
       </footer>
     </div>

@@ -57,7 +57,7 @@ export function SetLimitDialog({ open, onOpenChange, category, onSave, isSaving 
               onChange={setLimit}
               placeholder="0,00"
               className={cn(
-                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all font-bold",
+                "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all font-bold",
                 isMobile ? "h-10 text-base pl-10" : "h-14 text-2xl pl-14"
               )}
             />
@@ -69,7 +69,7 @@ export function SetLimitDialog({ open, onOpenChange, category, onSave, isSaving 
           </div>
         </div>
 
-        <div className="pt-4 md:pt-6 border-t border-white/5 flex items-center justify-end gap-3 md:gap-4">
+        <div className="pt-4 md:pt-6 border-t border-border/50 flex items-center justify-end gap-3 md:gap-4">
           {category?.monthlyLimit && (
             <Button
               variant="ghost"

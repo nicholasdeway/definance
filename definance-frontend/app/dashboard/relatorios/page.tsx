@@ -31,6 +31,8 @@ interface CategoryData {
 
 interface BalanceData {
   month: string
+  receitas: number
+  despesas: number
   saldo: number
 }
 
@@ -128,103 +130,155 @@ export default function RelatoriosPage() {
       if (response) {
         response.categoryAnalysis = response.categoryAnalysis.map(c => ({ ...c, categoria: capitalize(c.categoria) }))
         
-        // 1. Buscar progresso do onboarding para incluir rendas "sincronizadas" que ainda não foram salvas no banco
+        // 1. Buscar progresso do onboarding e Contas (Bills) para projeção
         try {
-          const progressData = await apiClient<any>("/api/onboarding/progress")
+          const [progressData, billsData] = await Promise.all([
+            apiClient<any>("/api/onboarding/progress"),
+            apiClient<any[]>("/api/Bills")
+          ])
+
           if (progressData) {
             const profileIncomes: any[] = progressData.incomes || progressData.Incomes || []
-            let totalAdjustment = 0
+            const bills: any[] = billsData || []
             
-            profileIncomes.forEach(pInc => {
-              const pTipo = (pInc.tipo || pInc.Tipo || "").toLowerCase()
-              const pDias = pInc.diasRecebimento || pInc.DiasRecebimento || ""
-              const pConfigEm = pInc.configuradoEm || pInc.ConfiguradoEm
-              
-              // --- Lógica de Histórico e Projeção ---
+            // Função auxiliar para calcular a renda projetada de um tipo específico em um mês/ano específico
+            const getProjectedForMonth = (pInc: any, year: number, month: number) => {
+              const selectedMonthDate = new Date(year, month - 1, 1)
               let effectiveValor = pInc.valor || pInc.Valor || 0
-              const freq = (pInc.frequencia || pInc.Frequencia || "").toLowerCase()
+              let effectiveFreq = (pInc.frequencia || pInc.Frequencia || "").toLowerCase()
+              let effectiveDias = pInc.diasRecebimento || pInc.DiasRecebimento || ""
 
-              // Aplicar multiplicadores de frequência para o total mensal
-              if (freq === "semanal") {
-                effectiveValor *= 4
-              } else if (freq === "quinzenal") {
-                effectiveValor *= 2
-              }
-              
-              const isVariable = freq === "variavel"
-              const firstDateStr = pDias.split(',')[0]?.trim()
-              const baseDateStr = isVariable ? pConfigEm : (firstDateStr || pConfigEm)
-              const selectedMonthDate = new Date(period.year, period.month - 1, 1)
+              const hMin = pInc.historicoConfiguracoes || []
+              const hMaj = pInc.HistoricoConfiguracoes || []
+              const history = hMin.length > 0 ? hMin : hMaj
 
-              // 1. Verificar se deve usar a configuração anterior (histórico)
-              if (pInc.configuracaoAnterior && pInc.configuracaoAnterior.validoAte) {
-                const validoAte = new Date(pInc.configuracaoAnterior.validoAte)
-                const validUntilMonth = new Date(validoAte.getFullYear(), validoAte.getMonth(), 1)
-                
-                if (selectedMonthDate < validUntilMonth) {
-                  effectiveValor = pInc.configuracaoAnterior.valor
+              if (history.length > 0) {
+                const configHistorica = [...history]
+                  .sort((a: any, b: any) => new Date(a.validoAte).getTime() - new Date(b.validoAte).getTime())
+                  .find((h: any) => {
+                    const vDate = new Date(h.validoAte)
+                    const validUntilMonth = new Date(vDate.getFullYear(), vDate.getMonth(), 1)
+                    return selectedMonthDate <= validUntilMonth
+                  })
+
+                if (configHistorica) {
+                  effectiveValor = configHistorica.valor
+                  effectiveFreq = (configHistorica.frequencia || "").toLowerCase()
+                  effectiveDias = configHistorica.diasRecebimento || ""
                 }
               }
 
-              // 2. Verificar se a renda já começou neste período
+              if (effectiveFreq === "semanal") effectiveValor *= 4
+              else if (effectiveFreq === "quinzenal") effectiveValor *= 2
+
+              const firstDateStr = effectiveDias.split(',')[0]?.trim()
+              const baseDateStr = firstDateStr || pInc.configuradoEm || pInc.ConfiguradoEm
               if (baseDateStr) {
                 const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
                 const [y, m, d] = datePart.split('-').map(Number)
-                const startDate = new Date(y, m - 1, d)
-
-                if (selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
-                  effectiveValor = 0 // Ainda não começou, então o valor projetado é 0
-                }
+                if (selectedMonthDate < new Date(y, m - 1, 1)) return 0
               }
+
+              return effectiveValor
+            }
+
+            // --- AJUSTE DOS CHARTS (MonthlyComparison e BalanceEvolution) ---
+            response.monthlyComparison.forEach(mEntry => {
+               const rDate = (mEntry as any).rawDate || (mEntry as any).RawDate
+               let monthNum = 0
+               let yearNum = period.year
+
+               if (rDate) {
+                 const d = new Date(rDate)
+                 monthNum = d.getMonth() + 1
+                 yearNum = d.getFullYear()
+               } else {
+                 const monthMap: Record<string, number> = {
+                   "jan": 1, "feb": 2, "fev": 2, "mar": 3, "apr": 4, "abr": 4,
+                   "may": 5, "mai": 5, "jun": 6, "jul": 7, "aug": 8, "ago": 8,
+                   "sep": 9, "set": 9, "oct": 10, "out": 10, "nov": 11, "dec": 12, "dez": 12
+                 }
+                 monthNum = monthMap[mEntry.month.toLowerCase()] || 0
+               }
+               
+               if (monthNum > 0) {
+                 // 1. Ajustar Receitas (Onboarding)
+                 let totalProjectedIncomes = 0
+                 profileIncomes.forEach(pInc => {
+                    totalProjectedIncomes += getProjectedForMonth(pInc, yearNum, monthNum)
+                 })
+                 if (mEntry.receitas < totalProjectedIncomes) mEntry.receitas = totalProjectedIncomes
+
+                 // 2. Ajustar Despesas (Projetar Bills Recorrentes ou Pendentes)
+                 let totalProjectedBills = 0
+                 bills.forEach(bill => {
+                   const dueDate = new Date(bill.dueDate || bill.DueDate)
+                   const isRecurring = bill.isRecurring || bill.IsRecurring
+                   
+                   // Se for recorrente e começou antes ou neste mês
+                   if (isRecurring) {
+                     const startMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1)
+                     const targetMonth = new Date(yearNum, monthNum - 1, 1)
+                     if (targetMonth >= startMonth) {
+                       totalProjectedBills += (bill.amount || bill.Amount || 0)
+                     }
+                   } 
+                   // Se for fixa (não recorrente) e cair exatamente neste mês
+                   else if (dueDate.getMonth() + 1 === monthNum && dueDate.getFullYear() === yearNum) {
+                     totalProjectedBills += (bill.amount || bill.Amount || 0)
+                   }
+                 })
+                 
+                 // Se o total de contas for maior que as despesas já pagas, usamos o total de contas
+                 if (mEntry.despesas < totalProjectedBills) mEntry.despesas = totalProjectedBills
+
+                 // 3. Atualizar BalanceEvolution (Agora com Receitas e Despesas detalhadas)
+                 const bEntry = response.balanceEvolution.find(b => b.month === mEntry.month)
+                 if (bEntry) {
+                   (bEntry as any).receitas = mEntry.receitas;
+                   (bEntry as any).despesas = mEntry.despesas;
+                   bEntry.saldo = mEntry.receitas - mEntry.despesas
+                 }
+               }
+            })
+
+            // --- ORDENAÇÃO EXPLÍCITA PARA GARANTIR PASSADO -> PRESENTE ---
+            const sortByDate = (a: any, b: any) => {
+              const dateA = new Date(a.rawDate || a.RawDate || 0).getTime()
+              const dateB = new Date(b.rawDate || b.RawDate || 0).getTime()
+              return dateA - dateB
+            }
+            response.monthlyComparison.sort(sortByDate)
+            response.balanceEvolution.sort(sortByDate)
+
+            // --- AJUSTE DOS STATS (Mês Selecionado) ---
+            let totalAdjustmentStats = 0
+            profileIncomes.forEach(pInc => {
+              const projectedValue = getProjectedForMonth(pInc, period.year, period.month)
+              const pTipo = (pInc.tipo || pInc.Tipo || "").toLowerCase()
               
-              // 3. Mesclar com os dados do banco (Analysis)
               const existingIndex = response.incomeAnalysis.findIndex(i => {
                 const iTipo = i.tipo.toLowerCase()
                 const pTipoLower = pTipo.toLowerCase()
-                
-                // Match por valor bruto (ex: "clt" === "clt") 
-                // OU por label (ex: "clt / salário" === "clt / salário")
                 return iTipo === pTipoLower || 
-                       (incomeTypes.find(t => t.value === pTipoLower)?.label.toLowerCase() === iTipo) ||
-                       (incomeTypes.find(t => t.label.toLowerCase() === iTipo)?.value === pTipoLower)
+                       (incomeTypes.find(t => t.value === pTipoLower)?.label.toLowerCase() === iTipo)
               })
-              
+
               if (existingIndex !== -1) {
-                // Já existe no banco: ajustamos o valor para bater com o Perfil (nossa fonte de verdade)
                 const dbValor = response.incomeAnalysis[existingIndex].valor
-                const diff = effectiveValor - dbValor
-                
-                response.incomeAnalysis[existingIndex].valor = effectiveValor
-                response.totalReceitas += diff
-                response.saldoFinal += diff
-                totalAdjustment += diff
-              } else if (effectiveValor > 0) {
-                // Não existe no banco: adicionamos como novo
-                response.incomeAnalysis.push({
-                  tipo: pTipo,
-                  valor: effectiveValor
-                })
-                response.totalReceitas += effectiveValor
-                response.saldoFinal += effectiveValor
-                totalAdjustment += effectiveValor
+                if (dbValor < projectedValue) {
+                  const diff = projectedValue - dbValor
+                  response.incomeAnalysis[existingIndex].valor = projectedValue
+                  totalAdjustmentStats += diff
+                }
+              } else if (projectedValue > 0) {
+                response.incomeAnalysis.push({ tipo: pTipo, valor: projectedValue })
+                totalAdjustmentStats += projectedValue
               }
             })
 
-            // Atualizar o gráfico de comparação mensal (Receitas vs Despesas)
-            if (totalAdjustment !== 0) {
-              const currentMonthStr = new Date(period.year, period.month - 1, 1).toLocaleString('en-US', { month: 'short' }).toLowerCase()
-              const monthEntry = response.monthlyComparison.find(m => m.month.toLowerCase() === currentMonthStr)
-              
-              if (monthEntry) {
-                monthEntry.receitas += totalAdjustment
-              } else {
-                response.monthlyComparison.push({
-                  month: currentMonthStr.charAt(0).toUpperCase() + currentMonthStr.slice(1),
-                  receitas: totalAdjustment,
-                  despesas: 0
-                })
-              }
-            }
+            response.totalReceitas = response.incomeAnalysis.reduce((sum, i) => sum + i.valor, 0)
+            response.saldoFinal = response.totalReceitas - response.totalDespesas
           }
         } catch (e) {
           console.error("Erro ao sincronizar rendas do perfil na análise:", e)
@@ -303,26 +357,32 @@ export default function RelatoriosPage() {
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <MonthlyComparisonChart 
-              data={data.monthlyComparison}
-              discreetMode={discreetMode}
-              cursorFill={cursorFill}
-              formatMonth={formatMonth}
-            />
+            <div className="min-w-0">
+              <MonthlyComparisonChart 
+                data={data.monthlyComparison}
+                discreetMode={discreetMode}
+                cursorFill={cursorFill}
+                formatMonth={formatMonth}
+              />
+            </div>
 
-            <CategoryAnalysisChart 
-              data={data.categoryAnalysis}
-              discreetMode={discreetMode}
-              cursorFill={cursorFill}
-            />
+            <div className="min-w-0">
+              <CategoryAnalysisChart 
+                data={data.categoryAnalysis}
+                discreetMode={discreetMode}
+                cursorFill={cursorFill}
+              />
+            </div>
           </div>
 
-          <BalanceEvolutionChart 
-            data={data.balanceEvolution}
-            discreetMode={discreetMode}
-            isDark={isDark}
-            formatMonth={formatMonth}
-          />
+          <div className="min-w-0">
+            <BalanceEvolutionChart 
+              data={data.balanceEvolution}
+              discreetMode={discreetMode}
+              isDark={isDark}
+              formatMonth={formatMonth}
+            />
+          </div>
 
           <CompositionCharts 
             incomeAnalysis={data.incomeAnalysis}

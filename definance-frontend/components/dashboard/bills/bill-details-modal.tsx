@@ -65,7 +65,7 @@ export function BillDetailsModal({
     >
       <div className="space-y-4 md:space-y-8 pt-6 sm:pt-0">
         {/* Header de Valor e Status */}
-        <div className="flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl md:rounded-3xl bg-muted/20 border border-white/5 relative overflow-hidden mt-6 md:mt-0">
+        <div className="flex flex-col items-center justify-center p-4 md:p-6 rounded-2xl md:rounded-3xl bg-muted/20 border border-border/50 relative overflow-hidden mt-6 md:mt-0">
            <div className={cn(
              "absolute top-0 right-0 p-4 opacity-10",
              isPaid ? "text-primary" : isOverdue ? "text-destructive" : "text-yellow-500"
@@ -111,7 +111,7 @@ export function BillDetailsModal({
 
         {/* Informações Grid */}
         <div className="grid grid-cols-2 gap-3 md:gap-6">
-          <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-white/5 space-y-0.5 md:space-y-1">
+          <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-border/50 space-y-0.5 md:space-y-1">
             <div className="flex items-center gap-2 text-muted-foreground mb-0.5 md:mb-1">
               <Calendar className="h-3 md:h-3.5 w-3 md:w-3.5" />
                <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">Vencimento</span>
@@ -124,7 +124,7 @@ export function BillDetailsModal({
             </p>
           </div>
 
-          <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-white/5 space-y-0.5 md:space-y-1">
+          <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-border/50 space-y-0.5 md:space-y-1">
             <div className="flex items-center gap-2 text-muted-foreground mb-0.5 md:mb-1">
               <Tag className="h-3 md:h-3.5 w-3 md:w-3.5" />
               <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">Categoria</span>
@@ -133,7 +133,7 @@ export function BillDetailsModal({
           </div>
         </div>
 
-        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-white/5 space-y-0.5 md:space-y-1 w-full">
+        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/10 border border-border/50 space-y-0.5 md:space-y-1 w-full">
           <div className="flex items-center gap-2 text-muted-foreground mb-0.5 md:mb-1">
             <Info className="h-3 md:h-3.5 w-3 md:w-3.5" />
             <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider">Status e Recorrência</span>
@@ -146,7 +146,7 @@ export function BillDetailsModal({
         </div>
 
         {/* Ações */}
-        <div className="pt-4 md:pt-6 border-t border-white/5 flex items-center gap-2 md:gap-3">
+        <div className="pt-4 md:pt-6 border-t border-border/50 flex items-center gap-2 md:gap-3">
           <Button
             variant="ghost"
             className="flex-1 h-10 md:h-12 rounded-xl md:rounded-2xl font-bold text-destructive hover:bg-destructive/10 hover:text-destructive border border-destructive/10 text-xs md:text-sm"

@@ -71,7 +71,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
               onChange={(e) => setIdentifier(e.target.value)}
               required
               disabled={isLoading}
-              className="bg-secondary/50 border-border h-12 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 focus:ring-emerald-500/20 text-foreground rounded-xl"
             />
           </div>
         </div>
@@ -96,7 +96,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              className="bg-secondary/50 border-border h-12 pr-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 pr-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
             />
             <button
               type="button"
@@ -129,7 +129,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
 
       <Button 
         variant="outline" 
-        className="h-12 w-full bg-secondary/20 border-border text-foreground hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer" 
+        className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer" 
         onClick={handleGoogleLogin}
         disabled={isLoading}
       >
