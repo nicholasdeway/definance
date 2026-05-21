@@ -498,7 +498,7 @@ export default function ContasPage() {
 
         <div className="flex flex-wrap items-center gap-4 w-full">
           <Button
-            className="bg-primary/70 text-primary-foreground hover:bg-primary cursor-pointer w-full sm:w-auto h-9 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary cursor-pointer w-full sm:w-auto h-9 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20"
             onClick={openAddDialog}
             size="sm"
           >

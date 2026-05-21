@@ -10,6 +10,7 @@ using definance_backend.Domain.Entities;
 using definance_backend.Features.Incomes.Repositories;
 using definance_backend.Features.Categories.Repositories;
 using definance_backend.Features.Expenses.Repositories;
+using definance_backend.Features.Shared.Services;
 
 namespace definance_backend.Features.Onboarding.Services
 {
@@ -20,23 +21,34 @@ namespace definance_backend.Features.Onboarding.Services
         private readonly IIncomeRepository _incomeRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IExpenseRepository _expenseRepository;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        private static readonly HashSet<string> BaseIncomeTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "salário", "freelance", "investimento", "aluguel", "pensão", "outros",
+            "clt", "pj", "autonomo", "freelancer", "mesada"
+        };
 
         public OnboardingService(
             IUserRepository userRepository, 
             IBillRepository billRepository, 
             IIncomeRepository incomeRepository,
             ICategoryRepository categoryRepository,
-            IExpenseRepository expenseRepository)
+            IExpenseRepository expenseRepository,
+            IDateTimeProvider dateTimeProvider)
         {
             _userRepository = userRepository;
             _billRepository = billRepository;
             _incomeRepository = incomeRepository;
             _categoryRepository = categoryRepository;
             _expenseRepository = expenseRepository;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task CompleteOnboardingAsync(Guid userId, OnboardingSubmissionDto dto)
         {
+            if (dto == null) throw new ArgumentNullException(nameof(dto), "Os dados de onboarding não podem ser nulos.");
+
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new ApplicationException("Usuário não encontrado.");
@@ -51,28 +63,16 @@ namespace definance_backend.Features.Onboarding.Services
             user.OnboardingData = jsonData;
             user.HasCompletedOnboarding = true;
             user.UpdatedAt = DateTime.UtcNow;
-
             await _userRepository.UpdateAsync(user);
 
-            // Sincronização única e otimizada
-            await SyncAllEntitiesAsync(userId);
+            // Sincronização única e otimizada - Passamos o DTO diretamente para evitar Race Condition e IO desnecessário
+            await SyncAllEntitiesAsync(userId, dto);
         }
 
-        private async Task SyncAllEntitiesAsync(Guid userId)
+        private async Task SyncAllEntitiesAsync(Guid userId, OnboardingSubmissionDto dto)
         {
             try 
             {
-                var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null || string.IsNullOrEmpty(user.OnboardingData)) return;
-
-                var options = new JsonSerializerOptions 
-                { 
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
-                };
-                var dto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
-                if (dto == null) return;
-
                 // Busca todas as entradas existentes UMA VEZ para uso nos métodos otimizados
                 var existingIncomes = (await _incomeRepository.GetByUserIdAsync(userId)).ToList();
                 var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
@@ -170,23 +170,24 @@ namespace definance_backend.Features.Onboarding.Services
             }
         }
 
+        private static readonly Dictionary<string, string> ExpenseLabels = new()
+        {
+            { "aluguel", "Aluguel" },
+            { "luz", "Energia" },
+            { "agua", "Água" },
+            { "internet", "Internet" },
+            { "celular", "Celular" },
+            { "streaming", "Streaming" },
+            { "academia", "Academia" },
+            { "transporte", "Transporte" },
+            { "alimentacao", "Alimentação" },
+            { "saude", "Saúde" },
+            { "educacao", "Educação" }
+        };
+
         private string GetExpenseLabel(string key)
         {
-            return key switch
-            {
-                "aluguel" => "Aluguel",
-                "luz" => "Energia",
-                "agua" => "Água",
-                "internet" => "Internet",
-                "celular" => "Celular",
-                "streaming" => "Streaming",
-                "academia" => "Academia",
-                "transporte" => "Transporte",
-                "alimentacao" => "Alimentação",
-                "saude" => "Saúde",
-                "educacao" => "Educação",
-                _ => key
-            };
+            return ExpenseLabels.TryGetValue(key.ToLower(), out var label) ? label : key;
         }
 
         public async Task SaveStepProgressAsync(Guid userId, int stepNumber, System.Text.Json.JsonElement data)
@@ -226,9 +227,9 @@ namespace definance_backend.Features.Onboarding.Services
                     var step4Data = JsonSerializer.Deserialize<OnboardingSubmissionDto>(jsonData, options);
                     if (step4Data != null)
                     {
-                        currentData.SelectedExpenses = step4Data.SelectedExpenses;
-                        currentData.CustomExpenses = step4Data.CustomExpenses;
-                        currentData.BillLoans = step4Data.BillLoans;
+                        if (step4Data.SelectedExpenses != null) currentData.SelectedExpenses = step4Data.SelectedExpenses;
+                        if (step4Data.CustomExpenses != null) currentData.CustomExpenses = step4Data.CustomExpenses;
+                        if (step4Data.BillLoans != null) currentData.BillLoans = step4Data.BillLoans;
                     }
                     break;
                 case 5:
@@ -313,16 +314,29 @@ namespace definance_backend.Features.Onboarding.Services
             await SyncDebtsOptimizedAsync(userId, dto, existingBills);
         }
 
+        private DateTime NormalizeDate(DateTime date)
+        {
+            return _dateTimeProvider.NormalizeToAppDate(date);
+        }
+
         private async Task SyncIncomesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Income> existingIncomes)
         {
             if (dto.Incomes == null) return;
             
-            var baseTypes = new[] { "clt", "pj", "autonomo", "freelancer", "mesada" };
-            
-            var toDelete = existingIncomes.Where(i => baseTypes.Contains(i.Type.ToLower())).Select(i => i.Id).ToList();
-            if (toDelete.Any())
+            var now = _dateTimeProvider.GetCurrentAppDate();
+            // Início e fim do mês para deleção segura (apenas do mês que estamos sincronizando)
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0); 
+            var currentMonthEnd = currentMonthStart.AddMonths(1).AddTicks(-1);
+
+            // 1. Identificar e deletar rendas sincronizadas APENAS do mês atual para evitar duplicidade
+            var syncedIncomesInCurrentMonth = existingIncomes
+                .Where(i => i.Date >= currentMonthStart && i.Date <= currentMonthEnd && BaseIncomeTypes.Contains(i.Type))
+                .Select(i => i.Id)
+                .ToList();
+
+            if (syncedIncomesInCurrentMonth.Any())
             {
-                await _incomeRepository.DeleteBatchAsync(toDelete);
+                await _incomeRepository.DeleteBatchAsync(syncedIncomesInCurrentMonth);
             }
 
             var newIncomes = new List<Income>();
@@ -330,20 +344,67 @@ namespace definance_backend.Features.Onboarding.Services
             {
                 if (inc.Valor <= 0) continue;
 
-                var dates = (inc.DiasRecebimento ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
-                var freq = inc.Frequencia.ToLower();
+                // --- Lógica de Histórico ---
+                // Se o usuário configurou uma nova renda mas o mês atual ainda deve usar a configuração anterior
+                decimal valorEfetivo = inc.Valor;
+                string freqEfetiva = (inc.Frequencia ?? "fixo_mensal").ToLower();
+                string diasEfetivos = inc.DiasRecebimento ?? "";
+                string? diaSemanaEfetivo = inc.DiaSemana;
+
+                // Verificar no histórico (do mais antigo para o mais recente)
+                // Pegamos a primeira configuração cujo mês de validade seja igual ou posterior ao mês atual
+                var configHistorica = inc.HistoricoConfiguracoes?
+                    .Where(h => !string.IsNullOrEmpty(h.ValidoAte))
+                    .OrderBy(h => DateTime.TryParse(h.ValidoAte, out var d) ? d : DateTime.MaxValue)
+                    .FirstOrDefault(h => 
+                    {
+                        if (DateTime.TryParse(h.ValidoAte, out var d))
+                        {
+                            // Comparamos apenas mês e ano para evitar problemas de fuso horário/dia
+                            var syncMonth = new DateTime(now.Year, now.Month, 1);
+                            var validityMonth = new DateTime(d.Year, d.Month, 1);
+                            return syncMonth <= validityMonth;
+                        }
+                        return false;
+                    });
+
+                if (configHistorica != null)
+                {
+                    valorEfetivo = configHistorica.Valor;
+                    freqEfetiva = configHistorica.Frequencia.ToLower();
+                    diasEfetivos = configHistorica.DiasRecebimento ?? "";
+                    diaSemanaEfetivo = configHistorica.DiaSemana;
+                }
+                else if (inc.ConfiguracaoAnterior != null && !string.IsNullOrEmpty(inc.ConfiguracaoAnterior.ValidoAte))
+                {
+                    // Fallback para campo legado se não houver lista ou se for dado antigo
+                    if (DateTime.TryParse(inc.ConfiguracaoAnterior.ValidoAte, out var d))
+                    {
+                        var currentMonth = new DateTime(now.Year, now.Month, 1);
+                        var validUntilMonth = new DateTime(d.Year, d.Month, 1);
+                        if (currentMonth <= validUntilMonth)
+                        {
+                            valorEfetivo = inc.ConfiguracaoAnterior.Valor;
+                            freqEfetiva = inc.ConfiguracaoAnterior.Frequencia.ToLower();
+                            diasEfetivos = inc.ConfiguracaoAnterior.DiasRecebimento ?? "";
+                            diaSemanaEfetivo = inc.ConfiguracaoAnterior.DiaSemana;
+                        }
+                    }
+                }
+
+                var dates = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var freq = freqEfetiva;
 
                 if (freq == "semanal")
                 {
                     // Projeta 4 recebimentos semanais
-                    DateTime now = DateTime.UtcNow;
-                    DateTime startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                    DateTime startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
                     
                     // Usar o dia da semana selecionado se existir
                     DayOfWeek? selectedDayOfWeek = null;
-                    if (!string.IsNullOrEmpty(inc.DiaSemana))
+                    if (!string.IsNullOrEmpty(diaSemanaEfetivo))
                     {
-                        selectedDayOfWeek = inc.DiaSemana.ToLower() switch
+                        selectedDayOfWeek = diaSemanaEfetivo.ToLower() switch
                         {
                             "segunda" => DayOfWeek.Monday,
                             "terca" => DayOfWeek.Tuesday,
@@ -373,7 +434,7 @@ namespace definance_backend.Features.Onboarding.Services
                             Id = Guid.NewGuid(),
                             UserId = userId,
                             Name = $"{inc.Tipo} (Semana {i + 1})",
-                            Amount = inc.Valor,
+                            Amount = valorEfetivo,
                             Type = inc.Tipo,
                             Date = paymentDate,
                             IsRecurring = true,
@@ -392,14 +453,17 @@ namespace definance_backend.Features.Onboarding.Services
                         {
                             if (DateTime.TryParse(dateStr.Trim(), out var dt))
                             {
+                                // Ajusta para o mês e ano atual, mantendo o dia
+                                var paymentDate = new DateTime(now.Year, now.Month, dt.Day, 0, 0, 0);
+                                
                                 newIncomes.Add(new Income
                                 {
                                     Id = Guid.NewGuid(),
                                     UserId = userId,
                                     Name = $"{inc.Tipo} (Quinzena {count})",
-                                    Amount = inc.Valor,
+                                    Amount = valorEfetivo,
                                     Type = inc.Tipo,
-                                    Date = dt.ToUniversalTime(),
+                                    Date = paymentDate,
                                     IsRecurring = true,
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
@@ -411,7 +475,6 @@ namespace definance_backend.Features.Onboarding.Services
                     else
                     {
                         // Fallback se não houver datas: usar o dia 1 e dia 15 do mês atual
-                        DateTime now = DateTime.UtcNow;
                         for (int i = 0; i < 2; i++)
                         {
                             newIncomes.Add(new Income
@@ -419,9 +482,9 @@ namespace definance_backend.Features.Onboarding.Services
                                 Id = Guid.NewGuid(),
                                 UserId = userId,
                                 Name = $"{inc.Tipo} (Quinzena {i + 1})",
-                                Amount = inc.Valor,
+                                Amount = valorEfetivo,
                                 Type = inc.Tipo,
-                                Date = new DateTime(now.Year, now.Month, i == 0 ? 1 : 15, 0, 0, 0, DateTimeKind.Utc),
+                                Date = new DateTime(now.Year, now.Month, i == 0 ? 1 : 15, 0, 0, 0),
                                 IsRecurring = true,
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
@@ -435,7 +498,8 @@ namespace definance_backend.Features.Onboarding.Services
                     DateTime? incomeDate = null;
                     if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
                     {
-                        incomeDate = dt.ToUniversalTime();
+                        // Ajusta para o mês e ano atual, mantendo o dia
+                        incomeDate = new DateTime(now.Year, now.Month, dt.Day, 0, 0, 0);
                     }
 
                     newIncomes.Add(new Income
@@ -443,9 +507,9 @@ namespace definance_backend.Features.Onboarding.Services
                         Id = Guid.NewGuid(),
                         UserId = userId,
                         Name = inc.Tipo,
-                        Amount = inc.Valor,
+                        Amount = valorEfetivo,
                         Type = inc.Tipo,
-                        Date = incomeDate ?? DateTime.UtcNow,
+                        Date = incomeDate ?? NormalizeDate(DateTime.UtcNow),
                         IsRecurring = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -461,9 +525,13 @@ namespace definance_backend.Features.Onboarding.Services
 
         private async Task SyncVehiclesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
         {
+            var now = _dateTimeProvider.GetCurrentAppDate();
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+
             var toDelete = existingBills.Where(b => 
                 b.Category == "Veículo" && 
                 b.Status == "Pendente" && 
+                (b.DueDate ?? b.CreatedAt) >= currentMonthStart &&
                 (
                     (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
                     b.Name.Contains("IPVA") || b.Name.Contains("Seguro") || b.Name.Contains("Parcela") || b.Name.Contains("Financiamento") || b.Name.Contains("Multa")
@@ -493,8 +561,8 @@ namespace definance_backend.Features.Onboarding.Services
                             DateTime? dueDate = null;
                             if (DateTime.TryParse(parcela.Vencimento, out var dt))
                             {
-                                dueDate = dt.ToUniversalTime();
-                                dueDay = dt.Day;
+                                dueDate = NormalizeDate(dt);
+                                dueDay = dueDate.Value.Day;
                             }
 
                             newBills.Add(new Bill
@@ -539,8 +607,8 @@ namespace definance_backend.Features.Onboarding.Services
                     DateTime? dueDate = null;
                     if (!string.IsNullOrEmpty(v.VencimentoSeguro) && DateTime.TryParse(v.VencimentoSeguro, out var dt))
                     {
-                        dueDate = dt.ToUniversalTime();
-                        dueDay = dt.Day;
+                        dueDate = NormalizeDate(dt);
+                        dueDay = dueDate.Value.Day;
                     }
 
                     newBills.Add(new Bill
@@ -608,9 +676,14 @@ namespace definance_backend.Features.Onboarding.Services
         {
             if (dto.SelectedExpenses == null) return;
 
+            var now = _dateTimeProvider.GetCurrentAppDate();
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+
             var toDelete = existingBills.Where(b => 
                 b.Status == "Pendente" && 
                 b.Description != null && 
+                // Se não tiver DueDate, usamos a data de criação ou assumimos que é nova
+                (b.DueDate ?? b.CreatedAt) >= currentMonthStart &&
                 (b.Description.Contains("Onboarding") || 
                  b.Description.Contains("Perfil Financeiro") || 
                  b.Description.Contains("Empréstimo vinculado")) &&
@@ -690,10 +763,14 @@ namespace definance_backend.Features.Onboarding.Services
 
         private async Task SyncDebtsOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
         {
+            var now = _dateTimeProvider.GetCurrentAppDate();
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+
             var toDelete = existingBills.Where(b => 
                 b.Category == "Dívidas" && 
                 b.Status == "Pendente" && 
                 b.Description != null && 
+                (b.DueDate ?? b.CreatedAt) >= currentMonthStart &&
                 (
                     (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)") ||
                     b.Description.Contains("Dívida")
@@ -715,15 +792,19 @@ namespace definance_backend.Features.Onboarding.Services
                 DateTime? baseDueDate = null;
                 if (!string.IsNullOrEmpty(d.Vencimento) && DateTime.TryParse(d.Vencimento, out var dt))
                 {
-                    baseDueDate = dt.ToUniversalTime();
+                    baseDueDate = NormalizeDate(dt);
                 }
 
-                if (d.Parcelado && d.ParcelasTotal > 0)
+                if (d.Parcelado && (d.ParcelasTotal ?? 0) > 0)
                 {
-                    int total = d.ParcelasTotal.Value;
+                    int total = d.ParcelasTotal!.Value;
                     int pagas = d.ParcelasPagas ?? 0;
                     int restantes = total - pagas;
-                    decimal valorParcela = d.Valor / total;
+                    
+                    if (restantes <= 0) continue;
+
+                    decimal valorBase = Math.Floor((d.Valor / total) * 100) / 100;
+                    decimal residual = d.Valor - (valorBase * total);
 
                     for (int i = 1; i <= restantes; i++)
                     {
@@ -738,12 +819,15 @@ namespace definance_backend.Features.Onboarding.Services
                             dueDay = installmentDate.Value.Day;
                         }
 
+                        // A última parcela (ou a única restante se for o caso) recebe o residual para fechar o valor total
+                        decimal valorDaParcela = (numeroParcela == total) ? (valorBase + residual) : valorBase;
+
                         newBills.Add(new Bill
                         {
                             Id = Guid.NewGuid(),
                             UserId = userId,
                             Name = $"{d.Descricao} ({numeroParcela}/{total})",
-                            Amount = valorParcela,
+                            Amount = valorDaParcela,
                             Category = "Dívidas",
                             BillType = "Fixa",
                             DueDay = dueDay,

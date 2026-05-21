@@ -124,7 +124,7 @@ export function MarqueeSection() {
         className="mt-16 flex justify-center"
       >
         <Link href="/login">
-          <Button className="group h-8 rounded-full bg-primary px-10 text-sm font-bold text-primary-foreground hover:scale-105 transition-all shadow-xl shadow-primary/20 cursor-pointer">
+          <Button className="group h-8 rounded-full bg-primary hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary px-10 text-sm font-bold text-primary-foreground hover:scale-105 transition-all shadow-xl shadow-primary/20 cursor-pointer">
             QUERO COMEÇAR
             <ArrowRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" />
           </Button>

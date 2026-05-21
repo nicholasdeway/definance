@@ -120,7 +120,7 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
                 "relative flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-all cursor-pointer",
                 isSelected
                   ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10"
-                  : "border-white/5 bg-white/5 hover:border-primary/20 hover:bg-primary/5"
+                  : "border-border/50 bg-muted/20 hover:border-primary/20 hover:bg-primary/5"
               )}
             >
               {isSelected && (
@@ -142,21 +142,21 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
 
       {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
-        <div className="space-y-3 border-t border-white/5 pt-4">
+        <div className="space-y-3 border-t border-border/50 pt-4">
           {/* Seção 1: Contas com Opção de Empréstimo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="h-px flex-1 bg-white/5" />
+                <span className="h-px flex-1 bg-border/50" />
                 <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Contas de Consumo</span>
-                <span className="h-px flex-1 bg-white/5" />
+                <span className="h-px flex-1 bg-border/50" />
               </div>
               <div className="grid gap-4">
                 {fixedExpenseCategories
                   .filter((cat) => ["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
                     <Fragment key={cat.key}>
-                      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                      <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
                         <cat.icon className="h-5 w-5 text-primary transition-colors" />
                         <div className="flex-1 space-y-1">
                           <FieldLabel 
@@ -238,15 +238,15 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
           {fixedExpenseCategories.some(c => !["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="h-px flex-1 bg-white/5" />
+                <span className="h-px flex-1 bg-border/50" />
                 <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Moradia, Assinaturas e Serviços</span>
-                <span className="h-px flex-1 bg-white/5" />
+                <span className="h-px flex-1 bg-border/50" />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
-                    <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
+                    <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2.5">
                       <cat.icon className="h-5 w-5 text-primary" />
                       <div className="flex-1 space-y-1">
                         <FieldLabel 
@@ -277,15 +277,15 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
 
       {/* Gastos personalizados */}
       {customExpenses.length > 0 && (
-        <div className="space-y-4 border-t border-white/5 pt-4">
+        <div className="space-y-4 border-t border-border/50 pt-4">
           <div className="flex items-center gap-2">
-            <span className="h-px flex-1 bg-white/5" />
+            <span className="h-px flex-1 bg-border/50" />
             <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Gastos Personalizados</span>
-            <span className="h-px flex-1 bg-white/5" />
+            <span className="h-px flex-1 bg-border/50" />
           </div>
           <div className="space-y-3">
             {customExpenses.map((exp, idx) => (
-              <div key={exp.id} className="group relative space-y-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 pb-4">
+              <div key={exp.id} className="group relative space-y-3 rounded-xl border border-border/50 bg-muted/20 p-3 pb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">Item {idx + 1}</span>
                   <button
@@ -345,19 +345,19 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
       <button
         type="button"
         onClick={addCustomExpense}
-        className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/5 p-3 text-[11px] font-bold text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-primary cursor-pointer"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:text-primary cursor-pointer"
       >
         <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
         Adicionar outra despesa fixa
       </button>
 
-      <div className="flex items-center justify-end pt-4 border-t border-white/5 mt-3">
+      <div className="flex items-center justify-end pt-4 border-t border-border/50 mt-3">
         <Button 
           type="button"
           size="sm"
           disabled={isSaving}
           onClick={handleSave}
-          className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary text-xs cursor-pointer"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary text-xs cursor-pointer"
         >
           {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Despesas"}
         </Button>

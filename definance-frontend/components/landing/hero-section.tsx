@@ -35,7 +35,7 @@ export function HeroSection() {
   const { href, label } = getCtaConfig()
 
   return (
-    <section className="relative overflow-hidden py-20 md:py-32">
+    <section className="relative overflow-hidden py-20 md:py-32 bg-muted/30 overflow-hidden border-y border-border/50">
       <div className="absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
       </div>
@@ -66,7 +66,7 @@ export function HeroSection() {
             ) : (
               <Link href={href}>
                 <Button 
-                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/70 shadow-md shadow-primary/20 transition-all hover:scale-105"
+                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary shadow-md shadow-primary/20 transition-all hover:scale-105"
                   disabled={isLoading}
                 >
                   {label}

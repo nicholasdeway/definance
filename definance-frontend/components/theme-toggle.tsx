@@ -5,8 +5,13 @@ import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  className?: string
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const { setTheme, theme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -16,7 +21,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="h-9 w-9 opacity-0">
+      <Button variant="ghost" size="icon" className={cn("h-9 w-9 opacity-0", className)}>
         <Sun className="h-4 w-4" />
       </Button>
     )
@@ -30,7 +35,7 @@ export function ThemeToggle() {
     <Button 
       variant="ghost" 
       size="icon" 
-      className="h-9 w-9 cursor-pointer relative overflow-hidden transition-colors hover:bg-accent"
+      className={cn("h-9 w-9 cursor-pointer relative overflow-hidden transition-colors hover:bg-accent", className)}
       onClick={toggleTheme}
       aria-label="Alternar tema"
     >

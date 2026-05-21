@@ -12,9 +12,10 @@ import { ptBR } from "date-fns/locale"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { PremiumModal } from "@/components/ui/premium-modal"
 import { useCategories } from "@/lib/category-context"
-import { ShoppingBag, Loader2, Save, Plus, Calendar as CalendarIcon } from "lucide-react"
+import { ShoppingBag, Loader2, Save, Plus, Calendar as CalendarIcon, Mic, MicOff } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
+import { useSpeechToText } from "@/hooks/use-speech-to-text"
 
 interface GastoDialogProps {
   open: boolean
@@ -33,6 +34,7 @@ export const GastoDialog = ({
 }: GastoDialogProps) => {
   const { categories } = useCategories()
   const isMobile = useIsMobile()
+  const { isListening, transcript, startListening, stopListening } = useSpeechToText()
   
   const [formData, setFormData] = useState({
     id: "",
@@ -76,6 +78,13 @@ export const GastoDialog = ({
     }
   }, [initialData, open])
 
+  // Atualiza a descrição conforme a fala
+  useEffect(() => {
+    if (transcript) {
+      setFormData(prev => ({ ...prev, nome: transcript }))
+    }
+  }, [transcript])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -111,17 +120,34 @@ export const GastoDialog = ({
         <div className={cn("flex-1", isMobile ? "space-y-3" : "space-y-6")}>
           {/* Descrição */}
           <div className="space-y-0.5 sm:space-y-2">
-            <Label htmlFor="nome" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
-              Descrição do Gasto
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="nome" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+                Descrição do Gasto
+              </Label>
+              <button
+                type="button"
+                onClick={isListening ? stopListening : startListening}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer relative",
+                  isListening 
+                    ? "bg-primary/20 text-primary" 
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-primary/20 pointer-events-none" />}
+                <span className={cn("text-[9px] font-black uppercase tracking-widest transition-opacity", isListening ? "opacity-100" : "opacity-0")}>Ouvindo...</span>
+                {isListening ? <Mic className="h-3 w-3 md:h-3.5 md:w-3.5" /> : <Mic className="h-3 w-3 md:h-3.5 md:w-3.5" />}
+              </button>
+            </div>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder={isMobile ? "Ex: Almoço, Uber..." : "Ex: Almoço no Centro, Uber Casa..."}
               className={cn(
-                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
-                isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5"
+                "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
+                isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5",
+                isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
               )}
               required
             />
@@ -155,7 +181,7 @@ export const GastoDialog = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                      "w-full justify-start text-left font-normal bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                       isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
                       !formData.data && "text-muted-foreground"
                     )}
@@ -166,7 +192,7 @@ export const GastoDialog = ({
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.data ? parseISO(formData.data) : undefined}
@@ -189,7 +215,7 @@ export const GastoDialog = ({
               Categoria
             </Label>
             <div className={cn(
-              "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm overflow-hidden",
+              "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm overflow-hidden",
               isMobile ? "h-8 px-1.5" : "h-12 px-5"
             )}>
               <span className={cn(
@@ -208,7 +234,7 @@ export const GastoDialog = ({
                 )}>
                   <SelectValue placeholder={isMobile ? "Sel." : "Selecionar"} />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                <SelectContent className="rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl">
                   {todasCategorias.sort().map((cat) => (
                     <SelectItem key={cat} value={cat} className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">{cat}</SelectItem>
                   ))}
@@ -219,12 +245,12 @@ export const GastoDialog = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
+        <div className="pt-3 md:pt-6 border-t border-border/50 flex items-center justify-end gap-2 md:gap-4">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted/30 transition-all cursor-pointer border border-border/50"
           >
             Cancelar
           </Button>

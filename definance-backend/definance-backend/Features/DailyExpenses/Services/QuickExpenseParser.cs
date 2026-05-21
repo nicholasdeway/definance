@@ -1,23 +1,31 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using definance_backend.Features.DailyExpenses.Models;
+using definance_backend.Features.Shared.Services;
 
 namespace definance_backend.Features.DailyExpenses.Services
 {
     public class QuickExpenseParser : IQuickExpenseParser
     {
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public QuickExpenseParser(IDateTimeProvider dateTimeProvider)
+        {
+            _dateTimeProvider = dateTimeProvider;
+        }
+
         public ParsedExpenseResult Parse(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 throw new ArgumentException("A entrada não pode estar vazia.");
 
-            // 1. Identificar data (hoje/ontem)
-            DateTime date = DateTime.Now;
+            // 1. Identificar data (hoje/ontem mantendo o horário)
+            DateTime date = _dateTimeProvider.GetExactAppDateTime();
             var dateMatch = Regex.Match(input, @"\b(hoje|ontem)\b", RegexOptions.IgnoreCase);
             if (dateMatch.Success)
             {
                 if (dateMatch.Value.ToLower() == "ontem")
-                    date = DateTime.Now.AddDays(-1);
+                    date = date.AddDays(-1);
                 
                 input = input.Remove(dateMatch.Index, dateMatch.Length).Trim();
             }

@@ -5,15 +5,15 @@ import {
   Mail, 
   CheckCircle2, 
   Smartphone,
-  ArrowLeft,
   Copy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { WhatsAppModal } from "@/components/dashboard/conectar-aplicativos/whatsapp-modal"
+import { useAuth } from "@/lib/auth-provider"
+import { apiClient } from "@/lib/api-client"
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -26,8 +26,81 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 )
 
 export default function ConectarAplicativosPage() {
+  const { user, refreshUser } = useAuth()
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = React.useState(false)
-  const [whatsappStatus, setWhatsappStatus] = React.useState<"conectado" | "pendente">("conectado")
+  const [whatsappStatus, setWhatsappStatus] = React.useState<"conectado" | "pendente">(user?.isWhatsAppConnected ? "conectado" : "pendente")
+  const [activationCode, setActivationCode] = React.useState<string | null>(null)
+  const [expiresAt, setExpiresAt] = React.useState<Date | null>(null)
+
+  const fetchStatus = React.useCallback(async () => {
+    try {
+      const data = await apiClient<{ code: string; status: string; expiresAt: string }>(`/api/whatsapp/status?t=${Date.now()}`)
+      const isConnected = data.status?.toLowerCase() === "connected"
+      setWhatsappStatus(isConnected ? "conectado" : "pendente")
+      
+      // Só exibe o código pendente se NÃO estiver conectado e o código não for vazio
+      if (!isConnected && data.code) {
+        setActivationCode(data.code)
+        setExpiresAt(new Date(data.expiresAt))
+      } else {
+        setActivationCode(null)
+        setExpiresAt(null)
+      }
+    } catch (e) {
+      // Fallback: usa o estado do usuário autenticado
+      setWhatsappStatus(user?.isWhatsAppConnected ? "conectado" : "pendente")
+      setActivationCode(null)
+    }
+  }, [user])
+
+  React.useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
+  // Ref para evitar múltiplas atualizações simultâneas
+  const isUpdating = React.useRef(false)
+
+  React.useEffect(() => {
+    if (whatsappStatus === "conectado") return
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await apiClient<{ code: string; status: string }>(`/api/whatsapp/status?t=${Date.now()}`)
+        if (data.status?.toLowerCase() === "connected" && !isUpdating.current) {
+          isUpdating.current = true
+          setWhatsappStatus("conectado")
+          setActivationCode(null)
+          setExpiresAt(null)
+          clearInterval(interval)
+
+          // Atualiza o contexto global sem recarregar a página
+          setTimeout(async () => {
+            setIsWhatsAppModalOpen(false)
+            await refreshUser(true)
+            isUpdating.current = false
+          }, 1000)
+        }
+      } catch (e) {
+        // Ignora erros de polling
+      }
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [whatsappStatus, refreshUser])
+
+  const handleGenerateCode = async () => {
+    setIsWhatsAppModalOpen(true)
+    try {
+      const data = await apiClient<{ code: string; status: string; expiresAt: string }>("/api/whatsapp/generate-code", {
+        method: "POST"
+      })
+      setActivationCode(data.code)
+      setExpiresAt(new Date(data.expiresAt))
+      setWhatsappStatus(data.status === "Connected" ? "conectado" : "pendente")
+    } catch (e) {
+      //
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -73,7 +146,7 @@ export default function ConectarAplicativosPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => setIsWhatsAppModalOpen(true)}
+                onClick={handleGenerateCode}
                 className="h-8 rounded-xl border-border/50 hover:bg-muted/50 text-[10px] uppercase font-bold tracking-wider whitespace-nowrap cursor-pointer"
               >
                 {whatsappStatus === "conectado" ? "Alterar número" : "Gerar novo código"}
@@ -84,7 +157,7 @@ export default function ConectarAplicativosPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-muted/30 border border-border/40 space-y-1">
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Número Conectado</p>
-                <p className="text-sm font-semibold">(00) 00000-0000</p>
+                <p className="text-sm font-semibold">{user?.phone ? (user.phone.startsWith('+') ? user.phone : `+${user.phone}`) : "Não cadastrado"}</p>
               </div>
               <div className="p-4 rounded-2xl bg-muted/30 border border-border/40 space-y-1">
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Status</p>
@@ -107,17 +180,17 @@ export default function ConectarAplicativosPage() {
               </div>
             </div>
 
-            {whatsappStatus === "pendente" && (
+            {whatsappStatus === "pendente" && activationCode && expiresAt && (
               <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-4 group/alert animate-in slide-in-from-top-2 duration-500">
                 <div className="space-y-1">
                   <h4 className="text-sm font-bold text-amber-500">Código de ativação pendente</h4>
                   <p className="text-[11px] text-muted-foreground leading-tight">Envie este código pelo WhatsApp para concluir a ativação.</p>
-                  <p className="text-[10px] text-amber-500/70 font-medium tracking-tight">Expira em 05/05/2026, 20:22.</p>
+                  <p className="text-[10px] text-amber-500/70 font-medium tracking-tight">Expira às {expiresAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
                 </div>
-                <div className="flex items-center gap-3 bg-black/40 p-2.5 px-4 rounded-xl border border-white/5 group-hover/alert:border-amber-500/40 transition-all shadow-inner w-full xs:w-auto justify-center shrink-0">
-                   <code className="text-xs font-bold text-amber-500 tracking-wider">WAUTH-3123871</code>
+                <div className="flex items-center gap-3 bg-background dark:bg-black/40 p-2.5 px-4 rounded-xl border border-border/50 dark:border-white/5 group-hover/alert:border-amber-500/40 transition-all shadow-inner w-full xs:w-auto justify-center shrink-0">
+                   <code className="text-xs font-bold text-amber-500 tracking-wider">{activationCode}</code>
                    <Copy className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-amber-500 transition-colors" onClick={() => {
-                     navigator.clipboard.writeText("WAUTH-3123871");
+                     navigator.clipboard.writeText(activationCode);
                    }} />
                 </div>
               </div>
@@ -177,7 +250,8 @@ export default function ConectarAplicativosPage() {
         open={isWhatsAppModalOpen} 
         onOpenChange={setIsWhatsAppModalOpen} 
         status={whatsappStatus}
-        activationCode="WAUTH-6890193"
+        activationCode={activationCode || "Carregando..."}
+        expiresAt={expiresAt}
       />
     </div>
   )

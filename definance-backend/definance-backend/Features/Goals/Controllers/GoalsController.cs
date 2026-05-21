@@ -108,13 +108,32 @@ namespace definance_backend.Features.Goals.Controllers
             }
         }
 
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteGoal(Guid id)
+        [HttpGet("{id:guid}/history")]
+        public async Task<IActionResult> GetGoalHistory(Guid id)
         {
             try
             {
                 var userId = GetUserId();
-                await _goalService.DeleteGoalAsync(userId, id);
+                var history = await _goalService.GetGoalHistoryAsync(userId, id);
+                return Ok(history);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+        }
+ 
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> DeleteGoal(Guid id, [FromQuery] bool deleteTransactions = false)
+        {
+            try
+            {
+                var userId = GetUserId();
+                await _goalService.DeleteGoalAsync(userId, id, deleteTransactions);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

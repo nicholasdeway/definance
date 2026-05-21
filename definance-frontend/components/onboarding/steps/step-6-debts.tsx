@@ -102,7 +102,7 @@ export const Step6Debts = () => {
               key={debt.id || `d-${idx}`} 
               value={debt.id} 
               className={cn(
-                "rounded-xl border border-border/60 bg-background/50 overflow-hidden transition-all duration-300",
+                "rounded-xl border border-border/50 bg-muted/10 dark:bg-background/50 overflow-hidden transition-all duration-300",
                 isExpanded && "border-primary/30 ring-1 ring-primary/10 shadow-lg bg-background",
                 hasError && "border-destructive/30"
               )}
@@ -111,8 +111,8 @@ export const Step6Debts = () => {
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-4 text-left">
                     <div className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all shadow-sm ring-1 ring-border/50",
-                        isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted/80"
+                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all shadow-sm ring-1 ring-border/20 dark:ring-border/50",
+                        isExpanded ? "bg-primary/20 scale-105 ring-primary/30" : "bg-muted dark:bg-muted/80"
                     )}>
                       <CreditCard className={cn("h-6 w-6", isExpanded ? "text-primary" : "text-muted-foreground")} />
                     </div>
@@ -232,7 +232,7 @@ export const Step6Debts = () => {
                           </span>
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                      <PopoverContent className="w-auto p-0 rounded-2xl border-border dark:border-white/10 bg-background" align="start">
                         <Calendar
                           mode="single"
                           selected={debt.vencimento ? parseISO(debt.vencimento) : undefined}
@@ -336,14 +336,14 @@ export const Step6Debts = () => {
       <button
         type="button"
         onClick={addDebt}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:text-primary cursor-pointer"
+        className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border dark:border-white/10 p-3 sm:p-4 text-xs sm:text-[13px] font-semibold text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer mt-2"
       >
         <Plus className="h-4 w-4" />
         Adicionar dívida
       </button>
 
       {debts.length === 0 && (
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-center text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-widest mt-4 opacity-50">
           Sem dívidas? Ótimo! Você pode pular esta etapa.
         </p>
       )}

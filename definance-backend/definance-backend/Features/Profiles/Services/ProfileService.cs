@@ -41,10 +41,10 @@ namespace definance_backend.Features.Profiles.Services
                 Phone = user.Phone,
                 PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
-                HasCompletedOnboarding = user.HasCompletedOnboarding
+                HasCompletedOnboarding = user.HasCompletedOnboarding,
+                IsWhatsAppConnected = user.IsWhatsAppConnected
             };
         }
-
 
         public async Task<ServiceResult<UserProfileResponse>> UpdateProfileAsync(
             Guid userId,
@@ -88,7 +88,8 @@ namespace definance_backend.Features.Profiles.Services
                 Phone = user.Phone,
                 PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
-                HasCompletedOnboarding = user.HasCompletedOnboarding
+                HasCompletedOnboarding = user.HasCompletedOnboarding,
+                IsWhatsAppConnected = user.IsWhatsAppConnected
             });
         }
 

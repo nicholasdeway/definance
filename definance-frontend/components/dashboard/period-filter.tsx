@@ -102,7 +102,7 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
               <Button
                 variant="outline"
                 className={cn(
-                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg transition-all",
+                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-card hover:bg-muted border-border/50 rounded-lg transition-all",
                   !value.startDate && "text-muted-foreground"
                 )}
               >
@@ -112,7 +112,7 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
                 </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+            <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover shadow-xl" align="start">
               <Calendar
                 mode="single"
                 selected={value.startDate ? parseISO(value.startDate) : undefined}
@@ -134,7 +134,7 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
               <Button
                 variant="outline"
                 className={cn(
-                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg transition-all",
+                  "flex-1 sm:w-[140px] h-9 text-[10px] sm:text-xs justify-start text-left font-normal bg-card hover:bg-muted border-border/50 rounded-lg transition-all",
                   !value.endDate && "text-muted-foreground"
                 )}
               >
@@ -144,7 +144,7 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
                 </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="end">
+            <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover shadow-xl" align="end">
               <Calendar
                 mode="single"
                 selected={value.endDate ? parseISO(value.endDate) : undefined}

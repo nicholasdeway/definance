@@ -26,6 +26,7 @@ export interface Despesa {
   data: string
   tipo: string
   status: string
+  hora?: string
   billId?: string | null
   descricao?: string | null
   observacoes?: string | null
@@ -106,6 +107,7 @@ export function ExpenseList({
           <div className="space-y-3 sm:space-y-4">
             {despesas.map((d) => {
               const category = dynamicCategories.find(c => c.name === d.categoria)
+              const categoryIcon = (category?.icon && category.icon !== "MoreHorizontal") ? category.icon : d.categoria
               const dataReduzida = d.data.replace(/\/20(\d{2})$/, '/$1')
               
               return (
@@ -126,7 +128,7 @@ export function ExpenseList({
                       style={{ borderColor: category?.color ? `${category.color}40` : undefined }}
                     >
                       <CategoryIcon 
-                        name={category?.icon} 
+                        name={categoryIcon} 
                         color={category?.color} 
                         fallback="MoreHorizontal" 
                       />
@@ -146,9 +148,15 @@ export function ExpenseList({
                       </div>
                       
                       <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 leading-tight gap-0.5 sm:gap-0">
-                        <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">
+                        <p className="text-[10px] sm:text-sm text-muted-foreground font-medium flex items-center gap-1.5">
                           <span className="sm:hidden">{dataReduzida}</span>
                           <span className="hidden sm:inline">{d.data}</span>
+                          {d.hora && (
+                            <>
+                              <span className="text-[8px] sm:text-[10px] opacity-40">•</span>
+                              <span className="text-[9px] sm:text-[12px] opacity-80">{d.hora}h</span>
+                            </>
+                          )}
                         </p>
                         <span className="hidden sm:inline text-muted-foreground/30 text-[10px]">•</span>
                         <span 
@@ -218,12 +226,12 @@ export function ExpenseList({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white/5 rounded-full flex-shrink-0 cursor-pointer"
+                          className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-muted/30 rounded-full flex-shrink-0 cursor-pointer"
                         >
                           <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[160px] rounded-xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                      <DropdownMenuContent align="end" className="min-w-[160px] rounded-xl border-border/50 bg-popover/95 backdrop-blur-xl">
                         {d.billId ? (
                           <DropdownMenuItem className="cursor-pointer text-xs text-muted-foreground italic" disabled>
                             Gerada por Minhas Contas

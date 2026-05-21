@@ -154,10 +154,9 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
 
                     return (
                         <AccordionItem key={debt.id} value={debt.id} className={cn(
-                        "w-full rounded-xl border overflow-hidden transition-all duration-300",
-                        isExpanded && "border-primary/30 shadow-lg bg-white/[0.03]",
-                        hasError && "border-destructive/30",
-                        !isExpanded && !hasError && "border-white/5 bg-white/[0.02]"
+                        "w-full rounded-xl border border-border/60 bg-background/50 overflow-hidden transition-all duration-300",
+                        isExpanded && "border-primary/30 shadow-lg bg-background",
+                        hasError && "border-destructive/30"
                     )}>
                             <AccordionTrigger className="hover:no-underline px-5 py-4 group data-[state=open]:pb-2 w-full">
                                 <div className="flex items-center justify-between w-full">
@@ -288,7 +287,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                                     </span>
                                                 </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                                            <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover shadow-xl" align="start">
                                                 <Calendar
                                                     mode="single"
                                                     selected={debt.vencimento ? parseISO(debt.vencimento) : undefined}
@@ -436,7 +435,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                                     <Button 
                                                         type="button"
                                                         size="sm" 
-                                                        className="h-8 text-xs bg-primary/70 text-primary-foreground hover:bg-primary/80" 
+                                                        className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary/80" 
                                                         onClick={() => handleAddNewExtra(debt.id)}
                                                     >
                                                         Salvar Gasto
@@ -460,7 +459,7 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                             type="button" 
                                             disabled={isSaving}
                                             onClick={handleSave}
-                                            className="w-full sm:w-auto bg-primary/70 text-primary-foreground hover:bg-primary font-bold cursor-pointer"
+                                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary/70 dark:hover:bg-primary font-bold cursor-pointer"
                                         >
                                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Dívida"}
                                         </Button>
@@ -472,10 +471,21 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                 })}
             </Accordion>
 
-            <button type="button" onClick={addDebt} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/5 p-2.5 text-[10px] text-muted-foreground/70 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all cursor-pointer">
+            {/* Botão adicionar dívida */}
+            <button
+                type="button"
+                onClick={addDebt}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:text-primary cursor-pointer"
+            >
                 <Plus className="h-4 w-4" />
                 Adicionar dívida
             </button>
+
+            {debts.length === 0 && (
+                <p className="text-center text-xs text-muted-foreground">
+                    Sem dívidas? Tudo bem! Você pode pular esta etapa.
+                </p>
+            )}
 
             <ConfirmDeleteDialog
                 open={itemToDelete !== null}

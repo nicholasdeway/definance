@@ -91,7 +91,7 @@ export function ExpenseFormDialog({
               value={form.nome}
               onChange={(e) => onFormChange({ ...form, nome: e.target.value })}
               className={cn(
-                "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
+                "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
                 isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5"
               )}
             />
@@ -126,7 +126,7 @@ export function ExpenseFormDialog({
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        "w-full justify-start text-left font-normal bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                         isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
                         !form.data && "text-muted-foreground"
                       )}
@@ -137,7 +137,7 @@ export function ExpenseFormDialog({
                       </span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                  <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover" align="start">
                     <Calendar
                       mode="single"
                       selected={form.data ? parseISO(form.data) : undefined}
@@ -160,7 +160,7 @@ export function ExpenseFormDialog({
                   value={form.hora}
                   onChange={(e) => onFormChange({ ...form, hora: e.target.value })}
                   className={cn(
-                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                    "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                     isMobile ? "h-8 text-[10px] px-1" : "h-12 px-5"
                   )}
                   required
@@ -176,7 +176,7 @@ export function ExpenseFormDialog({
                 Categoria
               </Label>
               <div className={cn(
-                "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm overflow-hidden",
+                "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm overflow-hidden",
                 isMobile ? "h-8 px-1.5" : "h-12 px-5"
               )}>
                 <span className={cn(
@@ -195,7 +195,7 @@ export function ExpenseFormDialog({
                   )}>
                     <SelectValue placeholder={isMobile ? "Sel." : "Selecionar"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                  <SelectContent className="rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl">
                     {todasCategorias.sort().map((cat) => (
                       <SelectItem key={cat} value={cat} className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">{cat}</SelectItem>
                     ))}
@@ -210,7 +210,7 @@ export function ExpenseFormDialog({
                 Tipo
               </Label>
               <div className={cn(
-                "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm overflow-hidden",
+                "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm overflow-hidden",
                 isMobile ? "h-8 px-1.5" : "h-12 px-5"
               )}>
                 <span className={cn(
@@ -229,7 +229,7 @@ export function ExpenseFormDialog({
                   )}>
                     <SelectValue placeholder={isMobile ? "Sel." : "Selecionar"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                  <SelectContent className="rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl">
                     <SelectItem value="Fixa" className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">Fixa</SelectItem>
                     <SelectItem value="Variável" className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">Variável</SelectItem>
                   </SelectContent>
@@ -242,7 +242,7 @@ export function ExpenseFormDialog({
           <div className="space-y-0.5 sm:space-y-2">
             <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Status</Label>
             <div className={cn(
-              "flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 shadow-sm",
+              "flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 shadow-sm",
               isMobile ? "h-8 px-1.5" : "h-12 px-5"
             )}>
               <span className={isMobile ? "text-[9px] font-medium text-muted-foreground" : "text-sm font-medium text-muted-foreground"}>
@@ -281,7 +281,7 @@ export function ExpenseFormDialog({
                     value={form.descricao}
                     onChange={(e) => onFormChange({ ...form, descricao: e.target.value })}
                     className={cn(
-                      "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
+                      "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
                       isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                     )}
                   />
@@ -294,7 +294,7 @@ export function ExpenseFormDialog({
                     value={form.observacoes}
                     onChange={(e) => onFormChange({ ...form, observacoes: e.target.value })}
                     className={cn(
-                      "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                      "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                       isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                     )}
                   />
@@ -305,12 +305,12 @@ export function ExpenseFormDialog({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
+        <div className="pt-3 md:pt-6 border-t border-border/50 flex items-center justify-end gap-2 md:gap-4">
           <Button
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted/30 transition-all cursor-pointer border border-border/50"
           >
             Cancelar
           </Button>

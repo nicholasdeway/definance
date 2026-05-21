@@ -1,6 +1,7 @@
 using Dapper;
 using definance_backend.Domain.Entities;
 using Npgsql;
+using definance_backend.Features.Goals.DTOs;
 
 namespace definance_backend.Features.Goals.Repositories
 {
@@ -112,6 +113,68 @@ namespace definance_backend.Features.Goals.Repositories
  
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.ExecuteAsync(sql, new { Id = id, UserId = userId });
+        }
+
+        public async Task DeleteWithCascadeAsync(Guid id, Guid userId, bool deleteTransactions)
+        {
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var transaction = await conn.BeginTransactionAsync();
+
+            try
+            {
+                if (deleteTransactions)
+                {
+                    // 1. Deletar despesas vinculadas a qualquer conta dessa meta
+                    const string deleteExpensesSql = @"
+                        DELETE FROM expenses 
+                        WHERE bill_id IN (SELECT id FROM bills WHERE goal_id = @GoalId AND user_id = @UserId);
+                    ";
+                    await conn.ExecuteAsync(deleteExpensesSql, new { GoalId = id, UserId = userId }, transaction);
+
+                    // 2. Deletar todas as contas dessa meta
+                    const string deleteBillsSql = "DELETE FROM bills WHERE goal_id = @GoalId AND user_id = @UserId;";
+                    await conn.ExecuteAsync(deleteBillsSql, new { GoalId = id, UserId = userId }, transaction);
+                }
+                else
+                {
+                    // 1. Deletar apenas contas que NÃO foram pagas (pendentes/atrasadas) vinculadas à meta
+                    const string deletePendingBillsSql = "DELETE FROM bills WHERE goal_id = @GoalId AND status != 'Pago' AND user_id = @UserId;";
+                    await conn.ExecuteAsync(deletePendingBillsSql, new { GoalId = id, UserId = userId }, transaction);
+
+                    // 2. Desvincular as contas PAGAS (histórico de depósitos) definindo goal_id = NULL
+                    const string updatePaidBillsSql = "UPDATE bills SET goal_id = NULL WHERE goal_id = @GoalId AND user_id = @UserId;";
+                    await conn.ExecuteAsync(updatePaidBillsSql, new { GoalId = id, UserId = userId }, transaction);
+                }
+
+                // 3. Deletar a meta
+                const string deleteGoalSql = "DELETE FROM goals WHERE id = @GoalId AND user_id = @UserId;";
+                await conn.ExecuteAsync(deleteGoalSql, new { GoalId = id, UserId = userId }, transaction);
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<GoalHistoryDto>> GetGoalHistoryAsync(Guid userId, Guid goalId)
+        {
+            const string sql = @"
+                SELECT 
+                    e.amount AS ""Amount"",
+                    e.date   AS ""Date"",
+                    e.name   AS ""Name""
+                FROM expenses e
+                JOIN bills b ON e.bill_id = b.id
+                WHERE b.goal_id = @GoalId AND b.user_id = @UserId
+                ORDER BY e.date DESC;
+            ";
+
+            await using var conn = new NpgsqlConnection(_connectionString);
+            return await conn.QueryAsync<GoalHistoryDto>(sql, new { GoalId = goalId, UserId = userId });
         }
     }
 }

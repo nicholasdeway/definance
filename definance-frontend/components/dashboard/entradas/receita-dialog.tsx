@@ -143,7 +143,7 @@ export const ReceitaDialog = ({
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder="Ex: Salário..."
-              className="h-8 md:h-12 text-[10px] md:text-lg bg-muted/20 border-white/5 rounded-lg md:rounded-2xl px-2 md:px-5 focus:ring-primary/20 transition-all"
+              className="h-8 md:h-12 text-[10px] md:text-lg bg-muted/20 border-border/50 rounded-lg md:rounded-2xl px-2 md:px-5 focus:ring-primary/20 transition-all"
               required
             />
           </div>
@@ -176,7 +176,7 @@ export const ReceitaDialog = ({
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                        "w-full justify-start text-left font-normal bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                         isMobile ? "h-8 px-2 text-[10px]" : "h-12 px-5 text-sm",
                         !formData.data && "text-muted-foreground"
                       )}
@@ -187,7 +187,7 @@ export const ReceitaDialog = ({
                       </span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 rounded-2xl border-white/10 bg-[#0a0a0a]" align="start">
+                  <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover" align="start">
                     <Calendar
                       mode="single"
                       selected={formData.data ? parseISO(formData.data) : undefined}
@@ -209,7 +209,7 @@ export const ReceitaDialog = ({
                   type="time"
                   value={formData.hora}
                   onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
-                  className="h-8 md:h-12 text-[10px] bg-muted/20 border-white/5 rounded-lg md:rounded-2xl px-1 md:px-5 transition-all"
+                  className="h-8 md:h-12 text-[10px] bg-muted/20 border-border/50 rounded-lg md:rounded-2xl px-1 md:px-5 transition-all"
                   required
                 />
               </div>
@@ -222,7 +222,7 @@ export const ReceitaDialog = ({
               <Label htmlFor="tipo" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                 Categoria
               </Label>
-              <div className="flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 h-8 md:h-12 px-1.5 md:px-5 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 h-8 md:h-12 px-1.5 md:px-5 shadow-sm overflow-hidden">
                 <span className={cn(
                   "font-medium text-muted-foreground min-w-0 mr-1 truncate",
                   isMobile ? "text-[10px]" : "text-sm"
@@ -241,7 +241,7 @@ export const ReceitaDialog = ({
                   )}>
                     <SelectValue placeholder={isMobile ? "Sel." : "Selecionar"} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
+                  <SelectContent className="rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl">
                     {todasCategorias.sort().map((cat) => (
                       <SelectItem key={cat} value={cat} className="text-[11px] md:text-sm py-1 md:py-1.5 px-2">
                         {cat}
@@ -255,7 +255,7 @@ export const ReceitaDialog = ({
             {/* Recorrência Switch */}
             <div className="flex-1 space-y-0.5">
               <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Recorrência</Label>
-              <div className="flex items-center justify-between rounded-lg md:rounded-2xl border border-white/5 bg-muted/20 h-8 md:h-12 px-1.5 md:px-5 shadow-sm">
+              <div className="flex items-center justify-between rounded-lg md:rounded-2xl border border-border/50 bg-muted/20 h-8 md:h-12 px-1.5 md:px-5 shadow-sm">
                 <span className={isMobile ? "text-[9px] font-medium text-muted-foreground" : "text-sm font-medium text-muted-foreground"}>
                   {isMobile ? "Recorrente" : "Receita Recorrente"}
                 </span>
@@ -269,7 +269,7 @@ export const ReceitaDialog = ({
           </div>
 
           {/* Seção de Detalhes (Opcional) */}
-          <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6 pt-2 md:pt-4 border-t border-white/5">
+          <div className="flex flex-row md:grid md:grid-cols-2 gap-2 md:gap-6 pt-2 md:pt-4 border-t border-border/50">
             {/* Descrição Detalhada */}
             <div className="flex-1 space-y-0.5">
               <Label htmlFor="income-descricao" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
@@ -282,7 +282,7 @@ export const ReceitaDialog = ({
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                   className={cn(
-                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
+                    "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
                     isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                   )}
                 />
@@ -301,7 +301,7 @@ export const ReceitaDialog = ({
                   value={formData.observacoes}
                   onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
                   className={cn(
-                    "bg-muted/20 border-white/5 rounded-lg md:rounded-2xl transition-all",
+                    "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all",
                     isMobile ? "h-8 text-[10px] px-2" : "h-12 text-sm px-5"
                   )}
                 />
@@ -318,7 +318,7 @@ export const ReceitaDialog = ({
                   value={formData.outroTipo}
                   onChange={(e) => setFormData({ ...formData, outroTipo: e.target.value })}
                   placeholder="Ex: Reembolso, Presente, Venda de Item..."
-                  className="h-12 bg-muted/20 border-white/5 rounded-2xl px-5 transition-all focus:bg-muted/30"
+                  className="h-12 bg-muted/20 border-border/50 rounded-2xl px-5 transition-all focus:bg-muted/30"
                 />
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-muted-foreground/30 group-focus-within:text-primary/40 transition-colors">
                   <Plus className="h-4 w-4" />
@@ -329,12 +329,12 @@ export const ReceitaDialog = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 md:pt-6 border-t border-white/5 flex items-center justify-end gap-2 md:gap-4">
+        <div className="pt-3 md:pt-6 border-t border-border/50 flex items-center justify-end gap-2 md:gap-4">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-white/5"
+            className="flex-1 md:flex-none min-w-[100px] md:min-w-[140px] h-9 md:h-12 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted/30 transition-all cursor-pointer border border-border/50"
           >
             Cancelar
           </Button>

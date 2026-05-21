@@ -50,8 +50,8 @@ export function FAQSection() {
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.3 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
           className="mx-auto mb-12 max-w-2xl text-center"
         >
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-5xl">
@@ -63,26 +63,26 @@ export function FAQSection() {
         </motion.div>
 
         <motion.div 
-          initial={{ opacity: 0, scale: 0.99 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
           className="mx-auto max-w-4xl"
         >
-          <div className="rounded-3xl border border-border bg-card/40 p-0.5 md:p-1.5 shadow-xl shadow-primary/5 backdrop-blur-md">
+          <div className="rounded-3xl border border-border bg-card/60 p-0.5 md:p-1.5 shadow-xl shadow-primary/5">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`} 
                   className={cn(
-                    "border-b border-border/40 px-4 md:px-8 transition-all duration-150",
+                    "border-b border-border/40 px-4 md:px-8 transition-colors duration-200",
                     "hover:bg-muted/30 first:rounded-t-[1.4rem] last:rounded-b-[1.4rem] last:border-0"
                   )}
                 >
                   <AccordionTrigger 
                     className={cn(
-                      "py-5 md:py-7 text-left text-base font-semibold hover:no-underline transition-all duration-150",
+                      "py-5 md:py-7 text-left text-base font-semibold hover:no-underline transition-colors duration-200 cursor-pointer",
                       "text-foreground/90 hover:text-foreground",
                       "flex items-center justify-between gap-4",
                       "[&[data-state=open]>span:last-child]:rotate-45 [&[data-state=open]>span:last-child]:text-primary [&[data-state=open]>span:last-child]:bg-primary/10"
@@ -90,7 +90,7 @@ export function FAQSection() {
                     hideChevron
                   >
                     <span className="flex-1 leading-snug">{faq.question}</span>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/50 transition-all duration-200 border border-border/50">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/50 transition-[transform,background-color,color] duration-200 border border-border/50">
                       <Plus className="h-4 w-4" />
                     </span>
                   </AccordionTrigger>

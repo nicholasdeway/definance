@@ -107,7 +107,7 @@ export const ReceitaItem = ({
             )}
           </div>
           {(receita.descricao || receita.observacoes) && (
-            <div className="flex flex-col gap-1 mt-1.5 pt-1.5 border-t border-white/5">
+            <div className="flex flex-col gap-1 mt-1.5 pt-1.5 border-t border-border/50">
               {receita.descricao && (
                 <p className="text-[11px] leading-relaxed text-muted-foreground/70 italic">
                   {receita.descricao}

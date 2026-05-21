@@ -193,16 +193,16 @@ export default function ConfiguracoesPage() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col">
             <div className="space-y-4 flex-1">
-              <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="text-xs h-auto py-12 px-2 flex flex-col gap-3 cursor-pointer hover:border-primary/50 transition-all group">
-                <Download className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-semibold">Exportar (CSV)</span>
-              </Button>
-              <Button variant="outline" className="text-xs h-auto py-12 px-2 flex flex-col gap-3 cursor-pointer hover:border-emerald-500/50 transition-all group">
-                <Download className="h-6 w-6 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold">Exportar (Google Sheets)</span>
-              </Button>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button variant="outline" className="text-xs h-auto py-8 md:py-12 px-4 flex flex-col gap-3 cursor-pointer hover:border-primary/50 transition-all group">
+                  <Download className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold">Exportar (CSV)</span>
+                </Button>
+                <Button variant="outline" className="text-xs h-auto py-8 md:py-12 px-4 flex flex-col gap-3 cursor-pointer hover:border-emerald-500/50 transition-all group">
+                  <Download className="h-6 w-6 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-center leading-tight">Exportar (Google Sheets)</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

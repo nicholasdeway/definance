@@ -1,7 +1,9 @@
 using definance_backend.Domain.Entities;
 using definance_backend.Features.Bills.Repositories;
+using definance_backend.Features.Expenses.Repositories;
 using definance_backend.Features.Goals.DTOs;
 using definance_backend.Features.Goals.Repositories;
+using definance_backend.Features.Shared.Services;
 using System.Transactions;
 
 namespace definance_backend.Features.Goals.Services
@@ -10,11 +12,19 @@ namespace definance_backend.Features.Goals.Services
     {
         private readonly IGoalRepository _goalRepository;
         private readonly IBillRepository _billRepository;
+        private readonly IExpenseRepository _expenseRepository;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public GoalService(IGoalRepository goalRepository, IBillRepository billRepository)
+        public GoalService(
+            IGoalRepository goalRepository, 
+            IBillRepository billRepository, 
+            IExpenseRepository expenseRepository,
+            IDateTimeProvider dateTimeProvider)
         {
             _goalRepository = goalRepository;
             _billRepository = billRepository;
+            _expenseRepository = expenseRepository;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<GoalDto> GetGoalByIdAsync(Guid userId, Guid goalId)
@@ -51,8 +61,8 @@ namespace definance_backend.Features.Goals.Services
                 TargetAmount = dto.TargetAmount,
                 CurrentAmount = 0,
                 Category = dto.Category,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
+                StartDate = dto.StartDate.HasValue ? _dateTimeProvider.NormalizeToAppDate(dto.StartDate.Value) : (DateTime?)null,
+                EndDate = dto.EndDate.HasValue ? _dateTimeProvider.NormalizeToAppDate(dto.EndDate.Value) : (DateTime?)null,
                 MonthlyReserve = dto.MonthlyReserve,
                 ReserveDay = dto.ReserveDay,
                 IsCompleted = false,
@@ -65,7 +75,7 @@ namespace definance_backend.Features.Goals.Services
             if (dto.MonthlyReserve > 0)
             {
                 // Calcula a data de vencimento baseada no dia da reserva
-                var now = DateTime.UtcNow;
+                var now = _dateTimeProvider.GetCurrentAppDate();
                 DateTime dueDate;
                 
                 // Se o dia da reserva já passou este mês, joga para o próximo mês
@@ -73,12 +83,12 @@ namespace definance_backend.Features.Goals.Services
                 {
                     var nextMonth = now.AddMonths(1);
                     int lastDay = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
-                    dueDate = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay));
+                    dueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                 }
                 else
                 {
                     int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
-                    dueDate = new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay));
+                    dueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                 }
 
                 var bill = new Bill
@@ -122,8 +132,8 @@ namespace definance_backend.Features.Goals.Services
             goal.Name = dto.Name;
             goal.TargetAmount = dto.TargetAmount;
             goal.Category = dto.Category;
-            goal.StartDate = dto.StartDate;
-            goal.EndDate = dto.EndDate;
+            goal.StartDate = dto.StartDate.HasValue ? _dateTimeProvider.NormalizeToAppDate(dto.StartDate.Value) : (DateTime?)null;
+            goal.EndDate = dto.EndDate.HasValue ? _dateTimeProvider.NormalizeToAppDate(dto.EndDate.Value) : (DateTime?)null;
             goal.MonthlyReserve = dto.MonthlyReserve;
             goal.ReserveDay = dto.ReserveDay;
             goal.UpdatedAt = DateTime.UtcNow;
@@ -143,17 +153,17 @@ namespace definance_backend.Features.Goals.Services
                         bill.Category = dto.Category;
                         
                         // Recalcula DueDate se o dia mudou
-                        var now = DateTime.UtcNow;
+                        var now = _dateTimeProvider.GetCurrentAppDate();
                         if (now.Day > dto.ReserveDay)
                         {
                             var nextMonth = now.AddMonths(1);
                             int lastDay = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
-                            bill.DueDate = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay));
+                            bill.DueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                         }
                         else
                         {
                             int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
-                            bill.DueDate = new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay));
+                            bill.DueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                         }
 
                         await _billRepository.UpdateAsync(bill);
@@ -168,18 +178,18 @@ namespace definance_backend.Features.Goals.Services
             }
             else if (dto.MonthlyReserve > 0)
             {
-                var now = DateTime.UtcNow;
+                var now = _dateTimeProvider.GetCurrentAppDate();
                 DateTime dueDate;
                 if (now.Day > dto.ReserveDay)
                 {
                     var nextMonth = now.AddMonths(1);
                     int lastDay = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
-                    dueDate = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay));
+                    dueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                 }
                 else
                 {
                     int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
-                    dueDate = new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay));
+                    dueDate = _dateTimeProvider.NormalizeToAppDate(new DateTime(now.Year, now.Month, Math.Min(dto.ReserveDay, lastDay), 12, 0, 0, DateTimeKind.Utc));
                 }
 
                 var bill = new Bill
@@ -218,7 +228,8 @@ namespace definance_backend.Features.Goals.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("Esta meta não pertence a este usuário.");
 
-            goal.CurrentAmount += Math.Round(dto.Amount, 2, MidpointRounding.AwayFromZero);
+            decimal depositAmount = Math.Round(dto.Amount, 2, MidpointRounding.AwayFromZero);
+            goal.CurrentAmount += depositAmount;
             
             if (goal.CurrentAmount >= goal.TargetAmount)
             {
@@ -236,13 +247,53 @@ namespace definance_backend.Features.Goals.Services
                 }
             }
 
+            // Criar a conta correspondente já marcada como "Pago" em "Minhas Contas" (Bills)
+            var appNow = _dateTimeProvider.GetExactAppDateTime();
+            var billId = Guid.NewGuid();
+            var newBill = new Bill
+            {
+                Id          = billId,
+                UserId      = userId,
+                Name        = $"Depósito: {goal.Name}",
+                Amount      = depositAmount,
+                Category    = goal.Category,
+                BillType    = "Variável",
+                DueDay      = appNow.Day,
+                DueDate     = appNow,
+                Status      = "Pago",
+                IsRecurring = false,
+                GoalId      = goal.Id,
+                Description = $"Depósito manual na meta: {goal.Name}",
+                CreatedAt   = DateTime.UtcNow,
+                UpdatedAt   = DateTime.UtcNow
+            };
+            await _billRepository.CreateAsync(newBill);
+
+            // Criar a despesa correspondente em "Saídas/Histórico" (Expenses)
+            var newExpense = new Expense
+            {
+                Id          = Guid.NewGuid(),
+                UserId      = userId,
+                Name        = $"Depósito: {goal.Name}",
+                Amount      = depositAmount,
+                Category    = goal.Category,
+                Date        = appNow, // AWS server-normalized timezone datetime
+                ExpenseType = "Variável",
+                Status      = "Pago",
+                BillId      = billId,
+                Description = $"Depósito manual na meta: {goal.Name}",
+                CreatedAt   = DateTime.UtcNow,
+                UpdatedAt   = DateTime.UtcNow
+            };
+            await _expenseRepository.CreateAsync(newExpense);
+
             goal.UpdatedAt = DateTime.UtcNow;
             await _goalRepository.UpdateAsync(goal);
             transaction.Complete();
             return MapToDto(goal);
         }
 
-        public async Task DeleteGoalAsync(Guid userId, Guid goalId)
+        public async Task DeleteGoalAsync(Guid userId, Guid goalId, bool deleteTransactions)
         {
             var goal = await _goalRepository.GetByIdAsync(goalId);
 
@@ -252,16 +303,19 @@ namespace definance_backend.Features.Goals.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("Esta meta não pertence a este usuário.");
 
-            if (goal.LinkedBillId.HasValue)
-            {
-                var bill = await _billRepository.GetByIdAsync(goal.LinkedBillId.Value);
-                if (bill != null && bill.GoalId == goalId)
-                {
-                    await _billRepository.DeleteAsync(bill.Id);
-                }
-            }
+            await _goalRepository.DeleteWithCascadeAsync(goalId, userId, deleteTransactions);
+        }
 
-            await _goalRepository.DeleteAsync(goalId, userId);
+        public async Task<IEnumerable<GoalHistoryDto>> GetGoalHistoryAsync(Guid userId, Guid goalId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new KeyNotFoundException("Meta não encontrada.");
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("Esta meta não pertence a este usuário.");
+
+            return await _goalRepository.GetGoalHistoryAsync(userId, goalId);
         }
 
         private static GoalDto MapToDto(Goal goal) => new()

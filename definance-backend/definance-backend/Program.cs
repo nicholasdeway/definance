@@ -35,6 +35,7 @@ using definance_backend.Features.Analysis.Repositories;
 using definance_backend.Features.Analysis.Services;
 using definance_backend.Features.Categories.Repositories;
 using definance_backend.Features.Categories.Services;
+using definance_backend.Features.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -175,6 +176,13 @@ builder.Services.AddScoped<IAnalysisService, AnalysisService>();
 // CATEGORIES
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// WHATSAPP
+builder.Services.AddScoped<definance_backend.Features.WhatsApp.Repositories.IWhatsAppRepository, definance_backend.Features.WhatsApp.Repositories.WhatsAppRepository>();
+builder.Services.AddScoped<definance_backend.Features.WhatsApp.Services.IWhatsAppService, definance_backend.Features.WhatsApp.Services.WhatsAppService>();
+
+// SHARED SERVICES
+builder.Services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
 // DATABASE
 builder.Services.AddTransient<Npgsql.NpgsqlConnection>(provider => 

@@ -42,28 +42,30 @@ export const MonthlyComparisonChart = ({
     return formatMonth(String(label ?? ""))
   }
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-base text-card-foreground">Receitas vs Despesas</CardTitle>
+        <CardTitle className="text-base text-card-foreground font-bold">Receitas vs Despesas</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col justify-between">
         <div className={cn(
-          "h-[300px] transition-all duration-300",
+          "h-[300px] w-full overflow-hidden transition-[filter] duration-300",
           discreetMode && "discreet-mode-blur"
         )}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
+              <BarChart data={data} margin={{ left: -20, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
                   tickFormatter={formatMonth}
                 />
                 <YAxis 
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={{ stroke: "var(--border)" }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
                   tickFormatter={formatYAxisTick}
                 />
                 <Tooltip
@@ -71,7 +73,9 @@ export const MonthlyComparisonChart = ({
                   contentStyle={{
                     backgroundColor: "var(--card)",
                     border: "1px solid var(--border)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
+                    fontSize: "12px",
+                    fontWeight: "bold"
                   }}
                   labelStyle={{ color: "var(--card-foreground)" }}
                   labelFormatter={tooltipLabelFormatter}
@@ -82,17 +86,19 @@ export const MonthlyComparisonChart = ({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart message="Sem dados históricos para comparação." />
+            <div className="flex h-full items-center justify-center">
+              <EmptyChart message="Sem dados históricos para comparação." />
+            </div>
           )}
         </div>
-        <div className="mt-4 flex justify-center gap-6 text-xs">
-          <div className="flex items-center gap-1">
+        <div className="mt-4 flex justify-center gap-6 text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-chart-1" />
-            <span className="text-muted-foreground">Receitas</span>
+            <span className="text-muted-foreground/80">Receitas</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-chart-5" />
-            <span className="text-muted-foreground">Despesas</span>
+            <span className="text-muted-foreground/80">Despesas</span>
           </div>
         </div>
       </CardContent>
