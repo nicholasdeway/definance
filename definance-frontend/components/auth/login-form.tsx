@@ -24,7 +24,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
     e.preventDefault()
     setIsLoading(true)
     setError("")
-    
+
     const result = await login(identifier, password)
     if (result.success && result.user) {
       if (result.user.hasCompletedOnboarding) {
@@ -66,22 +66,22 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
             <Input
               id="identifier"
               type="text"
-              placeholder="seu@email.com ou (00) 00000-0000"
+              placeholder="seu@email.com ou DDI (00) 00000-0000"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
               disabled={isLoading}
-              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-[13px] font-bold text-foreground">Senha</Label>
-            <button 
+            <button
               type="button"
-              onClick={onForgotPassword} 
+              onClick={onForgotPassword}
               className="text-sm font-medium text-emerald-500 hover:text-emerald-400 transition-colors cursor-pointer"
             >
               Esqueci minha senha
@@ -108,10 +108,10 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
             </button>
           </div>
         </div>
-        
-        <Button 
-          type="submit" 
-          className="h-12 w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-base rounded-xl shadow-lg shadow-emerald-900/20 cursor-pointer" 
+
+        <Button
+          type="submit"
+          className="h-12 w-full bg-emerald-600 hover:bg-emerald-500 text-white transition-all font-semibold text-base rounded-xl shadow-lg shadow-emerald-900/20 cursor-pointer"
           disabled={isLoading}
         >
           {isLoading ? <Spinner className="h-4 w-4" /> : "Acessar Painel ➔"}
@@ -127,9 +127,9 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
         </div>
       </div>
 
-      <Button 
-        variant="outline" 
-        className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer" 
+      <Button
+        variant="outline"
+        className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer"
         onClick={handleGoogleLogin}
         disabled={isLoading}
       >

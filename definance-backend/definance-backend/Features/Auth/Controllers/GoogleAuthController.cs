@@ -9,9 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
+using definance_backend.Common.Settings;
 using definance_backend.Domain.Entities;
 using definance_backend.Features.Auth.Services;
-using definance_backend.Common.Settings;
 using definance_backend.Features.Auth.Repositories;
 
 namespace definance_backend.Features.Auth.Controllers
@@ -26,19 +26,22 @@ namespace definance_backend.Features.Auth.Controllers
         private readonly ILogger<GoogleAuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly string _frontendBase;
+        private readonly SubscriptionSettings _subscriptionSettings;
 
         public GoogleAuthController(
             IUserRepository userRepository,
             IJwtService jwtService,
             IOptions<GoogleSettings> googleOptions,
             IConfiguration configuration,
-            ILogger<GoogleAuthController> logger)
+            ILogger<GoogleAuthController> logger,
+            IOptions<SubscriptionSettings> subscriptionSettings)
         {
             _userRepository = userRepository;
             _jwtService = jwtService;
             _googleSettings = googleOptions.Value;
             _logger = logger;
             _configuration = configuration;
+            _subscriptionSettings = subscriptionSettings.Value;
 
             _frontendBase =
                 configuration["FrontendBaseUrl"]
@@ -113,10 +116,8 @@ namespace definance_backend.Features.Auth.Controllers
 
             SetTokenCookie(token);
 
-            // Se o usuário já tiver uma returnUrl específica, respeita ela.
-            // Senão, verifica se completou o onboarding.
             string targetPath;
-            if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/")
+            if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/" && IsValidReturnUrl(returnUrl))
             {
                 targetPath = returnUrl;
             }
@@ -186,7 +187,11 @@ namespace definance_backend.Features.Auth.Controllers
                     PictureUrl = picture,
 
                     LastLoginAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+
+                    PlanType = "Free",
+                    PremiumUntil = DateTime.UtcNow.AddDays(_subscriptionSettings.TrialDays),
+                    SubscriptionStatus = "trialing"
                 };
 
                 user = await _userRepository.CreateAsync(user);
@@ -240,6 +245,26 @@ namespace definance_backend.Features.Auth.Controllers
                 firstName = definance_backend.Common.Helpers.NameFormatter.NormalizeName(parts[0]);
                 lastName = definance_backend.Common.Helpers.NameFormatter.NormalizeName(string.Join(' ', parts.Skip(1)));
             }
+        }
+
+        /// <summary>
+        /// Valida que a returnUrl seja segura (relativa ou pertencente ao domínio definance.com.br).
+        /// Previne open-redirect attacks.
+        /// </summary>
+        private static bool IsValidReturnUrl(string url)
+        {
+            // URL relativa (começa com /) — segura por definição
+            if (url.StartsWith('/') && !url.StartsWith("//"))
+                return true;
+
+            // URL absoluta — verificar se o host pertence ao domínio
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                var host = uri.Host.ToLowerInvariant();
+                return host == "definance.com.br" || host.EndsWith(".definance.com.br");
+            }
+
+            return false;
         }
     }
 }

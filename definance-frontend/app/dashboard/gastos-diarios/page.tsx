@@ -320,32 +320,22 @@ export default function GastosDiariosPage() {
             
             <div className="flex gap-2">
               <Input
-                placeholder='Ex: "Mercado 150" ou "Uber 25"'
+                placeholder={isListening ? "Escutando..." : 'Ex: "Mercado 150" ou "Uber 25"'}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGasto()}
                 className={cn(
                   "flex-1 h-10 bg-muted/20 border-border/50 text-xs truncate rounded-xl placeholder:text-muted-foreground/50 placeholder:text-xs sm:placeholder:text-sm transition-all",
-                  isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
+                  isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02] placeholder:text-primary/70 placeholder:font-semibold animate-pulse"
                 )}
                 disabled={isSaving}
               />
               
               <Button
                 type="button"
-                onPointerDown={isMobile ? (e) => {
-                  e.preventDefault()
-                  startListening()
-                } : undefined}
-                onPointerUp={isMobile ? (e) => {
-                  e.preventDefault()
-                  stopListening()
-                } : undefined}
-                onClick={!isMobile ? (isListening ? stopListening : startListening) : undefined}
-                onContextMenu={(e) => e.preventDefault()}
+                onClick={isListening ? stopListening : startListening}
                 className={cn(
-                  "h-10 w-10 p-0 shrink-0 shadow-lg transition-all duration-300 rounded-xl relative overflow-hidden",
-                  isMobile && "touch-none",
+                  "h-10 w-10 p-0 shrink-0 shadow-lg transition-all duration-300 rounded-xl relative overflow-hidden cursor-pointer",
                   isListening 
                     ? "bg-red-500 hover:bg-red-600 shadow-red-500/20 text-white scale-110" 
                     : "bg-primary/80 hover:bg-primary text-primary-foreground shadow-primary/20"

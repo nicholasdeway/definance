@@ -11,6 +11,7 @@ import { PersonalInfoForm } from "@/components/dashboard/perfil/personal-info-fo
 import { PasswordChangeForm } from "@/components/dashboard/perfil/password-change-form"
 import { ProfileAvatarSection } from "@/components/dashboard/perfil/profile-avatar-section"
 import { AccountSummaryCard } from "@/components/dashboard/perfil/account-summary-card"
+import { PlansSection } from "@/components/dashboard/perfil/plans-section"
 
 export default function PerfilPage() {
   const { user, updateProfile, changePassword, updateAvatar, removeAvatar, isActionLoading } = useAuth()
@@ -165,7 +166,8 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna da Esquerda: Informações e Assinatura */}
         <div className="lg:col-span-2 space-y-6">
           <PersonalInfoForm 
             profile={profile}
@@ -181,9 +183,12 @@ export default function PerfilPage() {
               onSubmit={handleChangePassword}
             />
           )}
+
+          <PlansSection />
         </div>
 
-        <div className="space-y-6">
+        {/* Coluna da Direita: Foto de Perfil & Resumo da Conta Individuais */}
+        <div className="lg:col-span-1 space-y-6">
           <ProfileAvatarSection 
             user={user}
             initials={initials}

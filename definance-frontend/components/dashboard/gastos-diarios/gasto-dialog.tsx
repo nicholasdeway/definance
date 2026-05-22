@@ -143,11 +143,11 @@ export const GastoDialog = ({
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder={isMobile ? "Ex: Almoço, Uber..." : "Ex: Almoço no Centro, Uber Casa..."}
+              placeholder={isListening ? "Escutando..." : (isMobile ? "Ex: Almoço, Uber..." : "Ex: Almoço no Centro, Uber Casa...")}
               className={cn(
                 "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
                 isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5",
-                isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
+                isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02] placeholder:text-primary/70 placeholder:font-semibold animate-pulse"
               )}
               required
             />

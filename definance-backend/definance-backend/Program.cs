@@ -36,12 +36,48 @@ using definance_backend.Features.Analysis.Services;
 using definance_backend.Features.Categories.Repositories;
 using definance_backend.Features.Categories.Services;
 using definance_backend.Features.Shared.Services;
+using definance_backend.Features.Subscriptions.Services;
+using definance_backend.Features.Subscriptions.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Validação de configurações obrigatórias
+var frontendBaseUrl = builder.Configuration["FrontendBaseUrl"];
+if (string.IsNullOrWhiteSpace(frontendBaseUrl))
+    throw new InvalidOperationException(
+        "A configuração 'FrontendBaseUrl' é obrigatória e não está definida no appsettings.");
+
+var stripeApiKey = builder.Configuration["Stripe:ApiKey"];
+var isDev = builder.Environment.IsDevelopment();
+
+if (string.IsNullOrWhiteSpace(stripeApiKey) || stripeApiKey.Contains("placeholder") || stripeApiKey.StartsWith("YOUR_"))
+{
+    throw new InvalidOperationException("A configuração 'Stripe:ApiKey' é obrigatória e está ausente ou inválida.");
+}
+
+var mpEnabled = builder.Configuration.GetValue<bool>("MercadoPago:Enabled");
+if (mpEnabled)
+{
+    var mpAccessToken = builder.Configuration["MercadoPago:AccessToken"];
+    var mpWebhookSecret = builder.Configuration["MercadoPago:WebhookSecret"];
+
+    if (string.IsNullOrWhiteSpace(mpAccessToken) || mpAccessToken.Contains("placeholder") || mpAccessToken.StartsWith("YOUR_"))
+    {
+        throw new InvalidOperationException("A configuração 'MercadoPago:AccessToken' é obrigatória quando o Mercado Pago está ativado.");
+    }
+
+    if (!isDev && (string.IsNullOrWhiteSpace(mpWebhookSecret) || mpWebhookSecret.Contains("placeholder")))
+    {
+        throw new InvalidOperationException("A configuração 'MercadoPago:WebhookSecret' é obrigatória em ambiente de produção quando o Mercado Pago está ativado.");
+    }
+}
 
 // Configuração de Rate Limiting
 builder.Services.AddRateLimiter(options =>
 {
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
     options.AddFixedWindowLimiter("ai-limit", opt =>
     {
         opt.PermitLimit = 10;
@@ -50,24 +86,38 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    {
+        opt.Window = TimeSpan.FromSeconds(30);
+        opt.PermitLimit = 5;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
 });
 
-// Configuração de Portas para Produção
+
 if (!builder.Environment.IsDevelopment())
 {
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(80);
-        // Descomente se for gerenciar SSL diretamente no Kestrel
-        // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
     });
     
-    // Define as URLs que o servidor vai escutar
     builder.WebHost.UseUrls("http://*:80"); 
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Aceitar enums como strings case-insensitive (ex: "monthly" ou "Monthly" → PlanType.Monthly)
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(
+                System.Text.Json.JsonNamingPolicy.CamelCase));
+        // Ignorar diferença de caixa nos nomes de propriedades JSON
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
+
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -127,7 +177,6 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Clear known networks and proxies to allow headers from any source (common in container environments)
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -159,7 +208,7 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IDailyExpenseRepository, DailyExpenseRepository>();
 builder.Services.AddScoped<IDailyExpenseService, DailyExpenseService>();
 builder.Services.AddScoped<IQuickExpenseParser, QuickExpenseParser>();
-builder.Services.AddHttpClient(); // Comunicação com a IA
+builder.Services.AddHttpClient();
 
 // BILLS (Minhas Contas)
 builder.Services.AddScoped<IBillRepository, BillRepository>();
@@ -168,6 +217,9 @@ builder.Services.AddScoped<IBillService, BillService>();
 // GOALS (Metas)
 builder.Services.AddScoped<IGoalRepository, GoalRepository>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IMercadoPagoService, MercadoPagoService>();
+builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
 
 // ANALYSIS
 builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
@@ -192,21 +244,16 @@ builder.Services.AddTransient<Npgsql.NpgsqlConnection>(provider =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// RATE LIMITER
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("AuthPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromSeconds(30);
-        opt.PermitLimit = 5;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 0;
-    });
-});
+
 
 // GOOGLE SETTINGS (IOptions<GoogleSettings>)
 builder.Services.Configure<GoogleSettings>(
     builder.Configuration.GetSection("Google")
+);
+
+// SUBSCRIPTION SETTINGS (IOptions<SubscriptionSettings>)
+builder.Services.Configure<SubscriptionSettings>(
+    builder.Configuration.GetSection("Subscription")
 );
 
 // AUTENTICAÇÃO: JWT + GOOGLE OAUTH
@@ -262,8 +309,6 @@ builder.Services
     .AddCookie("External", options =>
     {
         options.Cookie.HttpOnly = true;
-        // No localhost, SameSite=None sem Secure costuma falhar em navegadores modernos.
-        // Usamos Lax para o cookie externo ser enviado corretamente após o redirecionamento do Google.
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
@@ -305,6 +350,8 @@ builder.Services
         };
     });
 
+Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:ApiKey"];
+
 var app = builder.Build();
 
 app.UseSwagger();
@@ -318,12 +365,10 @@ app.MapGet("/", ctx =>
 
 app.UseStaticFiles();
 
-/* 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-*/
 
 app.UseExceptionHandler();
 

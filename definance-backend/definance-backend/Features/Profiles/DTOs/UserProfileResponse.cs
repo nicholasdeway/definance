@@ -11,5 +11,10 @@ namespace definance_backend.Features.Profiles.DTOs
         public DateTime CreatedAt { get; set; }
         public bool HasCompletedOnboarding { get; set; }
         public bool IsWhatsAppConnected { get; set; }
+        public string PlanType { get; set; } = string.Empty;
+        public DateTime? PremiumUntil { get; set; }
+        public bool IsPremium { get; set; }
+        public string? StripeSubscriptionId { get; set; }
+        public DateTime? SubscriptionStartedAt { get; set; }
     }
 }

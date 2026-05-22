@@ -43,7 +43,15 @@ namespace definance_backend.Features.Auth.Repositories
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
                     is_whatsapp_connected   AS ""IsWhatsAppConnected"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type               AS ""PlanType"",
+                    premium_until           AS ""PremiumUntil"",
+                    stripe_customer_id      AS ""StripeCustomerId"",
+                    stripe_subscription_id  AS ""StripeSubscriptionId"",
+                    subscription_status     AS ""SubscriptionStatus"",
+                    subscription_started_at AS ""SubscriptionStartedAt"",
+                    mp_payer_id             AS ""MercadoPagoPayerId"",
+                    mp_payment_id           AS ""MercadoPagoPaymentId""
                 FROM users
                 WHERE LOWER(email) = LOWER(@Email);
             ";
@@ -78,9 +86,17 @@ namespace definance_backend.Features.Auth.Repositories
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
                     is_whatsapp_connected   AS ""IsWhatsAppConnected"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type               AS ""PlanType"",
+                    premium_until           AS ""PremiumUntil"",
+                    stripe_customer_id      AS ""StripeCustomerId"",
+                    stripe_subscription_id  AS ""StripeSubscriptionId"",
+                    subscription_status     AS ""SubscriptionStatus"",
+                    subscription_started_at AS ""SubscriptionStartedAt"",
+                    mp_payer_id             AS ""MercadoPagoPayerId"",
+                    mp_payment_id           AS ""MercadoPagoPaymentId""
                 FROM users
-                WHERE phone = @Phone
+                WHERE (phone = @Phone OR phone = '+' || @Phone OR '+' || phone = @Phone)
                   AND is_active = TRUE
                 ORDER BY created_at DESC
                 LIMIT 1;
@@ -114,7 +130,14 @@ namespace definance_backend.Features.Auth.Repositories
                     is_active,
                     has_completed_onboarding,
                     is_whatsapp_connected,
-                    onboarding_data
+                    onboarding_data,
+                    plan_type,
+                    premium_until,
+                    stripe_customer_id,
+                    stripe_subscription_id,
+                    subscription_status,
+                    mp_payer_id,
+                    mp_payment_id
                 )
                 VALUES (
                     @FirstName,
@@ -136,7 +159,14 @@ namespace definance_backend.Features.Auth.Repositories
                     TRUE,
                     @HasCompletedOnboarding,
                     @IsWhatsAppConnected,
-                    @OnboardingData::jsonb
+                    @OnboardingData::jsonb,
+                    @PlanType,
+                    @PremiumUntil,
+                    @StripeCustomerId,
+                    @StripeSubscriptionId,
+                    @SubscriptionStatus,
+                    @MercadoPagoPayerId,
+                    @MercadoPagoPaymentId
                 )
                 RETURNING
                     id          AS ""Id"",
@@ -165,7 +195,14 @@ namespace definance_backend.Features.Auth.Repositories
                 user.LastLoginAt,
                 user.HasCompletedOnboarding,
                 user.IsWhatsAppConnected,
-                user.OnboardingData
+                user.OnboardingData,
+                user.PlanType,
+                user.PremiumUntil,
+                user.StripeCustomerId,
+                user.StripeSubscriptionId,
+                user.SubscriptionStatus,
+                user.MercadoPagoPayerId,
+                user.MercadoPagoPaymentId
             });
 
             user.Id = result.Id;
@@ -237,6 +274,14 @@ namespace definance_backend.Features.Auth.Repositories
                     has_completed_onboarding = @HasCompletedOnboarding,
                     is_whatsapp_connected   = @IsWhatsAppConnected,
                     onboarding_data         = @OnboardingData::jsonb,
+                    plan_type               = @PlanType,
+                    premium_until           = @PremiumUntil,
+                    stripe_customer_id      = @StripeCustomerId,
+                    stripe_subscription_id  = @StripeSubscriptionId,
+                    subscription_status     = @SubscriptionStatus,
+                    subscription_started_at = @SubscriptionStartedAt,
+                    mp_payer_id             = @MercadoPagoPayerId,
+                    mp_payment_id           = @MercadoPagoPaymentId,
                     updated_at              = now()
                 WHERE id = @Id;
             ";
@@ -264,7 +309,15 @@ namespace definance_backend.Features.Auth.Repositories
                 user.IsActive,
                 user.HasCompletedOnboarding,
                 user.IsWhatsAppConnected,
-                user.OnboardingData
+                user.OnboardingData,
+                user.PlanType,
+                user.PremiumUntil,
+                user.StripeCustomerId,
+                user.StripeSubscriptionId,
+                user.SubscriptionStatus,
+                user.SubscriptionStartedAt,
+                user.MercadoPagoPayerId,
+                user.MercadoPagoPaymentId
             });
 
             return user;
@@ -296,7 +349,15 @@ namespace definance_backend.Features.Auth.Repositories
                     is_active               AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
                     is_whatsapp_connected   AS ""IsWhatsAppConnected"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type               AS ""PlanType"",
+                    premium_until           AS ""PremiumUntil"",
+                    stripe_customer_id      AS ""StripeCustomerId"",
+                    stripe_subscription_id  AS ""StripeSubscriptionId"",
+                    subscription_status     AS ""SubscriptionStatus"",
+                    subscription_started_at AS ""SubscriptionStartedAt"",
+                    mp_payer_id             AS ""MercadoPagoPayerId"",
+                    mp_payment_id           AS ""MercadoPagoPaymentId""
                 FROM users
                 WHERE id = @Id
                   AND is_active = TRUE;
