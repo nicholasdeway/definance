@@ -25,7 +25,7 @@ export const ProfileAvatarSection = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 bg-card/60 backdrop-blur-sm relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-border/80">
       <CardHeader>
         <CardTitle className="text-base text-card-foreground">Foto de Perfil</CardTitle>
       </CardHeader>

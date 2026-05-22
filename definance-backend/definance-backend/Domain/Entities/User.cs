@@ -36,5 +36,24 @@ namespace definance_backend.Domain.Entities
 
         public bool IsWhatsAppConnected { get; set; } = false;
         public ICollection<WhatsAppPairing>? WhatsAppPairings { get; set; }
+
+        public string PlanType { get; set; } = "Free";
+
+        // Data de expiração do acesso Premium
+        public DateTime? PremiumUntil { get; set; }
+
+        // Stripe
+        public string? StripeCustomerId { get; set; }
+        public string? StripeSubscriptionId { get; set; }
+
+        // Mercado Pago
+        public string? MercadoPagoPayerId { get; set; }
+        public string? MercadoPagoPaymentId { get; set; }
+
+        public string? SubscriptionStatus { get; set; } = "trialing";
+        public DateTime? SubscriptionStartedAt { get; set; }
+
+        public bool IsPremium => PremiumUntil.HasValue && PremiumUntil.Value > DateTime.UtcNow;
+        public bool IsEligibleForRefund => PlanType == "Premium" && SubscriptionStartedAt.HasValue && SubscriptionStartedAt.Value > DateTime.UtcNow.AddDays(-7);
     }
 }

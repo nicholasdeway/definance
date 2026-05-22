@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api-proxy"
 
 function normalizeUser(user: User | null): User | null {
   if (!user) return null
-  
+
   if (user.pictureUrl) {
     if (user.pictureUrl.startsWith("http")) {
       user.avatar = user.pictureUrl
@@ -16,7 +16,7 @@ function normalizeUser(user: User | null): User | null {
       user.avatar = `${API_URL}${user.pictureUrl}`
     }
   }
-  
+
   return user
 }
 
@@ -32,6 +32,12 @@ export interface User {
   createdAt: string
   hasCompletedOnboarding: boolean
   isWhatsAppConnected: boolean
+  planType: string
+  premiumUntil?: string
+  isPremium: boolean
+  subscriptionStartedAt?: string
+  isEligibleForRefund?: boolean
+  stripeSubscriptionId?: string
 }
 
 export interface RegisterData {
@@ -74,7 +80,7 @@ interface AuthContextType {
   logout: (force?: boolean) => void
   isAuthenticated: boolean
   isLoading: boolean
-  refreshUser: (silent?: boolean) => Promise<void>
+  refreshUser: (silent?: boolean) => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -83,42 +89,45 @@ const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-p
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  
+
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [isLoginLoading, setIsLoginLoading] = useState(false)
   const [isRegisterLoading, setIsRegisterLoading] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
-  
+
   const [authError, setAuthError] = useState<string | null>(null)
-  
+
   const router = useRouter()
   const pathname = usePathname()
-  
+
   const clearAuthError = useCallback(() => setAuthError(null), [])
 
   const isPublicRoute = useMemo(() => {
     if (!pathname) return true
-    return PUBLIC_ROUTES.some(route => 
+    return PUBLIC_ROUTES.some(route =>
       route === "/" ? pathname === "/" : pathname.startsWith(route)
     )
   }, [pathname])
 
-  const checkAuth = useCallback(async (silent = false) => {
+  const checkAuth = useCallback(async (silent = false): Promise<User | null> => {
     if (!silent) setIsAuthLoading(true)
     try {
       const profile = await apiClient<User>("/api/Auth/me")
-      setUser(normalizeUser(profile))
+      const normalized = normalizeUser(profile)
+      setUser(normalized)
+      return normalized
     } catch (error: unknown) {
       setUser(null)
       const errorMessage = error instanceof Error ? error.message : String(error)
       if (errorMessage !== "Não autenticado" && errorMessage !== "Sessão expirada") {
         console.error("Auth check failed:", error)
       }
+      return null
     } finally {
       if (!silent) setIsAuthLoading(false)
     }
   }, [])
-  
+
   const logout = useCallback(async (force = false) => {
     setIsActionLoading(true)
     try {
@@ -145,7 +154,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
-  
+
+  // Listener para Back-Forward Cache (bfcache)
+  // Quando o usuário volta de páginas externas de pagamento (como Stripe ou Mercado Pago),
+  // a página é restaurada do cache do navegador. Atualizamos os dados do usuário em segundo plano
+  // de forma silenciosa para sincronizar o status de assinatura.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        checkAuth(true)
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow)
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow)
+    }
+  }, [checkAuth])
+
   // Listener para Logout Global (Disparado pelo api-client em caso de 401 fatal)
   useEffect(() => {
     const handleLogoutEvent = () => {
@@ -154,11 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         return
       }
-      
+
       console.warn("Sessão invalidada via evento global. Forçando logout...")
       logout(true)
     }
-    
+
     window.addEventListener("auth:logout", handleLogoutEvent)
     return () => window.removeEventListener("auth:logout", handleLogoutEvent)
   }, [logout, isPublicRoute])
@@ -209,7 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ identifier, password }),
       })
-      
+
       const profile = await apiClient<User>("/api/Auth/me")
       setUser(normalizeUser(profile))
       return { success: true, user: profile }
@@ -228,8 +253,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Validação de Telefone
     const rawPhone = data.phone ? data.phone.replace(/\D/g, "") : ""
-    if (data.phone && (rawPhone.length < 10 || rawPhone.length > 11)) {
-      const errorMsg = "Telefone inválido. Use (11) 99999-9999 ou similar."
+    if (data.phone && (rawPhone.length < 10 || rawPhone.length > 15)) {
+      const errorMsg = "Telefone inválido. O número deve conter apenas números e ter entre 10 e 15 dígitos (incluindo o DDI)."
       setAuthError(errorMsg)
       setIsRegisterLoading(false)
       return { success: false, message: errorMsg }
@@ -249,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify(payload),
       })
-      
+
       return { success: true }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao criar conta"
@@ -349,12 +374,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const formData = new FormData()
       formData.append("file", file)
-      
+
       const response = await apiClient<{ pictureUrl: string }>("/api/profile/avatar", {
         method: "POST",
         body: formData,
       })
-      
+
       await checkAuth(true)
       return { success: true, avatarUrl: response.pictureUrl }
     } catch (error: unknown) {
@@ -406,17 +431,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: isAuthLoading,
     refreshUser: checkAuth
   }), [
-    user, 
-    isAuthLoading, 
-    isLoginLoading, 
-    isRegisterLoading, 
-    isActionLoading, 
-    authError, 
-    clearAuthError, 
-    login, 
-    register, 
-    loginWithGoogle, 
-    requestPasswordReset, 
+    user,
+    isAuthLoading,
+    isLoginLoading,
+    isRegisterLoading,
+    isActionLoading,
+    authError,
+    clearAuthError,
+    login,
+    register,
+    loginWithGoogle,
+    requestPasswordReset,
     confirmPasswordReset,
     updateProfile,
     changePassword,
@@ -439,7 +464,7 @@ const defaultAuthContext: AuthContextType = {
   isRegisterLoading: false,
   isActionLoading: false,
   authError: null,
-  clearAuthError: () => {},
+  clearAuthError: () => { },
   login: async () => ({ success: false }),
   register: async () => ({ success: false }),
   loginWithGoogle: async () => false,
@@ -449,10 +474,10 @@ const defaultAuthContext: AuthContextType = {
   changePassword: async () => ({ success: false }),
   updateAvatar: async () => ({ success: false }),
   removeAvatar: async () => ({ success: false }),
-  logout: () => {},
+  logout: () => { },
   isAuthenticated: false,
   isLoading: false,
-  refreshUser: async () => {}
+  refreshUser: async () => null
 } as any
 
 export function useAuth(): AuthContextType {

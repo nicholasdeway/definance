@@ -42,7 +42,12 @@ namespace definance_backend.Features.Profiles.Services
                 PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
                 HasCompletedOnboarding = user.HasCompletedOnboarding,
-                IsWhatsAppConnected = user.IsWhatsAppConnected
+                IsWhatsAppConnected = user.IsWhatsAppConnected,
+                PlanType = user.PlanType,
+                PremiumUntil = user.PremiumUntil,
+                IsPremium = user.IsPremium,
+                StripeSubscriptionId = user.StripeSubscriptionId,
+                SubscriptionStartedAt = user.SubscriptionStartedAt
             };
         }
 
@@ -89,7 +94,12 @@ namespace definance_backend.Features.Profiles.Services
                 PictureUrl = user.PictureUrl,
                 CreatedAt = user.CreatedAt,
                 HasCompletedOnboarding = user.HasCompletedOnboarding,
-                IsWhatsAppConnected = user.IsWhatsAppConnected
+                IsWhatsAppConnected = user.IsWhatsAppConnected,
+                PlanType = user.PlanType,
+                PremiumUntil = user.PremiumUntil,
+                IsPremium = user.IsPremium,
+                StripeSubscriptionId = user.StripeSubscriptionId,
+                SubscriptionStartedAt = user.SubscriptionStartedAt
             });
         }
 

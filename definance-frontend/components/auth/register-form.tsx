@@ -110,7 +110,7 @@ export function RegisterForm() {
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 required
                 disabled={isLoading}
-                className="bg-secondary/50 border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
+                className="bg-secondary/50 border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
               />
             </div>
           </div>
@@ -124,7 +124,7 @@ export function RegisterForm() {
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
@@ -141,7 +141,7 @@ export function RegisterForm() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-background dark:bg-secondary/50 border-input dark:border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
@@ -150,9 +150,9 @@ export function RegisterForm() {
           <Label htmlFor="phone" className="text-[13px] font-bold text-foreground">Telefone</Label>
           <div className="flex gap-3">
             {/* Seletor de DDI com Dropdown */}
-            <div className="relative w-[160px] shrink-0 group">
+            <div className="relative w-[110px] sm:w-[160px] shrink-0 group">
               <select
-                className="w-full h-12 bg-background dark:bg-secondary/50 border border-input dark:border-border hover:border-emerald-500/50 transition-all rounded-xl pl-12 pr-8 text-xs font-bold text-transparent cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none relative z-20"
+                className="w-full h-12 bg-background dark:bg-secondary/50 border border-input dark:border-border hover:border-emerald-500/50 transition-all rounded-xl pl-10 pr-7 sm:pl-12 sm:pr-8 text-xs font-bold text-transparent cursor-pointer outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none relative z-20"
                 value={formData.ddi}
                 onChange={(e) => setFormData({ ...formData, ddi: e.target.value })}
               >
@@ -251,7 +251,7 @@ export function RegisterForm() {
               </select>
 
               {/* Camada Visual de Exibição */}
-              <div className="absolute inset-0 flex items-center pl-4 pr-8 pointer-events-none z-30">
+              <div className="absolute inset-0 flex items-center pl-3 pr-7 sm:pl-4 sm:pr-8 pointer-events-none z-30">
                 <span className="text-xs font-black text-foreground dark:text-white flex items-center gap-2 truncate">
                   <div className="w-5 h-3.5 shrink-0 overflow-hidden rounded-sm relative bg-foreground/10 dark:bg-white/10">
                     <img 
@@ -320,7 +320,7 @@ export function RegisterForm() {
                 }}
                 required
                 disabled={isLoading}
-                className="bg-secondary/50 border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground rounded-xl font-medium placeholder:opacity-30"
+                className="bg-secondary/50 border-border h-12 pl-10 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl font-medium placeholder:opacity-30"
               />
             </div>
           </div>
@@ -341,7 +341,7 @@ export function RegisterForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-secondary/50 border-border h-12 pl-10 pr-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-secondary/50 border-border h-12 pl-10 pr-10 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
             />
             <button
               type="button"
@@ -384,7 +384,7 @@ export function RegisterForm() {
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               required
               disabled={isLoading}
-              className="bg-secondary/50 border-border h-12 pr-10 focus:ring-emerald-500/20 text-foreground rounded-xl"
+              className="bg-secondary/50 border-border h-12 pr-10 focus:ring-emerald-500/20 text-foreground text-xs sm:text-sm rounded-xl"
             />
             <button
               type="button"

@@ -32,7 +32,12 @@ namespace definance_backend.Features.Profiles.Repositories
                     updated_at             AS ""UpdatedAt"",
                     is_active              AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type              AS ""PlanType"",
+                    premium_until          AS ""PremiumUntil"",
+                    stripe_customer_id     AS ""StripeCustomerId"",
+                    stripe_subscription_id AS ""StripeSubscriptionId"",
+                    subscription_status    AS ""SubscriptionStatus""
                 FROM users
                 WHERE id = @Id;
             ";
@@ -60,7 +65,12 @@ namespace definance_backend.Features.Profiles.Repositories
                     updated_at             AS ""UpdatedAt"",
                     is_active              AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type              AS ""PlanType"",
+                    premium_until          AS ""PremiumUntil"",
+                    stripe_customer_id     AS ""StripeCustomerId"",
+                    stripe_subscription_id AS ""StripeSubscriptionId"",
+                    subscription_status    AS ""SubscriptionStatus""
                 FROM users
                 WHERE email = @Email;
             ";
@@ -88,9 +98,14 @@ namespace definance_backend.Features.Profiles.Repositories
                     updated_at             AS ""UpdatedAt"",
                     is_active              AS ""IsActive"",
                     has_completed_onboarding AS ""HasCompletedOnboarding"",
-                    onboarding_data         AS ""OnboardingData""
+                    onboarding_data         AS ""OnboardingData"",
+                    plan_type              AS ""PlanType"",
+                    premium_until          AS ""PremiumUntil"",
+                    stripe_customer_id     AS ""StripeCustomerId"",
+                    stripe_subscription_id AS ""StripeSubscriptionId"",
+                    subscription_status    AS ""SubscriptionStatus""
                 FROM users
-                WHERE phone = @Phone AND is_active = TRUE;
+                WHERE (phone = @Phone OR phone = '+' || @Phone OR '+' || phone = @Phone) AND is_active = TRUE;
             ";
 
             await using var conn = new NpgsqlConnection(_connectionString);
@@ -112,6 +127,11 @@ namespace definance_backend.Features.Profiles.Repositories
                     picture_url      = @PictureUrl,
                     has_completed_onboarding = @HasCompletedOnboarding,
                     onboarding_data = @OnboardingData::jsonb,
+                    plan_type        = @PlanType,
+                    premium_until    = @PremiumUntil,
+                    stripe_customer_id = @StripeCustomerId,
+                    stripe_subscription_id = @StripeSubscriptionId,
+                    subscription_status = @SubscriptionStatus,
                     updated_at       = NOW(),
                     is_active        = @IsActive
                 WHERE id = @Id;

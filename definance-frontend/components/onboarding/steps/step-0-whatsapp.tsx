@@ -31,7 +31,24 @@ export function Step0WhatsApp() {
   const handleConnected = React.useCallback(async () => {
     setStatus("conectado")
     toast.success("WhatsApp conectado! Carregando seu perfil...")
-    await refreshUser()
+
+    // Retentativas com pequenos intervalos caso ocorra lag de escrita no DB
+    let attempts = 0
+    let updatedUser = null
+    while (attempts < 5) {
+      updatedUser = await refreshUser()
+      if (updatedUser?.isWhatsAppConnected) {
+        return
+      }
+      attempts++
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+
+    // Se após as retentativas o perfil ainda vier desatualizado, volta ao estado pendente
+    if (!updatedUser?.isWhatsAppConnected) {
+      setStatus("pendente")
+      toast.error("Houve uma oscilação na verificação. Por favor, clique em 'Já enviei o código' para tentar novamente.")
+    }
   }, [refreshUser])
 
   const fetchCode = React.useCallback(async () => {
@@ -39,7 +56,7 @@ export function Step0WhatsApp() {
     setError(null)
     try {
       const statusData = await apiClient<{ code: string; status: string; expiresAt: string }>("/api/whatsapp/status").catch(() => null)
-      
+
       if (statusData?.status?.toLowerCase() === "connected") {
         await handleConnected()
         return
@@ -70,7 +87,7 @@ export function Step0WhatsApp() {
     setIsVerifying(true)
     try {
       const data = await apiClient<{ code: string; status: string }>(`/api/whatsapp/status?t=${Date.now()}`)
-      
+
       if (data.status?.toLowerCase() === "connected") {
         await handleConnected()
       } else {

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { Logo } from "@/components/logo"
 import { Brain, LayoutGrid, MessageSquare } from "lucide-react"
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +26,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="mt-12">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
@@ -36,7 +35,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               Gestão.<br />
               <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Inteligência.</span>
             </motion.h1>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
@@ -46,20 +45,20 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             </motion.p>
 
             {/* Feature Cards */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="mt-16 flex flex-col gap-5"
             >
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 16 }}
-                animate={{ 
-                  opacity: 1, 
-                  x: 16, 
-                  y: [0, -8, 0] 
+                animate={{
+                  opacity: 1,
+                  x: 16,
+                  y: [0, -8, 0]
                 }}
-                transition={{ 
+                transition={{
                   opacity: { duration: 0.5, delay: 0.3 },
                   x: { duration: 0.5, delay: 0.3 },
                   y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
@@ -75,14 +74,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 48 }}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   x: 48,
-                  y: [0, -12, 0] 
+                  y: [0, -12, 0]
                 }}
-                transition={{ 
+                transition={{
                   opacity: { duration: 0.5, delay: 0.4 },
                   x: { duration: 0.5, delay: 0.4 },
                   y: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }
@@ -98,14 +97,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 24 }}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   x: 24,
-                  y: [0, -10, 0] 
+                  y: [0, -10, 0]
                 }}
-                transition={{ 
+                transition={{
                   opacity: { duration: 0.5, delay: 0.5 },
                   x: { duration: 0.5, delay: 0.5 },
                   y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
@@ -142,7 +141,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
@@ -151,7 +150,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <div className="relative group">
               {/* Outer Glow for the card */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-emerald-500/20 rounded-[32px] blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-              
+
               <div className="relative bg-background/80 border border-white/10 backdrop-blur-2xl rounded-[32px] p-8 md:p-12 shadow-2xl">
                 {children}
               </div>
