@@ -14,5 +14,11 @@ namespace definance_backend.Features.Auth.DTOs
         public bool HasCompletedOnboarding { get; set; }
         public bool IsWhatsAppConnected { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string PlanType { get; set; } = "Free";
+        public DateTime? PremiumUntil { get; set; }
+        public bool IsPremium { get; set; }
+        public DateTime? SubscriptionStartedAt { get; set; }
+        public bool IsEligibleForRefund { get; set; }
+        public string? StripeSubscriptionId { get; set; }
     }
 }

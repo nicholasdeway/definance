@@ -1,11 +1,13 @@
 using System;
 using System.Text.RegularExpressions;
+using definance_backend.Common.Settings;
 using definance_backend.Domain.Entities;
 using definance_backend.Features.Auth.DTOs;
 using definance_backend.Features.Auth.Repositories;
 using definance_backend.Common.Helpers;
 using definance_backend.Common.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace definance_backend.Features.Auth.Services
 {
@@ -15,17 +17,24 @@ namespace definance_backend.Features.Auth.Services
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly SubscriptionSettings _subscriptionSettings;
 
         // Hash falso para equalizar tempo de resposta e prevenir timing attack no login
         private const string _fakeHash =
             "$2a$11$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-        public AuthService(IUserRepository repository, IJwtService jwtService, IEmailService emailService, IConfiguration configuration)
+        public AuthService(
+            IUserRepository repository,
+            IJwtService jwtService,
+            IEmailService emailService,
+            IConfiguration configuration,
+            IOptions<SubscriptionSettings> subscriptionSettings)
         {
             _repository = repository;
             _jwtService = jwtService;
             _emailService = emailService;
             _configuration = configuration;
+            _subscriptionSettings = subscriptionSettings.Value;
         }
 
         public async Task<string> RegisterAsync(RegisterUserDto dto)
@@ -92,7 +101,10 @@ namespace definance_backend.Features.Auth.Services
                     ProviderUserId = null,
                     ProviderEmail = null,
                     PictureUrl = null,
-                    IsActive = true
+                    IsActive = true,
+                    PlanType = "Free",
+                    PremiumUntil = DateTime.UtcNow.AddDays(_subscriptionSettings.TrialDays),
+                    SubscriptionStatus = "trialing"
                 };
 
                 user = await _repository.CreateAsync(user);
@@ -235,6 +247,8 @@ namespace definance_backend.Features.Auth.Services
             if (user == null)
                 throw new ApplicationException("Usuário não encontrado.");
 
+
+
             return new UserProfileDto
             {
                 Id = user.Id,
@@ -246,7 +260,13 @@ namespace definance_backend.Features.Auth.Services
                 AuthProvider = user.AuthProvider ?? "Local",
                 HasCompletedOnboarding = user.HasCompletedOnboarding,
                 IsWhatsAppConnected = user.IsWhatsAppConnected,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                PlanType = user.PlanType,
+                PremiumUntil = user.PremiumUntil,
+                IsPremium = user.IsPremium,
+                SubscriptionStartedAt = user.SubscriptionStartedAt,
+                IsEligibleForRefund = user.IsEligibleForRefund,
+                StripeSubscriptionId = user.StripeSubscriptionId
             };
         }
     }

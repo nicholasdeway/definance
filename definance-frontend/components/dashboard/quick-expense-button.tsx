@@ -125,7 +125,7 @@ export function QuickExpenseButton() {
     if (isMobile && !isListening && transcript && transcript.trim().length > 3) {
       // Pequeno delay para garantir que o estado do input atualizou
       const timer = setTimeout(() => {
-        const fakeEvent = { preventDefault: () => {} } as React.FormEvent
+        const fakeEvent = { preventDefault: () => { } } as React.FormEvent
         handleSubmit(fakeEvent)
       }, 300)
       return () => clearTimeout(timer)
@@ -230,41 +230,31 @@ export function QuickExpenseButton() {
                         }}
                         onKeyDown={handleKeyDown}
                         disabled={status === "loading"}
-                        placeholder={HINTS[hintIndex]}
+                        placeholder={isListening ? "Escutando..." : HINTS[hintIndex]}
                         className={cn(
                           "w-full h-11 rounded-xl border bg-background pr-20 pl-3.5 text-[13px] font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-all disabled:opacity-50",
                           status === "error"
                             ? "border-destructive/40 focus:border-destructive/50"
                             : "border-input focus:border-primary/50 focus:ring-1 focus:ring-primary/20",
-                          isListening && "border-primary/50 ring-1 ring-primary/20"
+                          isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02] placeholder:text-primary/70 placeholder:font-semibold animate-pulse"
                         )}
                       />
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                         <button
                           type="button"
-                          onPointerDown={isMobile ? (e) => {
-                            e.preventDefault()
-                            startListening()
-                          } : undefined}
-                          onPointerUp={isMobile ? (e) => {
-                            e.preventDefault()
-                            stopListening()
-                          } : undefined}
-                          onClick={!isMobile ? (isListening ? stopListening : startListening) : undefined}
-                          onContextMenu={(e) => e.preventDefault()}
+                          onClick={isListening ? stopListening : startListening}
                           className={cn(
                             "flex h-7 w-7 items-center justify-center rounded-lg transition-all cursor-pointer relative",
-                            isMobile && "touch-none",
-                            isListening 
-                              ? "bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110" 
+                            isListening
+                              ? "bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
-                          title={isMobile ? "Segure para falar" : (isListening ? "Parar" : "Ouvir")}
+                          title={isListening ? "Parar" : "Ouvir"}
                         >
                           {isListening ? (
                             <>
                               <Mic className="h-3.5 w-3.5" />
-                              <motion.span 
+                              <motion.span
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1.5, opacity: 0 }}
                                 transition={{ repeat: Infinity, duration: 1.5 }}

@@ -143,9 +143,9 @@ namespace definance_backend.Features.WhatsApp.Services
                         }
 
                         // 2. Se estiver livre ou for o mesmo usuário, prossegue com o vínculo
+                        await _repository.UpdateUserPhoneAsync(pairing.UserId, normalizedPhone);
                         pairing.Status = "Connected";
                         await _repository.UpdatePairingAsync(pairing);
-                        await _repository.UpdateUserPhoneAsync(pairing.UserId, normalizedPhone);
 
                         await SendWhatsAppMessageAsync(fromPhone, "✅ Bem-vindo ao Definance! Seu WhatsApp foi conectado com sucesso.");
                         return;
