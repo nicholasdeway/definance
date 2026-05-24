@@ -28,6 +28,10 @@ services:
     environment:
       - AWS_REGION=us-east-2
       - S3_BUCKET_NAME=definance-avatars
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MODEL_NAME=${MODEL_NAME}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
     container_name: definance_ia
     restart: always
     networks:
