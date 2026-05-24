@@ -44,7 +44,7 @@ namespace definance_backend.Features.DailyExpenses.Services
 
             var userCategories = await _categoryRepository.GetByUserIdAsync(userId);
             var categoryNames = userCategories
-                .Select(c => string.IsNullOrEmpty(c.Keywords) ? c.Name : $"{c.Name} ({c.Keywords})")
+                .Select(c => string.IsNullOrEmpty(c.Keywords) ? $"{c.Name} [{c.Type}]" : $"{c.Name} [{c.Type}] ({c.Keywords})")
                 .ToList();
 
             ParsedExpenseResult parsedResult;

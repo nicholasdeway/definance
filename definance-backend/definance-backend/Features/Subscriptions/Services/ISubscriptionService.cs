@@ -10,5 +10,6 @@ namespace definance_backend.Features.Subscriptions.Services
         Task<string> CreateCustomerPortalSessionAsync(Guid userId, string originUrl);
         Task ProcessWebhookAsync(string jsonPayload, string stripeSignatureHeader, string webhookSecret);
         Task CancelAndRefundAsync(Guid userId);
+        Task CancelSubscriptionAsync(string subscriptionId);
     }
 }

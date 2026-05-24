@@ -116,5 +116,23 @@ namespace definance_backend.Features.Profiles.Controllers
 
             return Ok(new { message = "Foto removida com sucesso." });
         }
+
+        [HttpDelete("purge/{dataType}")]
+        public async Task<IActionResult> PurgeData(string dataType)
+        {
+            var userId = User.GetUserId();
+            _logger.LogWarning("Usuário {UserId} solicitou a exclusão de dados do tipo {DataType}", userId, dataType);
+
+            var result = await _profileService.PurgeDataAsync(userId, dataType);
+
+            if (!result.Success)
+            {
+                _logger.LogWarning("Falha na exclusão de dados do tipo {DataType} para o usuário {UserId}: {Errors}", dataType, userId, string.Join(", ", result.Errors));
+                return BadRequest(result.Errors);
+            }
+
+            _logger.LogInformation("Dados do tipo {DataType} excluídos com sucesso para o usuário {UserId}", dataType, userId);
+            return Ok(new { message = "Dados excluídos com sucesso." });
+        }
     }
 }

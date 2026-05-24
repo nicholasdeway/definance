@@ -171,7 +171,7 @@ namespace definance_backend.Features.Subscriptions.Services
                 }
 
                 // Verificar se o webhook já processou este pagamento
-                var eventId = paymentId.ToString();
+                var eventId = $"{paymentId}_approved";
                 var alreadyProcessed = await _webhookEventRepository.IsAlreadyProcessedAsync("mercadopago", eventId);
                 if (alreadyProcessed)
                 {
@@ -296,15 +296,6 @@ namespace definance_backend.Features.Subscriptions.Services
                 return;
             }
 
-            // Idempotência: verificar se já processamos este pagamento
-            var eventId = paymentId.ToString();
-            if (await _webhookEventRepository.IsAlreadyProcessedAsync("mercadopago", eventId))
-            {
-                _logger.LogInformation(
-                    "Webhook do Mercado Pago ignorado (já processado). PaymentId={PaymentId}", paymentId);
-                return; // retorna sem erro — MP vai parar de retentá-lo
-            }
-
             try
             {
                 Payment payment;
@@ -325,6 +316,16 @@ namespace definance_backend.Features.Subscriptions.Services
                 {
                     _logger.LogWarning(
                         "Pagamento {PaymentId} notificado via webhook não foi encontrado.", paymentId);
+                    return;
+                }
+
+                // Idempotência baseada no status do pagamento
+                var eventId = $"{paymentId}_{payment.Status?.ToLowerInvariant()}";
+                if (await _webhookEventRepository.IsAlreadyProcessedAsync("mercadopago", eventId))
+                {
+                    _logger.LogInformation(
+                        "Webhook do Mercado Pago ignorado (já processado para o status {Status}). PaymentId={PaymentId}",
+                        payment.Status, paymentId);
                     return;
                 }
 
@@ -383,10 +384,49 @@ namespace definance_backend.Features.Subscriptions.Services
                         }
                     }
                 }
+                else if (payment.Status == "refunded" || payment.Status == "charged_back" || payment.Status == "cancelled")
+                {
+                    var extRef = payment.ExternalReference;
+                    if (!string.IsNullOrEmpty(extRef))
+                    {
+                        var parts = extRef.Split(':');
+                        if (parts.Length >= 2 && Guid.TryParse(parts[0], out var userId))
+                        {
+                            var user = await _userRepository.GetByIdAsync(userId);
+                            if (user != null)
+                            {
+                                // Somente rebaixar se o usuário estiver com o status vinculado a esse pagamento específico
+                                if (user.MercadoPagoPaymentId == paymentId.ToString())
+                                {
+                                    user.PlanType = "Free";
+                                    user.PremiumUntil = DateTime.UtcNow;
+                                    user.SubscriptionStatus = "canceled";
+                                    user.MercadoPagoPaymentId = null;
+                                    user.SubscriptionStartedAt = null;
+
+                                    await _userRepository.UpdateAsync(user);
+
+                                    _logger.LogInformation(
+                                        "Usuário {UserId} rebaixado para Free via Webhook Mercado Pago devido ao status do pagamento ser {Status}. PaymentId={PaymentId}",
+                                        userId, payment.Status, paymentId);
+                                }
+                                else
+                                {
+                                    _logger.LogInformation(
+                                        "Webhook Mercado Pago de estorno ignorado para o usuário {UserId} porque o pagamento atual dele é outro (ou ele já foi atualizado).",
+                                        userId);
+                                }
+
+                                // Registrar idempotência para este status
+                                await _webhookEventRepository.MarkAsProcessedAsync("mercadopago", eventId);
+                            }
+                        }
+                    }
+                }
                 else
                 {
                     _logger.LogInformation(
-                        "Webhook do Mercado Pago recebido com status não aprovado. PaymentId={PaymentId} Status={Status}",
+                        "Webhook do Mercado Pago recebido com status não tratado. PaymentId={PaymentId} Status={Status}",
                         paymentId, payment.Status);
                 }
             }

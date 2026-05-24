@@ -38,6 +38,7 @@ export interface User {
   subscriptionStartedAt?: string
   isEligibleForRefund?: boolean
   stripeSubscriptionId?: string
+  authProvider?: string
 }
 
 export interface RegisterData {
@@ -77,6 +78,7 @@ interface AuthContextType {
   changePassword: (data: { currentPassword: string; newPassword: string }) => Promise<{ success: boolean; message?: string }>
   updateAvatar: (file: Blob | File) => Promise<{ success: boolean; avatarUrl?: string; message?: string }>
   removeAvatar: () => Promise<{ success: boolean; message?: string }>
+  deleteAccount: (currentPassword?: string) => Promise<{ success: boolean; message?: string }>
   logout: (force?: boolean) => void
   isAuthenticated: boolean
   isLoading: boolean
@@ -409,6 +411,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [checkAuth])
 
+  const deleteAccount = useCallback(async (currentPassword?: string): Promise<{ success: boolean; message?: string }> => {
+    setIsActionLoading(true)
+    setAuthError(null)
+    try {
+      await apiClient("/api/profile", {
+        method: "DELETE",
+        body: JSON.stringify({ currentPassword: currentPassword || "" }),
+      })
+      await logout(false)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao excluir conta"
+      setAuthError(message)
+      return { success: false, message }
+    } finally {
+      setIsActionLoading(false)
+    }
+  }, [logout])
+
   const contextValue = useMemo(() => ({
     user,
     isAuthLoading,
@@ -426,6 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     changePassword,
     updateAvatar,
     removeAvatar,
+    deleteAccount,
     logout,
     isAuthenticated: !!user,
     isLoading: isAuthLoading,
@@ -447,6 +469,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     changePassword,
     updateAvatar,
     removeAvatar,
+    deleteAccount,
     logout
   ])
 
@@ -474,6 +497,7 @@ const defaultAuthContext: AuthContextType = {
   changePassword: async () => ({ success: false }),
   updateAvatar: async () => ({ success: false }),
   removeAvatar: async () => ({ success: false }),
+  deleteAccount: async () => ({ success: false }),
   logout: () => { },
   isAuthenticated: false,
   isLoading: false,

@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { motion } from "framer-motion"
 import { Brain, LayoutGrid, MessageSquare } from "lucide-react"
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="dark min-h-screen bg-[#050505] text-foreground selection:bg-primary/30 relative overflow-x-hidden">
+
       {/* Background Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] h-[600px] w-[600px] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
@@ -26,100 +26,57 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="mt-12">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="text-7xl font-extrabold tracking-tight text-white leading-[1.1]"
-            >
+            <h1 className="text-7xl font-extrabold tracking-tight text-white leading-[1.1] anim-fade-in-up">
               Gestão.<br />
               <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Inteligência.</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="mt-8 max-w-md text-l text-white/50 leading-relaxed font-medium"
-            >
+            </h1>
+            <p className="mt-8 max-w-md text-l text-white/50 leading-relaxed font-medium anim-fade-in-up-delay-1">
               Revolucione a gestão do seu escritório com nossa plataforma financeira impulsionada por IA.
-            </motion.p>
+            </p>
 
             {/* Feature Cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="mt-16 flex flex-col gap-5"
-            >
-              <motion.div
-                initial={{ opacity: 0, x: 16 }}
-                animate={{
-                  opacity: 1,
-                  x: 16,
-                  y: [0, -8, 0]
-                }}
-                transition={{
-                  opacity: { duration: 0.5, delay: 0.3 },
-                  x: { duration: 0.5, delay: 0.3 },
-                  y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-                }}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors cursor-default"
-              >
-                <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Brain className="h-5 w-5" />
+            <div className="mt-16 flex flex-col gap-5 anim-fade-in-up-delay-2">
+              
+              {/* Card 1 */}
+              <div className="translate-x-4">
+                <div className="anim-float-1 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors cursor-default">
+                  <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                    <Brain className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Praticidade IA</p>
+                    <p className="text-xs text-white/40">Classificação inteligente</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Praticidade IA</p>
-                  <p className="text-xs text-white/40">Classificação inteligente</p>
-                </div>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 48 }}
-                animate={{
-                  opacity: 1,
-                  x: 48,
-                  y: [0, -12, 0]
-                }}
-                transition={{
-                  opacity: { duration: 0.5, delay: 0.4 },
-                  x: { duration: 0.5, delay: 0.4 },
-                  y: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }
-                }}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors shadow-2xl cursor-default"
-              >
-                <div className="h-10 w-10 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400">
-                  <LayoutGrid className="h-5 w-5" />
+              {/* Card 2 */}
+              <div className="translate-x-12">
+                <div className="anim-float-2 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors shadow-2xl cursor-default">
+                  <div className="h-10 w-10 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400">
+                    <LayoutGrid className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Visão Clássica</p>
+                    <p className="text-xs text-white/40">Acompanhe seu fluxo de caixa</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Visão Clássica</p>
-                  <p className="text-xs text-white/40">Acompanhe seu fluxo de caixa</p>
-                </div>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 24 }}
-                animate={{
-                  opacity: 1,
-                  x: 24,
-                  y: [0, -10, 0]
-                }}
-                transition={{
-                  opacity: { duration: 0.5, delay: 0.5 },
-                  x: { duration: 0.5, delay: 0.5 },
-                  y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
-                }}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors cursor-default"
-              >
-                <div className="h-10 w-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <MessageSquare className="h-5 w-5" />
+              {/* Card 3 */}
+              <div className="translate-x-6">
+                <div className="anim-float-3 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md max-w-sm hover:bg-white/[0.05] transition-colors cursor-default">
+                  <div className="h-10 w-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Assistencia 24h</p>
+                    <p className="text-xs text-white/40">Sua assistente no bolso</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Assistencia 24h</p>
-                  <p className="text-xs text-white/40">Sua assistente no bolso</p>
-                </div>
-              </motion.div>
-            </motion.div>
+              </div>
+
+            </div>
           </div>
 
           <div className="mt-auto pt-12">
@@ -141,12 +98,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-[480px]"
-          >
+          <div className="w-full max-w-[480px] anim-fade-in-scale">
             <div className="relative group">
               {/* Outer Glow for the card */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-emerald-500/20 rounded-[32px] blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
@@ -155,7 +107,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 {children}
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

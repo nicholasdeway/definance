@@ -324,197 +324,244 @@ namespace definance_backend.Features.Onboarding.Services
             if (dto.Incomes == null) return;
             
             var now = _dateTimeProvider.GetCurrentAppDate();
-            // Início e fim do mês para deleção segura (apenas do mês que estamos sincronizando)
-            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0); 
-            var currentMonthEnd = currentMonthStart.AddMonths(1).AddTicks(-1);
+            var currentMonth = new DateTime(now.Year, now.Month, 1);
 
-            // 1. Identificar e deletar rendas sincronizadas APENAS do mês atual para evitar duplicidade
-            var syncedIncomesInCurrentMonth = existingIncomes
-                .Where(i => i.Date >= currentMonthStart && i.Date <= currentMonthEnd && BaseIncomeTypes.Contains(i.Type))
-                .Select(i => i.Id)
-                .ToList();
-
-            if (syncedIncomesInCurrentMonth.Any())
-            {
-                await _incomeRepository.DeleteBatchAsync(syncedIncomesInCurrentMonth);
-            }
-
-            var newIncomes = new List<Income>();
+            // Determinar o limite de meses para sincronização futura
+            var maxFutureMonth = currentMonth;
             foreach (var inc in dto.Incomes)
             {
                 if (inc.Valor <= 0) continue;
-
-                // --- Lógica de Histórico ---
-                // Se o usuário configurou uma nova renda mas o mês atual ainda deve usar a configuração anterior
-                decimal valorEfetivo = inc.Valor;
-                string freqEfetiva = (inc.Frequencia ?? "fixo_mensal").ToLower();
-                string diasEfetivos = inc.DiasRecebimento ?? "";
-                string? diaSemanaEfetivo = inc.DiaSemana;
-
-                // Verificar no histórico (do mais antigo para o mais recente)
-                // Pegamos a primeira configuração cujo mês de validade seja igual ou posterior ao mês atual
-                var configHistorica = inc.HistoricoConfiguracoes?
-                    .Where(h => !string.IsNullOrEmpty(h.ValidoAte))
-                    .OrderBy(h => DateTime.TryParse(h.ValidoAte, out var d) ? d : DateTime.MaxValue)
-                    .FirstOrDefault(h => 
-                    {
-                        if (DateTime.TryParse(h.ValidoAte, out var d))
-                        {
-                            // Comparamos apenas mês e ano para evitar problemas de fuso horário/dia
-                            var syncMonth = new DateTime(now.Year, now.Month, 1);
-                            var validityMonth = new DateTime(d.Year, d.Month, 1);
-                            return syncMonth <= validityMonth;
-                        }
-                        return false;
-                    });
-
-                if (configHistorica != null)
+                
+                var datesStr = (inc.DiasRecebimento ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                if (datesStr.Length > 0 && DateTime.TryParse(datesStr[0].Trim(), out var dt))
                 {
-                    valorEfetivo = configHistorica.Valor;
-                    freqEfetiva = configHistorica.Frequencia.ToLower();
-                    diasEfetivos = configHistorica.DiasRecebimento ?? "";
-                    diaSemanaEfetivo = configHistorica.DiaSemana;
-                }
-                else if (inc.ConfiguracaoAnterior != null && !string.IsNullOrEmpty(inc.ConfiguracaoAnterior.ValidoAte))
-                {
-                    // Fallback para campo legado se não houver lista ou se for dado antigo
-                    if (DateTime.TryParse(inc.ConfiguracaoAnterior.ValidoAte, out var d))
+                    var configMonth = new DateTime(dt.Year, dt.Month, 1);
+                    if (configMonth > maxFutureMonth)
                     {
-                        var currentMonth = new DateTime(now.Year, now.Month, 1);
-                        var validUntilMonth = new DateTime(d.Year, d.Month, 1);
-                        if (currentMonth <= validUntilMonth)
-                        {
-                            valorEfetivo = inc.ConfiguracaoAnterior.Valor;
-                            freqEfetiva = inc.ConfiguracaoAnterior.Frequencia.ToLower();
-                            diasEfetivos = inc.ConfiguracaoAnterior.DiasRecebimento ?? "";
-                            diaSemanaEfetivo = inc.ConfiguracaoAnterior.DiaSemana;
-                        }
+                        maxFutureMonth = configMonth;
                     }
                 }
+            }
 
-                var dates = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                var freq = freqEfetiva;
+            // Limitar a no máximo 12 meses no futuro por segurança
+            if (maxFutureMonth > currentMonth.AddMonths(12))
+            {
+                maxFutureMonth = currentMonth.AddMonths(12);
+            }
 
-                if (freq == "semanal")
+            // Sincronizar mês a mês do atual até o maxFutureMonth
+            var newIncomes = new List<Income>();
+            var idsToDelete = new List<Guid>();
+
+            for (var syncMonth = currentMonth; syncMonth <= maxFutureMonth; syncMonth = syncMonth.AddMonths(1))
+            {
+                var monthStart = syncMonth;
+                var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+
+                // 1. Identificar rendas sincronizadas para este mês específico
+                var syncedIncomesInMonth = existingIncomes
+                    .Where(i => i.Date >= monthStart && i.Date <= monthEnd && BaseIncomeTypes.Contains(i.Type))
+                    .Select(i => i.Id)
+                    .ToList();
+
+                idsToDelete.AddRange(syncedIncomesInMonth);
+
+                // 2. Projetar para este mês específico
+                foreach (var inc in dto.Incomes)
                 {
-                    // Projeta 4 recebimentos semanais
-                    DateTime startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
-                    
-                    // Usar o dia da semana selecionado se existir
-                    DayOfWeek? selectedDayOfWeek = null;
-                    if (!string.IsNullOrEmpty(diaSemanaEfetivo))
-                    {
-                        selectedDayOfWeek = diaSemanaEfetivo.ToLower() switch
+                    if (inc.Valor <= 0) continue;
+
+                    // --- Lógica de Histórico ---
+                    decimal valorEfetivo = inc.Valor;
+                    string freqEfetiva = (inc.Frequencia ?? "fixo_mensal").ToLower();
+                    string diasEfetivos = inc.DiasRecebimento ?? "";
+                    string? diaSemanaEfetivo = inc.DiaSemana;
+
+                    // Verificar no histórico (do mais antigo para o mais recente)
+                    var configHistorica = inc.HistoricoConfiguracoes?
+                        .Where(h => !string.IsNullOrEmpty(h.ValidoAte))
+                        .OrderBy(h => DateTime.TryParse(h.ValidoAte, out var d) ? d : DateTime.MaxValue)
+                        .FirstOrDefault(h => 
                         {
-                            "segunda" => DayOfWeek.Monday,
-                            "terca" => DayOfWeek.Tuesday,
-                            "quarta" => DayOfWeek.Wednesday,
-                            "quinta" => DayOfWeek.Thursday,
-                            "sexta" => DayOfWeek.Friday,
-                            "sabado" => DayOfWeek.Saturday,
-                            "domingo" => DayOfWeek.Sunday,
-                            _ => null
-                        };
+                            if (DateTime.TryParse(h.ValidoAte, out var d))
+                            {
+                                var validityMonth = new DateTime(d.Year, d.Month, 1);
+                                return syncMonth <= validityMonth;
+                            }
+                            return false;
+                        });
+
+                    bool isUsingHistoricalConfig = false;
+
+                    if (configHistorica != null)
+                    {
+                        valorEfetivo = configHistorica.Valor;
+                        freqEfetiva = configHistorica.Frequencia.ToLower();
+                        diasEfetivos = configHistorica.DiasRecebimento ?? "";
+                        diaSemanaEfetivo = configHistorica.DiaSemana;
+                        isUsingHistoricalConfig = true;
+                    }
+                    else if (inc.ConfiguracaoAnterior != null && !string.IsNullOrEmpty(inc.ConfiguracaoAnterior.ValidoAte))
+                    {
+                        if (DateTime.TryParse(inc.ConfiguracaoAnterior.ValidoAte, out var d))
+                        {
+                            var validUntilMonth = new DateTime(d.Year, d.Month, 1);
+                            if (syncMonth <= validUntilMonth)
+                            {
+                                valorEfetivo = inc.ConfiguracaoAnterior.Valor;
+                                freqEfetiva = inc.ConfiguracaoAnterior.Frequencia.ToLower();
+                                diasEfetivos = inc.ConfiguracaoAnterior.DiasRecebimento ?? "";
+                                diaSemanaEfetivo = inc.ConfiguracaoAnterior.DiaSemana;
+                                isUsingHistoricalConfig = true;
+                            }
+                        }
                     }
 
-                    for (int i = 0; i < 4; i++)
+                    // Se não estamos usando configuração histórica, verificar se a nova configuração já iniciou neste mês
+                    if (!isUsingHistoricalConfig)
                     {
-                        DateTime baseDate = startDate.AddDays(i * 7);
-                        DateTime paymentDate = baseDate;
-
-                        // Ajustar para o dia da semana específico se selecionado
-                        if (selectedDayOfWeek.HasValue)
+                        var datesForStart = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        if (datesForStart.Length > 0 && DateTime.TryParse(datesForStart[0].Trim(), out var dt))
                         {
-                            int daysToAdd = ((int)selectedDayOfWeek.Value - (int)baseDate.DayOfWeek + 7) % 7;
-                            paymentDate = baseDate.AddDays(daysToAdd);
+                            var configStartMonth = new DateTime(dt.Year, dt.Month, 1);
+                            if (syncMonth < configStartMonth)
+                            {
+                                // A configuração atual ainda não iniciou e não há histórico para este mês (está antes do início)
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Se esta renda for uma configuração antiga (ou seja, há uma configuração posterior ativa no futuro),
+                    // ela não deve se propagar indefinidamente (IsRecurring = false).
+                    // Só é recorrente se for a configuração final/mais atual (syncMonth == maxFutureMonth).
+                    bool isRecurring = syncMonth == maxFutureMonth;
+
+                    var dates = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var freq = freqEfetiva;
+
+                    if (freq == "semanal")
+                    {
+                        // Projeta 4 recebimentos semanais
+                        DateTime startDate = syncMonth;
+                        
+                        // Usar o dia da semana selecionado se existir
+                        DayOfWeek? selectedDayOfWeek = null;
+                        if (!string.IsNullOrEmpty(diaSemanaEfetivo))
+                        {
+                            selectedDayOfWeek = diaSemanaEfetivo.ToLower() switch
+                            {
+                                "segunda" => DayOfWeek.Monday,
+                                "terca" => DayOfWeek.Tuesday,
+                                "quarta" => DayOfWeek.Wednesday,
+                                "quinta" => DayOfWeek.Thursday,
+                                "sexta" => DayOfWeek.Friday,
+                                "sabado" => DayOfWeek.Saturday,
+                                "domingo" => DayOfWeek.Sunday,
+                                _ => null
+                            };
+                        }
+
+                        for (int i = 0; i < 4; i++)
+                        {
+                            DateTime baseDate = startDate.AddDays(i * 7);
+                            DateTime paymentDate = baseDate;
+
+                            // Ajustar para o dia da semana específico se selecionado
+                            if (selectedDayOfWeek.HasValue)
+                            {
+                                int daysToAdd = ((int)selectedDayOfWeek.Value - (int)baseDate.DayOfWeek + 7) % 7;
+                                paymentDate = baseDate.AddDays(daysToAdd);
+                            }
+
+                            newIncomes.Add(new Income
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Name = $"{inc.Tipo} (Semana {i + 1})",
+                                Amount = valorEfetivo,
+                                Type = inc.Tipo,
+                                Date = paymentDate,
+                                IsRecurring = isRecurring,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                    else if (freq == "quinzenal")
+                    {
+                        if (dates.Length > 0)
+                        {
+                            int count = 1;
+                            foreach (var dateStr in dates)
+                            {
+                                if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                                {
+                                    var paymentDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
+                                    
+                                    newIncomes.Add(new Income
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        UserId = userId,
+                                        Name = $"{inc.Tipo} (Quinzena {count})",
+                                        Amount = valorEfetivo,
+                                        Type = inc.Tipo,
+                                        Date = paymentDate,
+                                        IsRecurring = isRecurring,
+                                        CreatedAt = DateTime.UtcNow,
+                                        UpdatedAt = DateTime.UtcNow
+                                    });
+                                    count++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < 2; i++)
+                            {
+                                newIncomes.Add(new Income
+                                {
+                                    Id = Guid.NewGuid(),
+                                    UserId = userId,
+                                    Name = $"{inc.Tipo} (Quinzena {i + 1})",
+                                    Amount = valorEfetivo,
+                                    Type = inc.Tipo,
+                                    Date = new DateTime(syncMonth.Year, syncMonth.Month, i == 0 ? 1 : 15, 0, 0, 0),
+                                    IsRecurring = isRecurring,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fixo Mensal ou Variável
+                        DateTime? incomeDate = null;
+                        if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
+                        {
+                            incomeDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
                         }
 
                         newIncomes.Add(new Income
                         {
                             Id = Guid.NewGuid(),
                             UserId = userId,
-                            Name = $"{inc.Tipo} (Semana {i + 1})",
+                            Name = inc.Tipo,
                             Amount = valorEfetivo,
                             Type = inc.Tipo,
-                            Date = paymentDate,
-                            IsRecurring = true,
+                            Date = incomeDate ?? NormalizeDate(syncMonth),
+                            IsRecurring = isRecurring,
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
                         });
                     }
                 }
-                else if (freq == "quinzenal")
-                {
-                    // Agora consideramos o valor digitado como VALOR POR RECEBIMENTO (2x ao mês)
-                    if (dates.Length > 0)
-                    {
-                        int count = 1;
-                        foreach (var dateStr in dates)
-                        {
-                            if (DateTime.TryParse(dateStr.Trim(), out var dt))
-                            {
-                                // Ajusta para o mês e ano atual, mantendo o dia
-                                var paymentDate = new DateTime(now.Year, now.Month, dt.Day, 0, 0, 0);
-                                
-                                newIncomes.Add(new Income
-                                {
-                                    Id = Guid.NewGuid(),
-                                    UserId = userId,
-                                    Name = $"{inc.Tipo} (Quinzena {count})",
-                                    Amount = valorEfetivo,
-                                    Type = inc.Tipo,
-                                    Date = paymentDate,
-                                    IsRecurring = true,
-                                    CreatedAt = DateTime.UtcNow,
-                                    UpdatedAt = DateTime.UtcNow
-                                });
-                                count++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Fallback se não houver datas: usar o dia 1 e dia 15 do mês atual
-                        for (int i = 0; i < 2; i++)
-                        {
-                            newIncomes.Add(new Income
-                            {
-                                Id = Guid.NewGuid(),
-                                UserId = userId,
-                                Name = $"{inc.Tipo} (Quinzena {i + 1})",
-                                Amount = valorEfetivo,
-                                Type = inc.Tipo,
-                                Date = new DateTime(now.Year, now.Month, i == 0 ? 1 : 15, 0, 0, 0),
-                                IsRecurring = true,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    // Fixo Mensal ou Variável
-                    DateTime? incomeDate = null;
-                    if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
-                    {
-                        // Ajusta para o mês e ano atual, mantendo o dia
-                        incomeDate = new DateTime(now.Year, now.Month, dt.Day, 0, 0, 0);
-                    }
+            }
 
-                    newIncomes.Add(new Income
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = inc.Tipo,
-                        Amount = valorEfetivo,
-                        Type = inc.Tipo,
-                        Date = incomeDate ?? NormalizeDate(DateTime.UtcNow),
-                        IsRecurring = true,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                }
+            if (idsToDelete.Any())
+            {
+                await _incomeRepository.DeleteBatchAsync(idsToDelete);
             }
 
             if (newIncomes.Any())
