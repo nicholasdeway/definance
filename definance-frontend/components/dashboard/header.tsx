@@ -4,7 +4,7 @@ import { useState } from "react"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { Bell, Plus, AlertTriangle, TrendingUp, TrendingDown, CreditCard, Receipt, LogOut, Menu } from "lucide-react"
+import { Bell, Plus, AlertTriangle, TrendingUp, TrendingDown, CreditCard, Receipt, LogOut, Menu, CalendarClock } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -173,20 +173,40 @@ export function DashboardHeader() {
 
 function NotificationDropdown({ 
   open, setOpen, isLoading, totalCount, overdueCount, setupCount, dueSoonCount, 
-  budgetAlertsCount, spendingAlert, spendingPct, showBudgetAlerts, showSpendingAlerts,
-  isMobile = false 
+  budgetAlertsCount, spendingAlert, spendingPct, isMobile = false 
 }: any) {
+  const { 
+    showOverdueAlerts, 
+    showSetupAlerts, 
+    showDueSoonAlerts, 
+    showBudgetAlerts, 
+    showSpendingAlerts 
+  } = useSettings()
+
+  const hasOverdue = overdueCount > 0 && showOverdueAlerts
+  const hasSetup = setupCount > 0 && showSetupAlerts
+  const hasDueSoon = dueSoonCount > 0 && showDueSoonAlerts
+  const hasBudget = budgetAlertsCount > 0 && showBudgetAlerts
+  const hasSpending = spendingAlert && showSpendingAlerts
+
+  const activeTotalCount = 
+    (hasOverdue ? overdueCount : 0) + 
+    (hasSetup ? setupCount : 0) + 
+    (hasDueSoon ? dueSoonCount : 0) + 
+    (hasBudget ? budgetAlertsCount : 0) + 
+    (hasSpending ? 1 : 0)
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className={cn("relative h-9 w-9 cursor-pointer rounded-full", isMobile && "h-11 w-11")}>
-          <Bell className={cn("h-4 w-4", !isLoading && totalCount > 0 && "animate-pulse text-primary")} />
-          {!isLoading && totalCount > 0 && (
+          <Bell className={cn("h-4 w-4", !isLoading && activeTotalCount > 0 && "animate-pulse text-primary")} />
+          {!isLoading && activeTotalCount > 0 && (
             <span className={cn(
               "absolute flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-in zoom-in duration-300",
               isMobile ? "-right-0 -top-0" : "-right-0.5 -top-0.5"
             )}>
-              {totalCount}
+              {activeTotalCount}
             </span>
           )}
         </Button>
@@ -197,7 +217,7 @@ function NotificationDropdown({
         </div>
         
         <div className="max-h-[350px] overflow-y-auto">
-          {totalCount === 0 ? (
+          {activeTotalCount === 0 ? (
             <div className="p-8 text-center space-y-2">
               <div className="flex justify-center">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -208,7 +228,7 @@ function NotificationDropdown({
             </div>
           ) : (
             <div className="py-1">
-              {overdueCount > 0 && (
+              {hasOverdue && (
                 <DropdownMenuItem asChild className="p-0 border-none focus:bg-destructive/10 cursor-pointer">
                   <Link href="/dashboard/contas?tab=atrasadas" className="flex items-center gap-2.5 px-4 py-2.5" onClick={() => setOpen(false)}>
                     <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive">
@@ -220,6 +240,74 @@ function NotificationDropdown({
                     </div>
                   </Link>
                 </DropdownMenuItem>
+              )}
+
+              {hasDueSoon && (
+                <>
+                  {hasOverdue && <div className="mx-4 my-1 border-t border-border/50" />}
+                  <DropdownMenuItem asChild className="p-0 border-none focus:bg-amber-500/10 cursor-pointer">
+                    <Link href="/dashboard/contas?tab=vencer" className="flex items-center gap-2.5 px-4 py-2.5" onClick={() => setOpen(false)}>
+                      <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                        <CalendarClock className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-600 leading-tight">Contas a Vencer</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{dueSoonCount} conta(s) em 2 dias</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {hasSetup && (
+                <>
+                  {(hasOverdue || hasDueSoon) && <div className="mx-4 my-1 border-t border-border/50" />}
+                  <DropdownMenuItem asChild className="p-0 border-none focus:bg-primary/10 cursor-pointer">
+                    <Link href="/dashboard/contas?tutorial=true" className="flex items-center gap-2.5 px-4 py-2.5" onClick={() => setOpen(false)}>
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <AlertTriangle className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-primary leading-tight">Ação Necessária</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{setupCount} conta(s) sem vencimento</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {hasBudget && (
+                <>
+                  {(hasOverdue || hasDueSoon || hasSetup) && <div className="mx-4 my-1 border-t border-border/50" />}
+                  <DropdownMenuItem asChild className="p-0 border-none focus:bg-blue-500/10 cursor-pointer">
+                    <Link href="/dashboard/relatorios" className="flex items-center gap-2.5 px-4 py-2.5" onClick={() => setOpen(false)}>
+                      <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                        <TrendingUp className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-blue-600 leading-tight">Limite de Categorias</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{budgetAlertsCount} categoria(s) no limite</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {hasSpending && (
+                <>
+                  {(hasOverdue || hasDueSoon || hasSetup || hasBudget) && <div className="mx-4 my-1 border-t border-border/50" />}
+                  <DropdownMenuItem asChild className="p-0 border-none focus:bg-orange-500/10 cursor-pointer">
+                    <Link href="/dashboard/relatorios" className="flex items-center gap-2.5 px-4 py-2.5" onClick={() => setOpen(false)}>
+                      <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <TrendingUp className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-orange-600 leading-tight">Gastos Elevados</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{Math.round(spendingPct * 100)}% da receita consumida</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
               )}
             </div>
           )}

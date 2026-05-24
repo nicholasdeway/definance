@@ -9,13 +9,13 @@ import { Separator } from "@/components/ui/separator"
 import {
   Palette,
   Bell,
-  Database, 
-  Download,
   Settings
 } from "lucide-react"
 import { toast } from "sonner"
 import { useSettings } from "@/lib/settings-context"
 import { ThemeToggle } from "@/components/theme-toggle"
+import PurgeDataSection from "@/components/dashboard/configuracoes/purge-data-section"
+import DataManagementSection from "@/components/dashboard/configuracoes/data-management-section"
 
 export default function ConfiguracoesPage() {
   const [isActionLoading, setIsActionLoading] = useState(false)
@@ -183,29 +183,10 @@ export default function ConfiguracoesPage() {
         </Card>
 
         {/* Gestão de Dados */}
-        <Card className="border-border/50 flex flex-col h-full">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base text-card-foreground">Gestão de Dados</CardTitle>
-            </div>
-            <CardDescription>Controle total sobre as suas informações</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
-            <div className="space-y-4 flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button variant="outline" className="text-xs h-auto py-8 md:py-12 px-4 flex flex-col gap-3 cursor-pointer hover:border-primary/50 transition-all group">
-                  <Download className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                  <span className="font-semibold">Exportar (CSV)</span>
-                </Button>
-                <Button variant="outline" className="text-xs h-auto py-8 md:py-12 px-4 flex flex-col gap-3 cursor-pointer hover:border-emerald-500/50 transition-all group">
-                  <Download className="h-6 w-6 text-emerald-500 group-hover:scale-110 transition-transform" />
-                  <span className="font-semibold text-center leading-tight">Exportar (Google Sheets)</span>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DataManagementSection />
+
+        {/* Limpeza de Dados Seletiva */}
+        <PurgeDataSection />
       </div>
     </div>
   )

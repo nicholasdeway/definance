@@ -9,5 +9,6 @@ namespace definance_backend.Features.Profiles.Repositories
         Task<User?> GetByPhoneAsync(string phone);
         Task UpdateAsync(User user);
         Task SoftDeleteAsync(Guid userId);
+        Task PurgeDataAsync(Guid userId, string dataType);
     }
 }

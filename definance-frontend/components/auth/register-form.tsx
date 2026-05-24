@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Check, Circle, X, AlertCircle, Mail, User, Phone, Lock } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -14,7 +14,7 @@ import { toast } from "sonner"
 
 export function RegisterForm() {
   const router = useRouter()
-  const { register, loginWithGoogle, logout } = useAuth()
+  const { register, logout } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -28,6 +28,19 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
+
+  // Restaura o estado de loading caso o usuário retorne à página ou saia dela (bfcache / back navigation)
+  useEffect(() => {
+    const resetLoading = () => {
+      setIsLoading(false)
+    }
+    window.addEventListener("pageshow", resetLoading)
+    window.addEventListener("pagehide", resetLoading)
+    return () => {
+      window.removeEventListener("pageshow", resetLoading)
+      window.removeEventListener("pagehide", resetLoading)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -73,11 +86,6 @@ export function RegisterForm() {
       setError(result.message || "Erro ao criar conta")
       setIsLoading(false)
     }
-  }
-
-  async function handleGoogleRegister() {
-    setIsLoading(true)
-    await loginWithGoogle()
   }
 
   return (
@@ -415,11 +423,9 @@ export function RegisterForm() {
         </div>
       </div>
 
-      <Button 
-        variant="outline" 
-        className="h-12 w-full bg-secondary/20 border-border text-foreground hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer" 
-        onClick={handleGoogleRegister}
-        disabled={isLoading}
+      <a 
+        href="/auth-g/login"
+        className="h-12 w-full bg-secondary/20 border border-border text-foreground hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer flex items-center justify-center transition-all" 
       >
         <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
           <path
@@ -440,7 +446,7 @@ export function RegisterForm() {
           />
         </svg>
         Cadastrar com Google
-      </Button>
+      </a>
 
       <div className="text-center text-base">
         <span className="text-muted-foreground">Já tem uma conta?</span>{" "}

@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas.expense_schema import ExpenseRequest, ParsedExpense
-from app.services.openai_service import parse_expense_text
+from app.schemas.chat_schema import ChatRequest, ChatResponse
+from app.services.openai_service import parse_expense_text, transcribe_audio_url
+from app.services.chat_service import process_chat
 from app.core.config import settings
 from app.core.logging import logger
 from typing import List
@@ -34,6 +36,33 @@ async def parse_expense(request: ExpenseRequest):
     """
     logger.info(f"Recebida requisição de processamento: {request.text}")
     return await parse_expense_text(request.text, request.categories)
+
+@app.post("/api/chat", response_model=ChatResponse, tags=["IA"])
+async def chat(request: ChatRequest):
+    """
+    Endpoint conversacional integrado com WhatsApp e Function Calling.
+    """
+    message_text = request.message
+    if request.audio_url:
+        logger.info(f"Processando áudio recebido de {request.phone_number}: {request.audio_url}")
+        try:
+            transcription = await transcribe_audio_url(request.audio_url)
+            logger.info(f"Áudio transcrito com sucesso: '{transcription}'")
+            message_text = transcription
+        except Exception as e:
+            logger.error(f"Erro ao transcrever áudio: {str(e)}")
+            # Retorna uma mensagem amigável de erro se a transcrição falhar
+            return ChatResponse(reply="⚠️ Não consegui entender o áudio. Por favor, tente enviar novamente com mais clareza ou digite a mensagem.")
+            
+    logger.info(f"Mensagem processada de {request.phone_number}: {message_text}")
+    reply = await process_chat(
+        user_id=request.user_id,
+        phone_number=request.phone_number,
+        user_name=request.user_name,
+        message=message_text,
+        token=request.token
+    )
+    return ChatResponse(reply=reply)
 
 if __name__ == "__main__":
     import uvicorn

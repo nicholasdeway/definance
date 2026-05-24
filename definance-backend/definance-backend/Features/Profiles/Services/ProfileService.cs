@@ -8,6 +8,10 @@ using definance_backend.Features.Profiles.Repositories;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.IO;
+using definance_backend.Features.Subscriptions.Services;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using definance_backend.Features.Onboarding.DTOs;
 
 namespace definance_backend.Features.Profiles.Services
 {
@@ -15,11 +19,19 @@ namespace definance_backend.Features.Profiles.Services
     {
         private readonly IProfileRepository _userRepository;
         private readonly IWebHostEnvironment _environment;
+        private readonly ISubscriptionService _subscriptionService;
+        private readonly ILogger<ProfileService> _logger;
 
-        public ProfileService(IProfileRepository userRepository, IWebHostEnvironment environment)
+        public ProfileService(
+            IProfileRepository userRepository,
+            IWebHostEnvironment environment,
+            ISubscriptionService subscriptionService,
+            ILogger<ProfileService> logger)
         {
             _userRepository = userRepository;
             _environment = environment;
+            _subscriptionService = subscriptionService;
+            _logger = logger;
         }
 
         public async Task<UserProfileResponse?> GetProfileAsync(Guid userId)
@@ -125,6 +137,11 @@ namespace definance_backend.Features.Profiles.Services
                     return ServiceResult<bool>.Fail("Credenciais inválidas.");
             }
 
+            if (!string.IsNullOrEmpty(user.StripeSubscriptionId))
+            {
+                await _subscriptionService.CancelSubscriptionAsync(user.StripeSubscriptionId);
+            }
+
             await _userRepository.SoftDeleteAsync(userId);
 
             return ServiceResult<bool>.Ok(true);
@@ -204,6 +221,70 @@ namespace definance_backend.Features.Profiles.Services
             user.UpdatedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);
             return ServiceResult<bool>.Ok(true);
+        }
+
+        public async Task<ServiceResult<bool>> PurgeDataAsync(Guid userId, string dataType)
+        {
+            var allowedTypes = new[] { "incomes", "expenses", "history", "daily-expenses", "bills", "goals", "categories" };
+            if (Array.IndexOf(allowedTypes, dataType) < 0)
+            {
+                _logger.LogWarning("Tentativa de limpeza com tipo de dado inválido '{DataType}' pelo usuário '{UserId}'", dataType, userId);
+                return ServiceResult<bool>.Fail("Tipo de dado inválido para exclusão.");
+            }
+
+            try
+            {
+                _logger.LogWarning("Iniciando exclusão de dados do tipo '{DataType}' para o usuário '{UserId}'", dataType, userId);
+                await _userRepository.PurgeDataAsync(userId, dataType);
+
+                // Sincronizar a exclusão de dados no OnboardingData para refletir no Perfil Financeiro
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user != null && !string.IsNullOrEmpty(user.OnboardingData))
+                {
+                    var options = new JsonSerializerOptions 
+                    { 
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+                    };
+
+                    var onboardingDto = JsonSerializer.Deserialize<OnboardingSubmissionDto>(user.OnboardingData, options);
+                    if (onboardingDto != null)
+                    {
+                        bool updated = false;
+                        if (dataType == "bills")
+                        {
+                            onboardingDto.SelectedExpenses = new();
+                            onboardingDto.CustomExpenses = new();
+                            onboardingDto.BillLoans = new();
+                            onboardingDto.Vehicles = new();
+                            onboardingDto.Debts = new();
+                            updated = true;
+                        }
+                        else if (dataType == "incomes" || dataType == "history")
+                        {
+                            onboardingDto.Incomes = new();
+                            onboardingDto.SelectedIncomeTypes = new();
+                            updated = true;
+                        }
+
+                        if (updated)
+                        {
+                            user.OnboardingData = JsonSerializer.Serialize(onboardingDto, options);
+                            user.UpdatedAt = DateTime.UtcNow;
+                            await _userRepository.UpdateAsync(user);
+                            _logger.LogInformation("OnboardingData atualizado com sucesso após a exclusão do tipo '{DataType}' para o usuário '{UserId}'", dataType, userId);
+                        }
+                    }
+                }
+
+                _logger.LogInformation("Dados do tipo '{DataType}' excluídos com sucesso para o usuário '{UserId}'", dataType, userId);
+                return ServiceResult<bool>.Ok(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao excluir dados do tipo '{DataType}' para o usuário '{UserId}'", dataType, userId);
+                return ServiceResult<bool>.Fail("Ocorreu um erro ao processar a exclusão dos dados.");
+            }
         }
     }
 }

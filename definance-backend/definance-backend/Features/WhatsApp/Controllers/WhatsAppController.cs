@@ -48,13 +48,24 @@ namespace definance_backend.Features.WhatsApp.Controllers
         {
             var from = form["From"].ToString();
             var body = form["Body"].ToString();
+            var mediaUrl = form["MediaUrl0"].ToString();
 
-            if (string.IsNullOrEmpty(from) || string.IsNullOrEmpty(body))
+            if (string.IsNullOrEmpty(from))
+            {
+                return BadRequest();
+            }
+
+            // Se for nota de voz/áudio, o Body pode vir vazio, mas temos o mediaUrl
+            if (string.IsNullOrEmpty(body) && !string.IsNullOrEmpty(mediaUrl))
+            {
+                body = "";
+            }
+            else if (string.IsNullOrEmpty(body))
             {
                 return BadRequest();
             }
             
-            await _whatsAppService.HandleTwilioWebhookAsync(from, body);
+            await _whatsAppService.HandleTwilioWebhookAsync(from, body, string.IsNullOrEmpty(mediaUrl) ? null : mediaUrl);
             return Content("<Response></Response>", "text/xml");
         }
     }

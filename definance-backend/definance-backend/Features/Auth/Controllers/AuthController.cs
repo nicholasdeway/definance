@@ -187,6 +187,11 @@ namespace definance_backend.Features.Auth.Controllers
                 var profile = await _AuthService.GetUserProfileAsync(userId);
                 return Ok(profile);
             }
+            catch (ApplicationException ex) when (ex.Message == "Usuário não encontrado.")
+            {
+                _logger.LogWarning("Tentativa de acessar dados de usuário excluído.");
+                return Unauthorized(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao buscar perfil do usuário.");

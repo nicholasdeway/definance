@@ -392,7 +392,6 @@ FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
@@ -490,3 +489,14 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local AI project map
+project_map.md
+
+# Scratch folders and local config
+definance-ia/scratch/
+**/scratch/
+definance-ia/pyrightconfig.json
+**/pyrightconfig.json
+**/test_chat.py
+**/.vscode/

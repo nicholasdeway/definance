@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -13,12 +13,26 @@ import { AlertCircle, Eye, EyeOff, Mail, Lock, Info } from "lucide-react"
 
 export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }) {
   const router = useRouter()
-  const { login, loginWithGoogle } = useAuth()
+  const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+
+  // Restaura o estado de loading caso o usuário retorne à página usando o botão "Voltar" (bfcache)
+  // Restaura o estado de loading caso o usuário retorne à página ou saia dela (bfcache / back navigation)
+  useEffect(() => {
+    const resetLoading = () => {
+      setIsLoading(false)
+    }
+    window.addEventListener("pageshow", resetLoading)
+    window.addEventListener("pagehide", resetLoading)
+    return () => {
+      window.removeEventListener("pageshow", resetLoading)
+      window.removeEventListener("pagehide", resetLoading)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,11 +50,6 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
       setError(result.message || "Credenciais inválidas")
     }
     setIsLoading(false)
-  }
-
-  async function handleGoogleLogin() {
-    setIsLoading(true)
-    await loginWithGoogle()
   }
 
   return (
@@ -127,11 +136,9 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer"
-        onClick={handleGoogleLogin}
-        disabled={isLoading}
+      <a
+        href="/auth-g/login"
+        className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer flex items-center justify-center transition-all"
       >
         <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
           <path
@@ -152,7 +159,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
           />
         </svg>
         Entrar com Google
-      </Button>
+      </a>
 
       <div className="text-center text-base">
         <span className="text-muted-foreground">Não tem uma conta?</span>{" "}

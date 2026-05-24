@@ -116,8 +116,16 @@ export const ReceitaDialog = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    const formatName = (name: string) => {
+      const trimmed = name.trim()
+      if (!trimmed) return ""
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+    }
+
     const dataToSave = {
       ...formData,
+      nome: formatName(formData.nome),
       tipo: formData.tipo === "Outros" ? (formData.outroTipo || "Outros") : formData.tipo,
       description: formData.descricao || null,
       notes: formData.observacoes || null
