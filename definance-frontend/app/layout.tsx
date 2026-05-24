@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-provider'
 import { SettingsProvider } from '@/lib/settings-context'
-import { Analytics } from '@vercel/analytics/next'
+import { SafeAnalytics } from '@/components/safe-analytics'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import "./globals.css";
@@ -59,7 +59,7 @@ export default function RootLayout({
             </SettingsProvider>
           </AuthProvider>
         </ThemeProvider>
-        <Analytics />
+        <SafeAnalytics />
       </body>
     </html>
   )

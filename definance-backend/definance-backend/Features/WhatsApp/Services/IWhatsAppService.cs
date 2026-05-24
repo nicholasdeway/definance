@@ -8,7 +8,8 @@ namespace definance_backend.Features.WhatsApp.Services
     {
         Task<WhatsAppPairingResponseDto> GeneratePairingCodeAsync(Guid userId);
         Task<WhatsAppPairingResponseDto> GetPairingStatusAsync(Guid userId);
-        Task HandleTwilioWebhookAsync(string fromPhone, string body);
+        Task HandleTwilioWebhookAsync(string fromPhone, string body, string? mediaUrl = null);
         Task<User?> GetUserByIdAsync(Guid userId);
+        Task SendWhatsAppMessageAsync(string to, string message);
     }
 }

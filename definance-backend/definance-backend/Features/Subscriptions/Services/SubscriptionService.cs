@@ -148,6 +148,10 @@ namespace definance_backend.Features.Subscriptions.Services
                         await HandleSubscriptionChangedAsync(stripeEvent);
                         break;
 
+                    case "charge.refunded":
+                        await HandleChargeRefundedAsync(stripeEvent);
+                        break;
+
                     default:
                         _logger.LogInformation(
                             "Evento Stripe não tratado. EventType={EventType} EventId={EventId}",
@@ -221,6 +225,21 @@ namespace definance_backend.Features.Subscriptions.Services
 
             _logger.LogInformation(
                 "Usuário {UserId} reembolsado e rebaixado para Free.", userId);
+        }
+
+        public async Task CancelSubscriptionAsync(string subscriptionId)
+        {
+            if (string.IsNullOrEmpty(subscriptionId)) return;
+            try
+            {
+                var stripeSubService = new Stripe.SubscriptionService();
+                await stripeSubService.CancelAsync(subscriptionId);
+                _logger.LogInformation("Assinatura Stripe {SubscriptionId} cancelada com sucesso via CancelSubscriptionAsync.", subscriptionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Erro ao cancelar assinatura no Stripe {SubscriptionId} ao excluir a conta.", subscriptionId);
+            }
         }
 
         // ══ Métodos privados ══════════════════════════════════════════════════════
@@ -350,6 +369,34 @@ namespace definance_backend.Features.Subscriptions.Services
             _logger.LogInformation(
                 "Assinatura do Usuário {UserId} atualizada. Status={Status} EventId={EventId}",
                 userId, subscription.Status, stripeEvent.Id);
+        }
+
+        private async Task HandleChargeRefundedAsync(Stripe.Event stripeEvent)
+        {
+            var charge = stripeEvent.Data.Object as Stripe.Charge;
+            if (charge == null || string.IsNullOrEmpty(charge.CustomerId)) return;
+
+            var stripeCustomerService = new CustomerService();
+            var customer = await stripeCustomerService.GetAsync(charge.CustomerId);
+
+            if (customer == null
+                || !customer.Metadata.TryGetValue("userId", out var userIdStr)
+                || !Guid.TryParse(userIdStr, out var userId))
+                return;
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return;
+
+            user.PlanType = "Free";
+            user.PremiumUntil = DateTime.UtcNow;
+            user.SubscriptionStatus = "canceled";
+            user.StripeSubscriptionId = null;
+            user.SubscriptionStartedAt = null;
+
+            await _userRepository.UpdateAsync(user);
+            _logger.LogInformation(
+                "Usuário {UserId} rebaixado para Free via Webhook Stripe (charge.refunded). EventId={EventId}",
+                userId, stripeEvent.Id);
         }
 
         private async Task ProcessStripeRefundAsync(Domain.Entities.User user, Guid userId)

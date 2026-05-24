@@ -98,7 +98,10 @@ namespace definance_backend.Features.WhatsApp.Repositories
                     last_name AS ""LastName"",
                     email AS ""Email"", 
                     phone AS ""Phone"",
-                    is_whatsapp_connected AS ""IsWhatsAppConnected"" 
+                    is_whatsapp_connected AS ""IsWhatsAppConnected"",
+                    is_active AS ""IsActive"",
+                    auth_provider AS ""AuthProvider"",
+                    provider_user_id AS ""ProviderUserId""
                 FROM users
                 WHERE id = @Id;
             ";

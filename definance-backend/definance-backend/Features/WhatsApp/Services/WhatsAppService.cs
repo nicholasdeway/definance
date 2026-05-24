@@ -17,17 +17,20 @@ namespace definance_backend.Features.WhatsApp.Services
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
         private readonly ILogger<WhatsAppService> _logger;
+        private readonly definance_backend.Features.Auth.Services.IJwtService _jwtService;
 
         public WhatsAppService(
             IWhatsAppRepository repository, 
             IConfiguration configuration,
             HttpClient httpClient,
-            ILogger<WhatsAppService> logger)
+            ILogger<WhatsAppService> logger,
+            definance_backend.Features.Auth.Services.IJwtService jwtService)
         {
             _repository = repository;
             _configuration = configuration;
             _httpClient = httpClient;
             _logger = logger;
+            _jwtService = jwtService;
 
             var accountSid = _configuration["Twilio:AccountSID"];
             var authToken = _configuration["Twilio:AuthToken"];
@@ -110,7 +113,7 @@ namespace definance_backend.Features.WhatsApp.Services
             };
         }
 
-        public async Task HandleTwilioWebhookAsync(string fromPhone, string body)
+        public async Task HandleTwilioWebhookAsync(string fromPhone, string body, string? mediaUrl = null)
         {
             try 
             {
@@ -171,7 +174,7 @@ namespace definance_backend.Features.WhatsApp.Services
                 }
 
                 // 3. Send to AI Service
-                await ForwardToAIServiceAsync(user.Id, normalizedPhone, text);
+                await ForwardToAIServiceAsync(user.Id, normalizedPhone, text, mediaUrl);
             }
             catch (Exception ex)
             {
@@ -179,7 +182,7 @@ namespace definance_backend.Features.WhatsApp.Services
             }
         }
 
-        private async Task SendWhatsAppMessageAsync(string to, string message)
+        public async Task SendWhatsAppMessageAsync(string to, string message)
         {
             var twilioNumber = _configuration["Twilio:PhoneNumber"];
             
@@ -212,15 +215,29 @@ namespace definance_backend.Features.WhatsApp.Services
             }
         }
 
-        private async Task ForwardToAIServiceAsync(Guid userId, string phone, string message)
+        private async Task ForwardToAIServiceAsync(Guid userId, string phone, string message, string? audioUrl = null)
         {
             var aiEndpoint = _configuration["AIService:Endpoint"] ?? "http://localhost:8000/api/chat";
             
+            var user = await _repository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogError("User not found: {UserId}", userId);
+                return;
+            }
+
+            var token = _jwtService.GenerateToken(user);
+            var userName = $"{user.FirstName} {user.LastName}".Trim();
+            if (string.IsNullOrEmpty(userName)) userName = "Usuário";
+
             var payload = new 
             {
                 user_id = userId.ToString(),
+                user_name = userName,
                 phone_number = phone,
-                message = message
+                message = message,
+                token = token,
+                audio_url = audioUrl
             };
 
             try 

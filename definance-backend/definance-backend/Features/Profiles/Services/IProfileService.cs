@@ -14,5 +14,6 @@ namespace definance_backend.Features.Profiles.Services
         Task<ServiceResult<bool>> ChangePasswordAsync(Guid userId, ChangePasswordDto request);
         Task<ServiceResult<string>> UpdateAvatarAsync(Guid userId, IFormFile file);
         Task<ServiceResult<bool>> RemoveAvatarAsync(Guid userId);
+        Task<ServiceResult<bool>> PurgeDataAsync(Guid userId, string dataType);
     }
 }

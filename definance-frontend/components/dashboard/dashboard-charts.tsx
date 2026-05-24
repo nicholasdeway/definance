@@ -1,6 +1,6 @@
 "use client"
- 
-import { useState, useEffect } from "react"
+
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useSettings } from "@/lib/settings-context"
@@ -22,7 +22,7 @@ export interface MonthlyData {
 
 interface DashboardChartsProps {
   categoryData: CategoryData[]
-  incomeData?: CategoryData[] // Usaremos a mesma interface CategoryData para simplificar
+  incomeData?: CategoryData[]
   monthlyData: MonthlyData[]
   loading?: boolean
 }
@@ -42,7 +42,7 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
   const isDark = resolvedTheme === "dark"
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<"gastos" | "receitas">("gastos")
-  
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -66,7 +66,23 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
     return [formatCurrency(Number(finalValue || 0)), String(name || "")] as [string, string]
   }
 
-  const currentPieData = activeTab === "gastos" ? categoryData : incomeData
+  const formatCategoryName = (name: string): string => {
+    if (!name) return ""
+    const lower = name.toLowerCase().trim()
+    if (lower === "clt") return "CLT"
+    if (lower === "pj") return "PJ"
+    if (lower === "freelancer") return "Freelancer"
+    return name.charAt(0).toUpperCase() + name.slice(1)
+  }
+
+  const currentPieData = useMemo(() => {
+    const data = activeTab === "gastos" ? categoryData : incomeData
+    return data.map(item => ({
+      ...item,
+      categoria: formatCategoryName(item.categoria)
+    }))
+  }, [activeTab, categoryData, incomeData])
+
   const total = currentPieData.reduce((sum, item) => sum + item.valor, 0)
 
   if (loading || !mounted) {
@@ -83,14 +99,14 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
         <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
           Análise de {activeTab === "gastos" ? "Gastos" : "Receitas"}
         </CardTitle>
-        
+
         <div className="flex bg-muted/20 p-0.5 rounded-lg border border-border/50">
           <button
             onClick={() => setActiveTab("gastos")}
             className={cn(
               "px-2.5 py-1 text-[10px] font-bold rounded-md transition-all",
-              activeTab === "gastos" 
-                ? "bg-background text-primary shadow-sm" 
+              activeTab === "gastos"
+                ? "bg-background text-primary shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -100,8 +116,8 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
             onClick={() => setActiveTab("receitas")}
             className={cn(
               "px-2.5 py-1 text-[10px] font-bold rounded-md transition-all",
-              activeTab === "receitas" 
-                ? "bg-background text-primary shadow-sm" 
+              activeTab === "receitas"
+                ? "bg-background text-primary shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -137,7 +153,7 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",
@@ -153,11 +169,11 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Total</span>
                 <span className="text-sm font-black text-card-foreground">
-                  {total > 1000 ? `R$ ${(total/1000).toFixed(1)}k` : formatCurrency(total)}
+                  {total > 1000 ? `R$ ${(total / 1000).toFixed(1)}k` : formatCurrency(total)}
                 </span>
               </div>
             </div>
-            
+
             <div className="flex-1 w-full space-y-2.5">
               {currentPieData.slice(0, 5).map((item, index) => (
                 <div key={item.categoria} className="flex items-center gap-2 group">
@@ -191,23 +207,23 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
               <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-5)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--chart-5)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--chart-5)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-5)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/30" />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
                   axisLine={false}
                   tickLine={false}
                   dy={10}
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
                   axisLine={false}
                   tickLine={false}

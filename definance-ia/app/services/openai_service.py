@@ -1,13 +1,13 @@
 import json
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.schemas.expense_schema import ParsedExpense
 from app.core.config import settings
 from app.core.logging import logger
 from typing import List
 
 # Inicializa o cliente usando as configurações centralizadas
-client = OpenAI(
-    api_key=settings.OPENAI_API_KEY,
+client = AsyncOpenAI(
+    api_key=settings.GROQ_API_KEY,
     base_url=settings.GROQ_BASE_URL
 )
 
@@ -33,18 +33,20 @@ def get_system_prompt(categories: List[str]) -> str:
     3. O valor deve ser um número float.
     4. Identifique se o usuário mencionou 'hoje' ou 'ontem'.
     
-    CATEGORIAS DISPONÍVEIS:
+    CATEGORIAS DISPONÍVEIS (com seus respectivos tipos e palavras-chave):
     [{categories_str}]
 
     5. AVALIAÇÃO DE CATEGORIAS (Siga ESTES PASSOS rigorosamente):
-       PASSO 1: O NOME de alguma categoria (ignorando maiúsculas) aparece ESCRITO NA FRASE? 
-                - Exemplo: frase="jogos da steam", categoria="Steam". A palavra "steam" está na frase!
-                - Se SIM: Escolha essa categoria IMEDIATAMENTE e ignore o Passo 2.
-       PASSO 2: Se nenhuma categoria passou no Passo 1, procure pelas palavras-chave entre parênteses. 
-                - Se a frase menciona algo que é palavra-chave de uma categoria, use ela.
-       PASSO 3: Se não achar nada, use a intuição semântica.
-    6. IMPORTANTE: No campo "category" do JSON, retorne APENAS o NOME da categoria, sem as palavras-chave entre parênteses.
-    7. Se nenhuma categoria da lista servir de forma alguma, use 'Outros'.
+       - As categorias são enviadas no formato "Nome [Tipo] (palavras-chave)". O [Tipo] indica se a categoria serve para 'Entrada', 'Saída' ou 'Ambos'.
+       - Primeiro identifique se a transação do usuário é uma 'Entrada' ou 'Saída'.
+       - Você SÓ PODE escolher uma categoria cujo [Tipo] corresponda à transação (ou que seja [Ambos]). NUNCA use uma categoria [Entrada] para um gasto/saída, nem uma categoria [Saída] para um ganho/receita.
+       PASSO 1: O NOME de alguma categoria permitida aparece ESCRITO NA FRASE? 
+                - Exemplo: frase="jogos da steam", categoria="Steam [Saída]". 
+                - Se SIM: Escolha essa categoria IMEDIATAMENTE e ignore os demais passos.
+       PASSO 2: Se não houver correspondência de nome, procure pelas palavras-chave entre parênteses. 
+       PASSO 3: Se não achar nada, use a intuição semântica dentro das categorias permitidas para o tipo da transação.
+    6. IMPORTANTE: No campo "category" do JSON, retorne APENAS o NOME EXATO da categoria (sem o [Tipo] e sem as palavras-chave).
+    7. Se nenhuma categoria da lista servir, use 'Outros'.
     
     8. Retorne APENAS o JSON no formato abaixo:
     {{
@@ -73,7 +75,7 @@ async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExp
     try:
         logger.info(f"Processando texto: '{text}' com {len(categories)} categorias.")
         
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=settings.MODEL_NAME,
             messages=[
                 {"role": "system", "content": get_system_prompt(categories)},
@@ -84,6 +86,8 @@ async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExp
         )
         
         content = response.choices[0].message.content
+        if not content:
+            raise ValueError("A resposta da IA está vazia.")
         data = json.loads(content)
         
         # Garante que o nome comece com letra maiúscula
@@ -93,7 +97,9 @@ async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExp
         import re
         text_lower = text.lower()
         for cat in categories:
-            cat_name = cat.split("(")[0].strip()
+            # cat pode estar no formato "Nome [Tipo] (keywords)" ou "Nome [Tipo]"
+            cat_name = cat.split("[")[0].strip()
+            
             if cat_name.lower() != "outros" and len(cat_name) > 2:
                 pattern = r'\b' + re.escape(cat_name.lower()) + r'\b'
                 if re.search(pattern, text_lower):
@@ -121,3 +127,48 @@ def _get_error_response(message: str) -> ParsedExpense:
         type="Saída", 
         confidence=0
     )
+
+async def transcribe_audio_url(audio_url: str) -> str:
+    """
+    Baixa um arquivo de áudio a partir de uma URL e faz a transcrição usando o Groq Whisper.
+    Suporta autenticação básica do Twilio caso as chaves estejam no environment.
+    """
+    import httpx
+    import os
+    try:
+        logger.info(f"Iniciando download do áudio: {audio_url}")
+        
+        # Suporte opcional a autenticação para URLs privadas do Twilio
+        auth = None
+        twilio_sid = os.getenv("TWILIO_ACCOUNT_SID") or os.getenv("Twilio__AccountSID")
+        twilio_token = os.getenv("TWILIO_AUTH_TOKEN") or os.getenv("Twilio__AuthToken")
+        if twilio_sid and twilio_token and "twilio.com" in audio_url:
+            auth = (twilio_sid, twilio_token)
+            
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as http_client:
+            response = await http_client.get(audio_url, auth=auth)
+            response.raise_for_status()
+            audio_bytes = response.content
+
+        # Determina a extensão ou usa .ogg como padrão do WhatsApp
+        filename = "voice.ogg"
+        url_lower = audio_url.lower()
+        if ".mp3" in url_lower:
+            filename = "voice.mp3"
+        elif ".wav" in url_lower:
+            filename = "voice.wav"
+        elif ".m4a" in url_lower:
+            filename = "voice.m4a"
+
+        logger.info(f"Enviando {len(audio_bytes)} bytes de áudio para o modelo Whisper no Groq...")
+        
+        # Usando a API de transcrição do cliente OpenAI/Groq assíncrono
+        transcription = await client.audio.transcriptions.create(
+            file=(filename, audio_bytes),
+            model="whisper-large-v3",
+            response_format="text"
+        )
+        return transcription.strip()
+    except Exception as e:
+        logger.error(f"Erro ao transcrever arquivo de áudio: {type(e).__name__} - {str(e)}")
+        raise

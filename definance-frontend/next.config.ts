@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        source: "/auth-g/login",
+        destination: `${backendUrl}/api/Auth/google/login`,
+      },
+      {
         source: "/api-proxy/:path*",
         destination: `${backendUrl}/:path*`,
       },
