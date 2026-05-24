@@ -28,7 +28,7 @@ def get_system_prompt(categories: List[str]) -> str:
     Seu objetivo é transformar frases informais em dados estruturados (JSON).
 
     Regras:
-    1. Extraia o NOME, VALOR e a CATEGORIA mencionado.
+    1. Extraia o ITEM/DESCRIÇÃO da transação (nome do produto, serviço ou local comprado), o VALOR e a CATEGORIA.
     2. Identifique se é uma 'Entrada' (recebimento, ganho, salário, venda) ou 'Saída' (gasto, compra, pagamento).
     3. O valor deve ser um número float.
     4. Identifique se o usuário mencionou 'hoje' ou 'ontem'.
@@ -50,7 +50,7 @@ def get_system_prompt(categories: List[str]) -> str:
     
     8. Retorne APENAS o JSON no formato abaixo:
     {{
-      "name": "Nome corrigido",
+      "name": "Descrição da transação (ex: Fralda para Celso, Leite, Uber)",
       "amount": 0.0,
       "category": "Nome da Categoria",
       "type": "Entrada" ou "Saída",
@@ -58,7 +58,11 @@ def get_system_prompt(categories: List[str]) -> str:
       "confidence": 0.95
     }}
 
-    11. IMPORTANTE: Formate o NOME de maneira legível em PORTUGUÊS, garantindo que a primeira letra seja maiúscula. Corrija a ortografia e adicione acentos se necessário (ex: 'cafe' vira 'Café', 'almoco' vira 'Almoço', 'pao' vira 'Pão', 'agua' vira 'Água'). Preserve nomes de marcas/empresas (ex: 'Steam', 'Uber').
+    9. IMPORTANTE sobre o campo "name" (Descrição da transação):
+       - Formate o nome de maneira legível em PORTUGUÊS, garantindo que a primeira letra seja maiúscula. Corrija erros de digitação, ortografia e adicione acentos se necessário (ex: 'frauda' vira 'Fralda', 'cafe' vira 'Café', 'almoco' vira 'Almoço', 'pao' vira 'Pão', 'agua' vira 'Água', 'gaz' vira 'Gás').
+       - Corrija contrações informais e gírias para manter a descrição formal (ex: 'pra' vira 'para', 'pro' vira 'para o', 'vc' vira 'você').
+       - NUNCA extraia apenas o nome próprio de uma pessoa (como "Celso") como o campo "name" principal da transação. O campo "name" deve refletir o que foi comprado ou pago (ex: se o texto diz "fralda pro celso", o name deve ser "Fralda para o Celso" ou "Fralda", mas nunca apenas "Celso").
+       - Preserve nomes de marcas/empresas (ex: 'Steam', 'Uber', 'Ifood').
     """
 
 async def parse_expense_text(text: str, categories: List[str] = []) -> ParsedExpense:

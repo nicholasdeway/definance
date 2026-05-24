@@ -176,7 +176,7 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
 
             <div className="flex-1 w-full space-y-2.5">
               {currentPieData.slice(0, 5).map((item, index) => (
-                <div key={item.categoria} className="flex items-center gap-2 group">
+                <div key={`${item.categoria}-${index}`} className="flex items-center gap-2 group">
                   <div
                     className="h-2 w-2 rounded-full shrink-0"
                     style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
