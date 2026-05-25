@@ -31,6 +31,7 @@ services:
       - MODEL_NAME=${MODEL_NAME}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - BACKEND_URL=http://backend
     container_name: definance_ia
     restart: always
     networks:
