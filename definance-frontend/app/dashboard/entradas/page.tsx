@@ -402,7 +402,7 @@ export default function ReceitasPage() {
         const url = isEditing ? `/api/incomes/${formData.id}` : "/api/incomes";
         const method = isEditing ? "PUT" : "POST";
 
-        const finalType = formData.tipo === "Outros" ? (formData.outroTipo || "Outros") : formData.tipo
+        const finalType = formData.tipo?.toLowerCase() === "outros" ? (formData.outroTipo || "Outros") : formData.tipo
 
         const response = await apiClient<IncomeApiResponse>(url, {
             method: method,

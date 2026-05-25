@@ -112,13 +112,18 @@ const iconMap: Record<string, any> = {
 }
 
 export function CategoryIcon({ name, color, fallback = "MoreHorizontal", className, ...props }: CategoryIconProps) {
+  const cleanName = name ? name.trim().toLowerCase() : ""
+  const isOutro = cleanName === "outros" || cleanName === "outro" || cleanName === "outroe"
+  
   const caseInsensitiveMatch = name ? Object.keys(iconMap).find(k => k.toLowerCase() === name.toLowerCase()) : null;
   
-  const IconComponent = (name && (
-    iconMap[name] || 
-    (caseInsensitiveMatch && iconMap[caseInsensitiveMatch]) || 
-    (Icons as any)[name]
-  )) || iconMap[fallback]
+  const IconComponent = isOutro 
+    ? Icons.MoreHorizontal 
+    : (name && (
+        iconMap[name] || 
+        (caseInsensitiveMatch && iconMap[caseInsensitiveMatch]) || 
+        (Icons as any)[name]
+      )) || iconMap[fallback]
 
   return (
     <IconComponent 

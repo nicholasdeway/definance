@@ -106,7 +106,7 @@ export function ExpenseList({
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {despesas.map((d) => {
-              const category = dynamicCategories.find(c => c.name === d.categoria)
+              const category = dynamicCategories.find(c => c.name.toLowerCase() === d.categoria?.toLowerCase())
               const categoryIcon = (category?.icon && category.icon !== "MoreHorizontal") ? category.icon : d.categoria
               const dataReduzida = d.data.replace(/\/20(\d{2})$/, '/$1')
               

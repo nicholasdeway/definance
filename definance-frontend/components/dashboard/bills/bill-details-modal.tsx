@@ -44,7 +44,7 @@ export function BillDetailsModal({
   if (!conta) return null
 
   // Busca o ícone oficial da categoria
-  const realCategory = categories.find(c => c.name === conta.categoria)
+  const realCategory = categories.find(c => c.name.toLowerCase() === conta.categoria?.toLowerCase())
   const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : conta.categoria
 
   const isPaid = conta.status === "paga"
