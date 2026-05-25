@@ -20,6 +20,10 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
 
+  const googleLoginUrl = process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith("http")
+    ? `${process.env.NEXT_PUBLIC_API_URL}/api/Auth/google/login`
+    : `${process.env.NEXT_PUBLIC_API_URL || "/api-proxy"}/api/Auth/google/login`
+
   // Restaura o estado de loading caso o usuário retorne à página usando o botão "Voltar" (bfcache)
   // Restaura o estado de loading caso o usuário retorne à página ou saia dela (bfcache / back navigation)
   useEffect(() => {
@@ -137,7 +141,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword: () => void }
       </div>
 
       <a
-        href="/auth-g/login"
+        href={googleLoginUrl}
         className="h-12 w-full bg-background hover:bg-muted dark:bg-secondary/20 border border-input dark:border-border text-foreground dark:hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer flex items-center justify-center transition-all"
       >
         <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">

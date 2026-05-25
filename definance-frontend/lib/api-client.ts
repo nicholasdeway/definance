@@ -1,26 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api-proxy"
 
-// Fila para gerenciar múltiplas requisições durante o refresh
-let isRefreshing = false
-let failedQueue: Array<{
-  resolve: (value: any) => void
-  reject: (reason?: any) => void
-  endpoint: string
-  options: RequestInit
-}> = []
 
-const processQueue = (error: Error | null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      apiClient(prom.endpoint, prom.options)
-        .then(prom.resolve)
-        .catch(prom.reject)
-    }
-  })
-  failedQueue = []
-}
 
 // Cache de promessas em voo para evitar requisições duplicadas simultâneas
 const pendingRequests = new Map<string, Promise<any>>()
@@ -62,45 +42,14 @@ export async function apiClient<T>(
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions)
 
     if (!response.ok) {
-      // Interceptador de 401 para Refresh Token
-      if (response.status === 401 && !endpoint.includes("/api/Auth/refresh") && !isServer) {
-        if (isRefreshing) {
-          // Já existe um refresh em curso, enfileira esta requisição
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject, endpoint, options })
-          })
+      // Interceptador de 401
+      if (response.status === 401 && !isServer) {
+        // Notifica o sistema globalmente que a sessão caiu (Logout Silencioso)
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          window.dispatchEvent(new CustomEvent("auth:logout"))
         }
-
-        isRefreshing = true
         
-        try {
-          // Tenta renovar o token via cookie
-          const refreshResponse = await fetch(`${API_URL}/api/Auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include"
-          })
-          
-          if (!refreshResponse.ok) {
-            throw new Error("Refresh failed")
-          }
-          
-          isRefreshing = false
-          processQueue(null)
-          
-          // Tenta a requisição original novamente
-          return apiClient<T>(endpoint, options)
-        } catch (refreshError) {
-          isRefreshing = false
-          processQueue(new Error("Sessão expirada"))
-          
-          // Notifica o sistema globalmente que a sessão caiu (Logout Silencioso)
-          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-            window.dispatchEvent(new CustomEvent("auth:logout"))
-          }
-          
-          throw new Error("Não autenticado")
-        }
+        throw new Error("Não autenticado")
       }
 
       const text = await response.text()
