@@ -77,18 +77,21 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
           </div>
         ) : (
           <div className="space-y-3.5">
-            {currentTransactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between group gap-4">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    t.tipo === "receita" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
-                  )}>
-                    <CategoryIcon 
-                      name={(categories.find(c => c.name === t.categoria)?.icon && categories.find(c => c.name === t.categoria)?.icon !== "MoreHorizontal") ? categories.find(c => c.name === t.categoria)?.icon : t.categoria} 
-                      className="h-4 w-4" 
-                    />
-                  </div>
+            {currentTransactions.map((t) => {
+              const catObj = categories.find(c => c.name.toLowerCase() === t.categoria?.toLowerCase());
+              const categoryIcon = (catObj?.icon && catObj.icon !== "MoreHorizontal") ? catObj.icon : t.categoria;
+              return (
+                <div key={t.id} className="flex items-center justify-between group gap-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      t.tipo === "receita" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                    )}>
+                      <CategoryIcon 
+                        name={categoryIcon} 
+                        className="h-4 w-4" 
+                      />
+                    </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-card-foreground group-hover:text-primary transition-colors truncate">{t.nome}</p>
                     <p className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wider truncate">
@@ -104,8 +107,9 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
                     {t.tipo === "receita" ? "+" : "-"} {formatCurrency(Math.abs(t.valor))}
                   </span>
                 </div>
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         )}
       </CardContent>

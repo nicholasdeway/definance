@@ -288,7 +288,9 @@ export default function ContasPage() {
 
   const openEditDialog = (conta: ContaItem) => {
     const inputDate = conta.rawDueDate ? conta.rawDueDate.split('T')[0] : ""
-    const isCustomCategory = conta.categoria && !todasCategoriasParaFiltro.includes(conta.categoria) && conta.categoria !== "Outros"
+    const isCustomCategory = conta.categoria && 
+      !todasCategoriasParaFiltro.some(cat => cat.toLowerCase() === conta.categoria.toLowerCase()) && 
+      conta.categoria.toLowerCase() !== "outros"
 
     setForm({
       id: conta.id,
@@ -327,7 +329,7 @@ export default function ContasPage() {
       const payload = {
         name: formattedName,
         amount,
-        category: form.categoria === "Outros" ? (form.outroCategoria || "Outros") : (form.categoria || "Outros"),
+        category: form.categoria?.toLowerCase() === "outros" ? (form.outroCategoria || "Outros") : (form.categoria || "Outros"),
         billType: form.tipo,
         dueDate,
         dueDay,

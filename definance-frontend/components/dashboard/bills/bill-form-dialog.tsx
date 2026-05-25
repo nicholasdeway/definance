@@ -409,7 +409,7 @@ export function BillFormDialog({
           </div>
 
           {/* Outros (Apenas Desktop) */}
-          {form.categoria === "Outros" && !isMobile && (
+          {form.categoria?.toLowerCase() === "outros" && !isMobile && (
             <div className="space-y-0.5 sm:space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <Label htmlFor="bill-outro-categoria" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Qual categoria?</Label>
               <Input

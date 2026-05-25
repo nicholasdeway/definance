@@ -80,7 +80,7 @@ export const ReceitaDialog = ({
 
       // Verificar se é uma categoria customizada (sem ignorar case)
       const exactMatch = todasCategorias.find(c => c.toLowerCase() === initialTipo.toLowerCase())
-      const isCustomType = initialTipo && !exactMatch && initialTipo !== "Outros"
+      const isCustomType = initialTipo && !exactMatch && initialTipo.toLowerCase() !== "outros"
       
       setFormData({
         id: initialData.id || "",
@@ -126,7 +126,7 @@ export const ReceitaDialog = ({
     const dataToSave = {
       ...formData,
       nome: formatName(formData.nome),
-      tipo: formData.tipo === "Outros" ? (formData.outroTipo || "Outros") : formData.tipo,
+      tipo: formData.tipo?.toLowerCase() === "outros" ? (formData.outroTipo || "Outros") : formData.tipo,
       description: formData.descricao || null,
       notes: formData.observacoes || null
     }
@@ -235,7 +235,7 @@ export const ReceitaDialog = ({
                   "font-medium text-muted-foreground min-w-0 mr-1 truncate",
                   isMobile ? "text-[10px]" : "text-sm"
                 )}>
-                  {formData.tipo === "Outros" && formData.outroTipo 
+                  {formData.tipo?.toLowerCase() === "outros" && formData.outroTipo 
                     ? formData.outroTipo 
                     : formData.tipo || (isMobile ? "Categoria" : "Selecione uma categoria")}
                 </span>
@@ -317,7 +317,7 @@ export const ReceitaDialog = ({
             </div>
           </div>
 
-          {formData.tipo === "Outros" && (
+          {formData.tipo?.toLowerCase() === "outros" && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <Label htmlFor="outroTipo" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Especifique a categoria</Label>
               <div className="relative group">
