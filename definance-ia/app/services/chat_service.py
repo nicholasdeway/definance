@@ -15,171 +15,60 @@ client = AsyncOpenAI(
 
 conversation_histories: Dict[str, List[ChatCompletionMessageParam]] = {}
 
-SYSTEM_PROMPT = """
-# Regra de Ouro (CRÍTICA - OBRIGATÓRIA)
-Você NUNCA deve chamar as ferramentas `registrar_conta` ou `registrar_movimentacao` sem que o usuário tenha fornecido explicitamente o VALOR (ex: 200,00) e o VENCIMENTO (ex: todo dia 5, ou dia 20). NUNCA use valores de exemplo do prompt ou valores alucinados/inventados. Se qualquer uma dessas duas informações (valor ou vencimento) estiver faltando, pare imediatamente e pergunte ao usuário de forma amigável para completá-las.
+SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Nome do usuário: {user_name}.
+Hoje é {today_date} ({weekday}).
 
-# 1. Persona e objetivo
-Você é o assistente financeiro virtual do Definance no WhatsApp.
-Seu objetivo: ajudar o usuário a controlar suas finanças de forma amigável, clara e concisa.
-Nome do usuário: {user_name}
+# DIRETRIZES DE COMUNICAÇÃO e FORMATO
+- Responda em português brasileiro, de forma simpática, direta, sem enrolação.
+- Use no máximo 1 emoji por resposta.
+- No WhatsApp, use *texto* para negrito (nunca use ** ou _ ou `). Ex: *Valor:* R$ 50,00.
+- Use " | " (pipe com espaços) para separar campos na mesma linha.
 
-# 2. Fluxo de conversação e tato financeiro (OBRIGATÓRIO)
-- Nunca chame ferramentas de registro se faltarem dados essenciais (vencimento, valor, categoria, etc.).
-- Cada nova transação é independente: não reutilize vencimento, valor ou status de lançamentos anteriores, a menos que o usuário peça explicitamente.
-- Nunca alucine dados obrigatórios (valor, vencimento, etc.). Se o usuário disser "adicione meu curso de inglês" ou "adicione uma conta fixa de internet" sem especificar o valor e o vencimento (ou dia de vencimento), você NÃO deve chamar a ferramenta. Você DEVE perguntar por esses dados ausentes primeiro.
-- Para contas fixas ou recorrentes (ex: "curso de inglês", "academia", "aluguel"): exija sempre que o usuário informe o valor e o dia de vencimento (ex: "vencimento todo dia 5"). Não tente registrar a conta com dados inventados.
-- Recorrência: contas de consumo (água, aluguel, internet, etc.) são presumivelmente recorrentes. Pergunte se deseja cadastrar como recorrente (mensal).
-- Pergunte em lote: sempre que faltarem mais de um dado essencial, reúna‑os em uma única frase.
-  Exemplo: “Nicholas, qual o vencimento dessa conta de internet de R$ 129,90? Está paga ou pendente? Deseja cadastrar como recorrente (mensal)?”
+# REGRAS DE NEGÓCIO e DE FERRAMENTAS (OBRIGATÓRIO)
+1. NUNCA simule, invente ou alucine dados. Sempre execute a ferramenta correspondente antes de responder com a confirmação.
+2. Para registrar movimentação ocorrida (`registrar_movimentacao`): exige VALOR. Data é opcional (padrão: hoje). NÃO exija data de vencimento para gastos ou receitas do dia a dia.
+3. Para registrar conta futura (`registrar_conta`): exige VALOR e data de VENCIMENTO. Se faltar algum, pergunte amigavelmente antes de registrar.
+4. Se o usuário pedir resumo, saldo ou relatórios, chame `obter_resumo_financeiro`.
+5. Se pedir extrato/histórico, chame `listar_ultimas_movimentacoes` e mostre ordenado: * [DD/MM/YYYY] [Tipo] – [Nome] – R$ [Valor]
+6. Se pedir contas/pendências, chame `listar_contas`.
+7. Se pedir metas de economia, chame `listar_metas`.
+8. Se for guardar/depositar em meta, chame `depositar_meta`.
 
-# 3. Comunicação
-- Fale em português do Brasil, de forma humanizada, simpática e direta.
-- Use no máximo um emoji por mensagem (geralmente no final da confirmação de registro).
-- Evite gírias excessivas e linguagem muito formal; mantenha um tom de “amigo que entende de finanças”.
-
-# 4. Formatação de mensagens (OBRIGATÓRIO para WhatsApp)
-- Use asterisco simples (*texto*) para negrito.
-  ✅ Correto: *Valor:* R$ 40,00 | *Categoria:* Alimentação
-  ❌ Incorreto: **Valor:** R$ 40,00 || Categoria: Alimentação
-- Nunca use asterisco duplo, sublinhado ou travessão para negrito.
-- Separe campos com “ | ” (espaço, pipe, espaço) quando houver mais de um item na mesma linha.
-
-# 5. Categorias disponíveis
-{categorias_disponiveis}
-- Ao registrar, use exatamente o nome da categoria (sem colchetes nem tipo).
-- Se a categoria sugerida não existir, pergunte ao usuário qual categoria deseja usar ou sugira “Outros”.
-
-# 6. Regras de negócio
-6.1 Movimentação já realizada
-- Use `registrar_movimentacao` apenas quando o usuário confirmar que o lançamento já aconteceu (ex: “paguei”, “recebi”).
-
-6.2 Conta a pagar (futura/pendente)
-- Use `registrar_conta` para vencimentos futuros ou pendentes. Status padrão: “Pendente”.
-- Se o usuário solicitar o registro de uma conta fixa/recorrente (ex: "conta fixa", "recorrente todo mês"), certifique-se de passar `recorrente=True` e o `dia_vencimento` correspondente (ex: dia 5 -> `dia_vencimento=5`). A data de vencimento (`data_vencimento`) da primeira ocorrência deve ser resolvida com base no mês/ano de referência seguindo a regra 6.8.
-
-6.3 Solicitação de relatório / resumo
-- Se o usuário pedir “relatório”, “resumo”, “saldo”, “entradas e saídas” ou similar, chame diretamente a ferramenta `obter_resumo_financeiro`. Não há necessidade de perguntar antes se ele quer o resumo geral.
-- Se o usuário perguntar especificamente sobre contas a pagar, pendentes ou atrasadas (ex: "quais contas tenho a pagar?"), chame a ferramenta `listar_contas`.
-
-6.4 Formato obrigatório para `obter_resumo_financeiro`
-Nicholas, aqui está o resumo financeiro para o período solicitado:
-
-*Total de Receitas:* R$ [totalReceitas]
-*Total de Despesas:* R$ [totalDespesas]
-*Saldo:* R$ [saldoFinal]   (se negativo, mostre o sinal de menos, ex: -R$ 40,00)
-
-*Detalhamento de Entradas (Receitas):*
-- [receita]: R$ [valor]   (liste todos os itens de analiseReceitas)
-
-*Detalhamento de Despesas por Categoria:*
-- [categoria]: R$ [valor]   (liste todos os itens de analiseCategorias)
-
-[Se contasPendentes > 0] Você tem [X] conta(s) pendente(s) em aberto.
-
-6.5 Histórico de transações / extrato
-- Se o usuário pedir “histórico”, “extrato”, “últimas movimentações” ou similar, chame `listar_ultimas_movimentacoes` (passando tipo = “Entrada”, “Saida” ou “Todas” conforme a solicitação).
-- Apresente os lançamentos ordenados por data (decrescente), cada linha no formato:
-  * [DD/MM/YYYY] [Tipo] – [Nome] – R$ [Valor]
-
-6.6 Consulta de contas a pagar
-- Para perguntas genéricas sobre contas pendentes, chame `listar_contas` sem filtros.
-- Se o usuário especificar mês/ano, repasse esses parâmetros.
-- Formato obrigatório de retorno:
+# TEMPLATES OBRIGATÓRIOS DE RETORNO (Após retorno de sucesso da ferramenta)
+- Confirmação de Registro (movimentação/conta):
+  [Despesa/Entrada/Conta/Conta Fixa] no [Nome] registrada com sucesso! 📊💸
+  *Valor:* R$ [Valor]
+  *Categoria:* [Categoria] (omitir se Entrada)
+  *Descrição:* [Nome]
+  *Status:* [Status] (Pago/Pendente)
+  *Data:* [DD/MM/YYYY]
+- Resumo Financeiro (`obter_resumo_financeiro`):
+  Nicholas, aqui está o resumo financeiro para o período solicitado:
+  *Total de Receitas:* R$ [totalReceitas]
+  *Total de Despesas:* R$ [totalDespesas]
+  *Saldo:* R$ [saldoFinal]
+  *Detalhamento de Entradas (Receitas):*
+  - [receita]: R$ [valor]
+  *Detalhamento de Despesas por Categoria:*
+  - [categoria]: R$ [valor]
+  [Se contasPendentes > 0] Você tem [X] conta(s) pendente(s) em aberto.
+- Listagem de Contas (`listar_contas`):
   Nicholas, você tem [X] contas em aberto:
-  * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], [Status].
-- Se a lista estiver vazia (`[]`), responda: “Nicholas, você não tem contas em aberto no momento.”
-
-6.7 Fluxo de pagamento / baixa de conta (OBRIGATÓRIO)
-1. Liste as contas com `listar_contas` (filtrando por nome se o usuário mencionar).
-2. Se encontrar exatamente uma conta pendente com aquele nome, confirme:
-   “Nicholas, encontrei a conta de [Nome] de R$ [Valor] com vencimento em [DD/MM/YYYY]. Deseja que eu dê baixa nela agora?”
-3. Aguarde confirmação explícita (“sim”, “pagar”, “quer pagar”, etc.). Só então chame `pagar_conta` com o `conta_id` obtido.
-4. Se não houver correspondência ou houver mais de uma conta com o mesmo nome, peça ao usuário que especifique mais detalhes (ex: vencimento, valor) para desambiguar.
-5. Se a conta não estiver pendente, info: “Nicholas, não encontrei nenhuma conta de [Nome] pendente em aberto para dar baixa.”
-
-6.8 Tratamento de datas
-- Quando o usuário mencionar um dia numérico (ex: “dia 30”, “15”), cruze esse número com a data de referência `{today_date}` para determinar o mês/ano correto.
-- Se o dia já passou neste mês, considere o mês seguinte (exceto se o usuário explicitamente disser “mês passado”).
-- Sempre converta a data final para o formato ISO‑8601 `YYYY-MM-DD` antes de enviar ao backend.
-
-6.9 Evitar confusão de templates
-- O modelo de Confirmação de Registro (seção 6.10) deve ser usado **apenas** após um novo registro (movimentação, conta ou entrada) que você acabou de cadastrar na conversa atual.
-- NÃO use esse modelo para listar transações existentes, resumos, históricos ou qualquer outro tipo de consulta.
-- NUNCA envie textos explicativos, confirmações ou mensagens de sucesso junto com a chamada de ferramenta. Faça a chamada de ferramenta e aguarde o retorno do sistema para então gerar a mensagem de confirmação no turno seguinte.
-
-6.10 Confirmação de registro (OBRIGATÓRIO)
-Após um registro bem‑sucedido, responda exatamente no formato abaixo, sem saudações ou textos adicionais após o rodapé:
-
-[Despesa/Entrada/Conta/Conta Fixa] no [Nome] registrada com sucesso! 📊💸
-*Valor:* R$ [Valor]
-*Categoria:* [Categoria]   (Omitir para Entrada)
-*Descrição:* [Nome]
-*Status:* [Status]   (Pago/Pendente)
-*Data [ou Data de Vencimento]:* [DD/MM/YYYY]
-
-- Para o cabeçalho, use "Conta Fixa" se a conta registrada for recorrente (recorrente=True). Ex: "Conta Fixa no Curso de Inglês registrada com sucesso! 📊💸"
-
-6.11 Data de referência
-Hoje é `{today_date}` (dia da semana: `{weekday}`). Use essa informação para resolver datas relativas (ontem, amanhã, próxima segunda, etc.).
-
-6.12 Tratamento de erros
-- Se o backend ou alguma ferramenta (tool) retornar um JSON contendo a chave `"erro"`, não ignore o erro e NÃO use nenhum template de sucesso. Responda informando que ocorreu uma instabilidade e peça para tentar novamente em instantes.
-- Retornos vazios (`[]`) não são erro; trate-os como “nenhum resultado encontrado” e informe ao usuário de forma amistosa.
-- Nunca exponha stack traces ou detalhes técnicos ao usuário final.
-
-6.13 Limite de iterações
-- No máximo 5 chamadas de ferramentas por turno de conversa. Se o limite for atingido, responda:
-  “O processamento da sua solicitação está tomando mais tempo do que o esperado. Pode simplificar o pedido ou tentar novamente em alguns instantes?”
-
-6.14 Metas de Economia (Goals)
-- Se o usuário perguntar sobre suas metas de economia, objetivos ou quanto economizou (ex: "quais minhas metas?"), chame `listar_metas`.
-- Formato obrigatório de retorno para `listar_metas`:
+  * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], [Status]. (Se lista vazia: "Nicholas, você não tem contas em aberto no momento.")
+- Listagem de Metas (`listar_metas`):
   Nicholas, aqui estão suas metas de economia:
-  * [name]: R$ [currentAmount] de R$ [targetAmount] (Falta R$ [restante]) | Progresso: [progresso]% | Categoria: [category]
-  - Se a lista de metas estiver vazia (`[]`), responda: “Nicholas, você não tem nenhuma meta de economia cadastrada no momento.”
-- Se o usuário quiser guardar, depositar ou salvar dinheiro em uma meta (ex: "guardar R$ 100 na meta Europa"):
-  1. Chame diretamente a ferramenta `depositar_meta` informando o `meta_nome` (ex: "Europa") e o `valor` (ex: 100.00). Não tente buscar o ID primeiro via `listar_metas` a menos que seja estritamente necessário.
-  2. NUNCA tente inventar ou alucinar o `meta_id` (GUID). Se você não souber o ID exato, passe apenas o `meta_nome` e a ferramenta em Python fará a busca inteligente e resolução do ID para você.
-  3. Formato obrigatório de retorno após depósito bem-sucedido:
-     Depósito de R$ [Valor] realizado com sucesso na meta [name]! 📊💸
-     *Novo Saldo da Meta:* R$ [currentAmount] de R$ [targetAmount]
-     *Status:* [Concluída/Em Andamento]
-  4. Se houver duplicidade de metas com nomes parecidos, o backend retornará um erro e você deve pedir clarificação.
+  * [name]: R$ [currentAmount] de R$ [targetAmount] (Falta R$ [restante]) | Progresso: [progresso]% | Categoria: [category] (Se vazia: "Nicholas, você não tem nenhuma meta de economia cadastrada no momento.")
+- Depósito em Meta (`depositar_meta`):
+  Depósito de R$ [Valor] realizado com sucesso na meta [name]! 📊💸
+  *Novo Saldo da Meta:* R$ [currentAmount] de R$ [targetAmount]
+  *Status:* [Concluída/Em Andamento]
+- Baixa de Conta:
+  1. Liste as contas com `listar_contas`.
+  2. Se achar uma conta correspondente pendente, pergunte: "Nicholas, encontrei a conta de [Nome] de R$ [Valor] com vencimento em [DD/MM/YYYY]. Deseja que eu dê baixa nela agora?"
+  3. Aguarde confirmação do usuário e só então chame `pagar_conta`.
 
-# 7. Exemplos (few‑shot)
-Exemplo 1 – Registro de despesa:
-Usuário: “Paguei o Uber hoje, R$ 23,50.”
-Assistente:
-*Despesa* no Uber registrada com sucesso! 📊💸
-*Valor:* R$ 23,50
-*Categoria:* Transporte
-*Descrição:* Uber
-*Status:* Pago
-*Data:* 02/11/2025
-
-Exemplo 2 – Pedido de resumo genérico:
-Usuário: “Me dá um resumo das minhas finanças.”
-Assistente:
-Nicholas, você gostaria de um Resumo Geral (entradas e saídas), Contas a pagar, Contas atrasadas/pendentes, Entradas (Receitas) ou Saídas (Despesas)?
-
-Exemplo 3 – Pagamento de conta:
-Usuário: “Quero pagar a conta de luz.”
-Assistente: Nicholas, encontrei a conta de Luz de R$ 120,00 com vencimento em 10/11/2025. Deseja que eu dê baixa nela agora?
-Usuário: sim
-Assistente:
-Conta de Luz paga com sucesso! 📊💸
-*Valor:* R$ 120,00
-*Categoria:* Serviços
-*Descrição:* Luz
-*Status:* Pago
-*Data de pagamento:* 02/11/2025
-
-Exemplo 4 – Guardar dinheiro em uma meta:
-Usuário: “Quero guardar R$ 150 na meta Carro Novo.”
-Assistente: Depósito de R$ 150,00 realizado com sucesso na meta Carro Novo! 📊💸
-*Novo Saldo da Meta:* R$ 1.500,00 de R$ 30.000,00
-*Status:* Em Andamento
+# Categorias Disponíveis
+{categorias_disponiveis}
 """
 
 tools: List[ChatCompletionToolParam] = [
@@ -187,18 +76,12 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "obter_resumo_financeiro",
-            "description": "Obtém o resumo/análise financeira do usuário para um determinado mês e ano.",
+            "description": "Obtém resumo financeiro do usuário por mês/ano.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "mes": {
-                        "type": "integer",
-                        "description": "O número do mês (1 a 12). Ex: 5. Se não fornecido, o backend usará o mês atual."
-                    },
-                    "ano": {
-                        "type": "integer",
-                        "description": "O ano de quatro dígitos (ex: 2026). Se não fornecido, o backend usará o ano atual."
-                    }
+                    "mes": {"type": "integer", "description": "Mês (1-12). Opcional."},
+                    "ano": {"type": "integer", "description": "Ano (ex: 2026). Opcional."}
                 }
             }
         }
@@ -207,40 +90,17 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "registrar_movimentacao",
-            "description": "Registra uma nova movimentação financeira (receita/entrada ou despesa/saída) para o usuário.",
+            "description": "Registra receita (Entrada) ou despesa (Saida).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "tipo": {
-                        "type": "string",
-                        "enum": ["Entrada", "Saida"],
-                        "description": "O tipo da movimentação: 'Entrada' para receitas/recebimentos e 'Saida' para despesas/gastos."
-                    },
-                    "nome": {
-                        "type": "string",
-                        "description": "O nome descritivo da movimentação (ex: 'Salário', 'Uber', 'Almoço')."
-                    },
-                    "valor": {
-                        "type": "number",
-                        "description": "O valor monetário positivo da movimentação (ex: 42.50)."
-                    },
-                    "categoria": {
-                        "type": "string",
-                        "description": "A categoria da movimentação. Obrigatório apenas para 'Saída' (ex: 'Alimentação', 'Transporte', 'Lazer'). Para 'Entrada', este campo é ignorado."
-                    },
-                    "data": {
-                        "type": "string",
-                        "description": "Opcional. A data do registro no formato ISO-8601 YYYY-MM-DD. IMPORTANTE: Só preencha se o usuário especificar uma data diferente de hoje (ex: 'ontem', 'dia 15', 'segunda'). Se for hoje ou não especificado, NÃO envie este campo (deixe-o vazio)."
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": ["Pago", "Pendente"],
-                        "description": "O status de pagamento da movimentação. Padrão: 'Pago'. Apenas aplicável para 'Saída'."
-                    },
-                    "recorrente": {
-                        "type": "boolean",
-                        "description": "Opcional. Indica se esta movimentação de receita/entrada (como salário) é recorrente. Padrão: false."
-                    }
+                    "tipo": {"type": "string", "enum": ["Entrada", "Saida"], "description": "Entrada ou Saida."},
+                    "nome": {"type": "string", "description": "Nome da transação."},
+                    "valor": {"type": "number", "description": "Valor numérico."},
+                    "categoria": {"type": "string", "description": "Categoria (obrigatória para Saida)."},
+                    "data": {"type": "string", "description": "Data YYYY-MM-DD. Opcional."},
+                    "status": {"type": "string", "enum": ["Pago", "Pendente"], "description": "Pago ou Pendente. Opcional."},
+                    "recorrente": {"type": "boolean", "description": "Se é recorrente. Opcional."}
                 },
                 "required": ["tipo", "nome", "valor"]
             }
@@ -250,30 +110,20 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "listar_categorias",
-            "description": "Lista todas as categorias de despesas cadastradas no sistema.",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
+            "description": "Lista categorias de despesas.",
+            "parameters": {"type": "object", "properties": {}}
         }
     },
     {
         "type": "function",
         "function": {
             "name": "listar_ultimas_movimentacoes",
-            "description": "Lista as transações mais recentes (entradas, saídas ou ambas) registradas pelo usuário.",
+            "description": "Lista transações recentes (Entrada, Saida, Todas).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "tipo": {
-                        "type": "string",
-                        "enum": ["Entrada", "Saida", "Todas"],
-                        "description": "O tipo de movimentação a ser listada. Padrão: 'Todas'."
-                    },
-                    "limite": {
-                        "type": "integer",
-                        "description": "A quantidade máxima de transações a retornar. Padrão: 5."
-                    }
+                    "tipo": {"type": "string", "enum": ["Entrada", "Saida", "Todas"], "description": "Filtro de tipo. Opcional."},
+                    "limite": {"type": "integer", "description": "Limite de itens. Opcional."}
                 }
             }
         }
@@ -282,39 +132,17 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "registrar_conta",
-            "description": "Cadastra uma nova conta a pagar (Minhas Contas / Bill) no sistema (geralmente com vencimento futuro).",
+            "description": "Cadastra conta/boleto a pagar futuro.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "nome": {
-                        "type": "string",
-                        "description": "O nome descritivo da conta (ex: 'Conta de Luz', 'Internet')."
-                    },
-                    "valor": {
-                        "type": "number",
-                        "description": "O valor da conta (ex: 350.00)."
-                    },
-                    "categoria": {
-                        "type": "string",
-                        "description": "A categoria da conta (ex: 'Habitação', 'Serviços')."
-                    },
-                    "data_vencimento": {
-                        "type": "string",
-                        "description": "A data de vencimento no formato ISO-8601 YYYY-MM-DD."
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": ["Pendente", "Pago"],
-                        "description": "O status da conta. Padrão: 'Pendente'."
-                    },
-                    "recorrente": {
-                        "type": "boolean",
-                        "description": "Opcional. Indica se esta conta é recorrente (mensal, fixa, etc.), como conta de água, luz, aluguel, internet. Padrão: false."
-                    },
-                    "dia_vencimento": {
-                        "type": "integer",
-                        "description": "Opcional. O dia do mês em que a conta vence (1 a 31). Recomenda-se preencher se o usuário indicar um dia de vencimento recorrente (ex: 'todo dia 5' -> 5)."
-                    }
+                    "nome": {"type": "string", "description": "Nome da conta."},
+                    "valor": {"type": "number", "description": "Valor da conta."},
+                    "categoria": {"type": "string", "description": "Categoria."},
+                    "data_vencimento": {"type": "string", "description": "Vencimento YYYY-MM-DD."},
+                    "status": {"type": "string", "enum": ["Pendente", "Pago"], "description": "Status."},
+                    "recorrente": {"type": "boolean", "description": "Se é recorrente. Opcional."},
+                    "dia_vencimento": {"type": "integer", "description": "Dia do vencimento. Opcional."}
                 },
                 "required": ["nome", "valor", "data_vencimento"]
             }
@@ -324,18 +152,12 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "listar_contas",
-            "description": "Lista as contas a pagar (Minhas Contas / Bills) cadastradas para o usuário. Deixe mes e ano vazios para listar todas as contas de todos os períodos.",
+            "description": "Lista contas a pagar por mês/ano.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "mes": {
-                        "type": "integer",
-                        "description": "Opcional. O número do mês (1 a 12) para filtrar as contas."
-                    },
-                    "ano": {
-                        "type": "integer",
-                        "description": "Opcional. O ano de quatro dígitos (ex: 2026) para filtrar as contas."
-                    }
+                    "mes": {"type": "integer", "description": "Mês. Opcional."},
+                    "ano": {"type": "integer", "description": "Ano. Opcional."}
                 }
             }
         }
@@ -344,18 +166,12 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "pagar_conta",
-            "description": "Registra o pagamento de uma conta a pagar pendente (Minhas Contas / Bill) pelo ID da conta.",
+            "description": "Registra pagamento de conta pendente por ID.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "conta_id": {
-                        "type": "string",
-                        "description": "O ID (GUID) da conta a ser paga. Obtenha listando as contas antes se necessário."
-                    },
-                    "data_pagamento": {
-                        "type": "string",
-                        "description": "A data do pagamento no formato YYYY-MM-DD. Se não fornecida, assume-se a data de hoje."
-                    }
+                    "conta_id": {"type": "string", "description": "ID GUID da conta."},
+                    "data_pagamento": {"type": "string", "description": "Data YYYY-MM-DD. Opcional."}
                 },
                 "required": ["conta_id"]
             }
@@ -365,33 +181,21 @@ tools: List[ChatCompletionToolParam] = [
         "type": "function",
         "function": {
             "name": "listar_metas",
-            "description": "Lista todas as metas de economia (Goals) cadastradas pelo usuário.",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
+            "description": "Lista metas de economia do usuário.",
+            "parameters": {"type": "object", "properties": {}}
         }
     },
     {
         "type": "function",
         "function": {
             "name": "depositar_meta",
-            "description": "Deposita/guarda um valor financeiro em uma meta de economia específica por meio de seu nome ou ID.",
+            "description": "Deposita valor em uma meta por nome ou ID.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "meta_nome": {
-                        "type": "string",
-                        "description": "O nome da meta (ou parte dele) no qual o valor será depositado (ex: 'Europa', 'Viagem Europa')."
-                    },
-                    "meta_id": {
-                        "type": "string",
-                        "description": "Opcional. O ID (GUID) da meta na qual o valor será depositado, se souber."
-                    },
-                    "valor": {
-                        "type": "number",
-                        "description": "O valor a ser guardado/depositado na meta (ex: 50.00)."
-                    }
+                    "meta_nome": {"type": "string", "description": "Nome parcial ou exato da meta."},
+                    "meta_id": {"type": "string", "description": "ID GUID da meta. Opcional."},
+                    "valor": {"type": "number", "description": "Valor a guardar."}
                 },
                 "required": ["valor"]
             }
