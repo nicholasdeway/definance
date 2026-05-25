@@ -7,6 +7,15 @@ from app.core.logging import logger
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam, ChatCompletionMessageToolCall
 
+from zoneinfo import ZoneInfo
+sp_tz = ZoneInfo("America/Sao_Paulo")
+
+def get_now_sp() -> datetime.datetime:
+    return datetime.datetime.now(sp_tz)
+
+def get_today_sp() -> datetime.date:
+    return datetime.datetime.now(sp_tz).date()
+
 # Inicializa o cliente OpenAI/Groq assíncrono reusando as chaves de configuração
 client = AsyncOpenAI(
     api_key=settings.GROQ_API_KEY,
@@ -211,9 +220,9 @@ def _sanitize_date(date_str: str | None) -> str:
     tenha alucinado um ano passado (como 2023, 2024 ou 2025) quando o sistema está em 2026.
     """
     if not date_str:
-        return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        return get_now_sp().strftime("%Y-%m-%dT%H:%M:%S")
         
-    current_year = datetime.date.today().year
+    current_year = get_today_sp().year
     
     # Se a string começar com um ano de 4 dígitos
     match = re.match(r"^(\d{4})-(.*)$", date_str)
@@ -373,7 +382,7 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                 
                 if len(data) == 10:
                     # A IA enviou apenas a data (YYYY-MM-DD) sem hora — combina com a hora atual
-                    data = f"{data}T{datetime.datetime.now().strftime('%H:%M:%S')}"
+                    data = f"{data}T{get_now_sp().strftime('%H:%M:%S')}"
                 
                 if tipo == "Entrada":
                     url = f"{settings.BACKEND_URL}/api/Incomes"
@@ -515,7 +524,7 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                         day = int(date_parts[2])
                         
                         dueDateObj = datetime.date(year, month, day)
-                        todayObj = datetime.date.today()
+                        todayObj = get_today_sp()
                         
                         if dueDateObj <= todayObj:
                             if month == 12:
@@ -686,7 +695,7 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
     history = conversation_histories.get(phone_number, [])
     
     # Contexto temporal
-    today = datetime.date.today()
+    today = get_today_sp()
     today_date = today.strftime("%d/%m/%Y")
     weekdays = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
     weekday = weekdays[today.weekday()]
@@ -768,7 +777,7 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
                     
                     tool_calls.append(
                         ChatCompletionMessageToolCall(
-                            id=f"call_{idx}_{int(datetime.datetime.now().timestamp())}",
+                            id=f"call_{idx}_{int(get_now_sp().timestamp())}",
                             type="function",
                             function=Function(name=func_name, arguments=args_str)
                         )
