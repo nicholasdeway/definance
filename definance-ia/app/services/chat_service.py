@@ -16,6 +16,18 @@ def get_now_sp() -> datetime.datetime:
 def get_today_sp() -> datetime.date:
     return datetime.datetime.now(sp_tz).date()
 
+def format_currency_brl(val: float) -> str:
+    is_negative = val < 0
+    abs_val = abs(val)
+    formatted = f"{abs_val:,.2f}"
+    parts = formatted.split(".")
+    integer_part = parts[0].replace(",", ".")
+    decimal_part = parts[1]
+    result = f"{integer_part},{decimal_part}"
+    if is_negative:
+        return f"-{result}"
+    return result
+
 # Inicializa o cliente OpenAI/Groq assíncrono reusando as chaves de configuração
 client = AsyncOpenAI(
     api_key=settings.GROQ_API_KEY,
@@ -30,6 +42,7 @@ Hoje é {today_date} ({weekday}).
 # DIRETRIZES DE COMUNICAÇÃO e FORMATO
 - Responda em português brasileiro, de forma simpática, direta, sem enrolação.
 - Use no máximo 1 emoji por resposta.
+- Sempre formate TODOS os valores monetários no padrão brasileiro (BRL), usando vírgula como separador decimal e ponto como separador de milhar. Ex: R$ 1.500,00, R$ 35,50, R$ 300,00. NUNCA envie valores com ponto decimal (como 300.00 ou 5624.91).
 - No WhatsApp, use *texto* para negrito (nunca use ** ou _ ou `). Ex: *Valor:* R$ 50,00.
 - Use " | " (pipe com espaços) para separar campos na mesma linha.
 
@@ -236,7 +249,7 @@ def _sanitize_date(date_str: str | None) -> str:
             
     return date_str
 
-async def _resolve_category(sugestao: str | None, headers: dict) -> str:
+async def _resolve_category(sugestao: str | None, headers: dict, cat_names: Union[list, None] = None) -> str:
     """
     Busca as categorias reais do backend e encontra a melhor correspondência
     para a sugestão da IA, garantindo que o nome enviado ao banco seja exato.
@@ -244,24 +257,25 @@ async def _resolve_category(sugestao: str | None, headers: dict) -> str:
     if not sugestao:
         return "Outros"
     
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as http:
-            resp = await http.get(f"{settings.BACKEND_URL}/api/Categories", headers=headers)
-            if resp.status_code != 200:
-                return sugestao
-            
-            categories: list = resp.json()
-            # categories pode ser uma lista de strings ou de objetos com campo 'name'
-            cat_names = []
-            for c in categories:
-                if isinstance(c, str):
-                    cat_names.append(c)
-                elif isinstance(c, dict):
-                    cat_names.append(c.get("name") or c.get("Name") or "")
-            cat_names = [c for c in cat_names if c]
-    except Exception as e:
-        logger.warning(f"Não foi possível buscar categorias para resolver sugestão: {e}")
-        return sugestao
+    if cat_names is None:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as http:
+                resp = await http.get(f"{settings.BACKEND_URL}/api/Categories", headers=headers)
+                if resp.status_code != 200:
+                    return sugestao
+                
+                categories: list = resp.json()
+                # categories pode ser uma lista de strings ou de objetos com campo 'name'
+                cat_names = []
+                for c in categories:
+                    if isinstance(c, str):
+                        cat_names.append(c)
+                    elif isinstance(c, dict):
+                        cat_names.append(c.get("name") or c.get("Name") or "")
+                cat_names = [c for c in cat_names if c]
+        except Exception as e:
+            logger.warning(f"Não foi possível buscar categorias para resolver sugestão: {e}")
+            return sugestao
     
     sugestao_lower = sugestao.lower().strip()
     
@@ -326,30 +340,71 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                 
                 if resp.status_code == 200:
                     data = resp.json()
+                    
+                    # Busca categorias reais uma vez para agrupamento case-insensitive
+                    cat_names = []
+                    try:
+                        resp_cats = await http_client.get(f"{settings.BACKEND_URL}/api/Categories", headers=headers)
+                        if resp_cats.status_code == 200:
+                            categories = resp_cats.json()
+                            for c in categories:
+                                if isinstance(c, str):
+                                    cat_names.append(c)
+                                elif isinstance(c, dict):
+                                    cat_names.append(c.get("name") or c.get("Name") or "")
+                            cat_names = [x for x in cat_names if x]
+                    except Exception as e:
+                        logger.warning(f"Erro ao pre-buscar categorias no resumo: {e}")
+
+                    total_rec = data.get("totalReceitas") or data.get("TotalReceitas") or 0.0
+                    total_desp = data.get("totalDespesas") or data.get("TotalDespesas") or 0.0
+                    total_atr = data.get("totalAtrasadas") or data.get("TotalAtrasadas") or 0.0
+                    saldo = data.get("saldoFinal") or data.get("SaldoFinal") or 0.0
+
                     compacted = {
-                        "totalReceitas": data.get("totalReceitas") or data.get("TotalReceitas") or 0.0,
-                        "totalDespesas": data.get("totalDespesas") or data.get("TotalDespesas") or 0.0,
-                        "totalAtrasadas": data.get("totalAtrasadas") or data.get("TotalAtrasadas") or 0.0,
+                        "totalReceitas": format_currency_brl(total_rec),
+                        "totalDespesas": format_currency_brl(total_desp),
+                        "totalAtrasadas": format_currency_brl(total_atr),
                         "contasPendentes": data.get("contasPendentes") or data.get("ContasPendentes") or 0,
-                        "saldoFinal": data.get("saldoFinal") or data.get("SaldoFinal") or 0.0,
+                        "saldoFinal": format_currency_brl(saldo),
                     }
                     
                     cats_source = data.get("categoryAnalysis") or data.get("CategoryAnalysis") or []
-                    cats_clean = []
+                    grouped_cats = {}
                     for c in cats_source:
                         cat_name = c.get("categoria") or c.get("Categoria") or ""
                         amount = c.get("valor") or c.get("Valor") or 0.0
                         if cat_name:
-                            cats_clean.append({"categoria": cat_name, "valor": amount})
+                            resolved_name = await _resolve_category(cat_name, headers, cat_names)
+                            grouped_cats[resolved_name] = grouped_cats.get(resolved_name, 0.0) + amount
+                            
+                    cats_clean = []
+                    for cat_name, amount in sorted(grouped_cats.items(), key=lambda x: x[1], reverse=True):
+                        cats_clean.append({"categoria": cat_name, "valor": format_currency_brl(amount)})
                     compacted["analiseCategorias"] = cats_clean
                     
                     inc_source = data.get("incomeAnalysis") or data.get("IncomeAnalysis") or []
-                    inc_clean = []
+                    grouped_incomes = {}
                     for i in inc_source:
                         inc_name = i.get("tipo") or i.get("Tipo") or ""
                         amount = i.get("valor") or i.get("Valor") or 0.0
                         if inc_name:
-                            inc_clean.append({"receita": inc_name, "valor": amount})
+                            inc_lower = inc_name.lower().strip()
+                            if inc_lower == "clt":
+                                resolved_inc = "CLT"
+                            elif inc_lower == "pj":
+                                resolved_inc = "PJ"
+                            elif inc_lower in ("autonomo", "autônomo"):
+                                resolved_inc = "Autônomo"
+                            elif inc_lower in ("freelancer", "freelance"):
+                                resolved_inc = "Freelancer"
+                            else:
+                                resolved_inc = inc_name.strip().capitalize()
+                            grouped_incomes[resolved_inc] = grouped_incomes.get(resolved_inc, 0.0) + amount
+                            
+                    inc_clean = []
+                    for inc_name, amount in sorted(grouped_incomes.items(), key=lambda x: x[1], reverse=True):
+                        inc_clean.append({"receita": inc_name, "valor": format_currency_brl(amount)})
                     compacted["analiseReceitas"] = inc_clean
                     
                     return compacted
@@ -454,6 +509,21 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                     if resp.status_code == 200:
                         expenses = resp.json()
                 
+                # Pre-busca categorias do usuário uma vez
+                cat_names = []
+                try:
+                    resp_cats = await http_client.get(f"{settings.BACKEND_URL}/api/Categories", headers=headers)
+                    if resp_cats.status_code == 200:
+                        categories = resp_cats.json()
+                        for c in categories:
+                            if isinstance(c, str):
+                                cat_names.append(c)
+                            elif isinstance(c, dict):
+                                cat_names.append(c.get("name") or c.get("Name") or "")
+                        cat_names = [x for x in cat_names if x]
+                except Exception as e:
+                    logger.warning(f"Erro ao pre-buscar categorias no historico: {e}")
+
                 combined = []
                 for inc in incomes:
                     combined.append({
@@ -465,12 +535,14 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                         "data": inc.get("date")
                     })
                 for exp in expenses:
+                    raw_cat = exp.get("category")
+                    resolved_cat = await _resolve_category(raw_cat, headers, cat_names)
                     combined.append({
                         "id": exp.get("id"),
                         "nome": exp.get("name"),
                         "valor": exp.get("amount"),
                         "tipo": "Saída",
-                        "categoria": exp.get("category"),
+                        "categoria": resolved_cat,
                         "data": exp.get("date"),
                         "status": exp.get("status")
                     })
