@@ -16,6 +16,11 @@ export function RegisterForm() {
   const router = useRouter()
   const { register, logout } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+
+  const googleLoginUrl = process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith("http")
+    ? `${process.env.NEXT_PUBLIC_API_URL}/api/Auth/google/login`
+    : `${process.env.NEXT_PUBLIC_API_URL || "/api-proxy"}/api/Auth/google/login`
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -424,7 +429,7 @@ export function RegisterForm() {
       </div>
 
       <a 
-        href="/auth-g/login"
+        href={googleLoginUrl}
         className="h-12 w-full bg-secondary/20 border border-border text-foreground hover:bg-secondary/40 rounded-xl font-semibold cursor-pointer flex items-center justify-center transition-all" 
       >
         <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
