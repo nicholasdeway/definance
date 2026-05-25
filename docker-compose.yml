@@ -10,6 +10,7 @@ services:
       - AWS_REGION=us-east-2
       - S3_BUCKET_NAME=definance-avatars
       - AiService__Url=http://ia-service:8000/parse-expense
+      - AiService__Endpoint=http://ia-service:8000/api/chat
     container_name: definance_api
     restart: always
     networks:
