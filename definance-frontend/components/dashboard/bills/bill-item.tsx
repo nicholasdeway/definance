@@ -65,7 +65,7 @@ export const BillItem = ({
   const isOverdue = conta.status === "atrasada"
 
   // Busca a categoria real para pegar o ícone configurado no sistema
-  const realCategory = categories.find(c => c.name === conta.categoria)
+  const realCategory = categories.find(c => c.name.toLowerCase() === conta.categoria?.toLowerCase())
   const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : conta.categoria
 
   // Formata data reduzida (DD/MM/YYYY -> DD/MM/YY)

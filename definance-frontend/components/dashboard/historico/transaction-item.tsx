@@ -50,7 +50,7 @@ export const TransactionItem = ({
   const isMobile = useIsMobile()
 
   // Busca o ícone oficial da categoria
-  const realCategory = categories.find(c => c.name === transaction.categoria)
+  const realCategory = categories.find(c => c.name.toLowerCase() === transaction.categoria?.toLowerCase())
   const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : transaction.categoria
 
   const dataExibicao = isMobile 
