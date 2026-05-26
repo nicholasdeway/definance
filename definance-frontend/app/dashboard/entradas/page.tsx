@@ -247,22 +247,18 @@ export default function ReceitasPage() {
                   effectiveDiaSemana = configHistorica.diaSemana || configHistorica.DiaSemana || ""
                 }
 
-                // Se NÃO estamos no período do histórico, verificamos se a nova configuração já começou
-                const isHistoryPeriod = !!configHistorica;
+                // Verificar se a configuração ativa para este período (seja histórica ou atual) já havia iniciado
+                const firstDateStr = effectiveFreq === "variavel" ? "" : (effectiveDias.split(',')[0] || "").trim()
+                const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
                 
-                if (!isHistoryPeriod) {
-                  const firstDateStr = effectiveFreq === "variavel" ? "" : (effectiveDias.split(',')[0] || "").trim()
-                  const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
-                  
-                  const startDateObj = baseDateStr ? (() => {
-                    const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
-                    const [y, m, d] = datePart.split('-').map(Number)
-                    return new Date(y, m - 1, d)
-                  })() : null
-                  
-                  if (startDateObj && targetMonthDate < new Date(startDateObj.getFullYear(), startDateObj.getMonth(), 1)) {
-                    return []
-                  }
+                const startDateObj = baseDateStr ? (() => {
+                  const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
+                  const [y, m, d] = datePart.split('-').map(Number)
+                  return new Date(y, m - 1, d)
+                })() : (user?.createdAt ? new Date(user.createdAt) : null)
+                
+                if (startDateObj && targetMonthDate < new Date(startDateObj.getFullYear(), startDateObj.getMonth(), 1)) {
+                  return []
                 }
 
                 const freqInfo = incomeFrequencies.find(f => f.value === effectiveFreq)
@@ -436,7 +432,7 @@ export default function ReceitasPage() {
     }
     
     try {
-        const isEditing = !!formData.id;
+        const isEditing = !!formData.id && !formData.id.startsWith("synced-");
         const url = isEditing ? `/api/incomes/${formData.id}` : "/api/incomes";
         const method = isEditing ? "PUT" : "POST";
 
@@ -521,6 +517,12 @@ export default function ReceitasPage() {
 
   const handleDeleteReceita = async () => {
     if (deleteDialog.item) {
+      if (deleteDialog.item.id.startsWith("synced-")) {
+        toast.info("Esta é uma entrada projetada do Perfil Financeiro. Para removê-la, edite seu Perfil Financeiro.")
+        setDeleteDialog({ open: false, item: null })
+        return
+      }
+
       try {
         setIsDeleting(true)
         await apiClient(`/api/incomes/${deleteDialog.item.id}`, { method: "DELETE" })
