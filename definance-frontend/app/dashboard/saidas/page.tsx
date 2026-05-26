@@ -106,7 +106,7 @@ export default function DespesasPage() {
 
         const mapped: Despesa[] = data.map((e: ExpenseApiResponse) => ({
           id: e.id,
-          nome: e.name,
+          nome: e.name ? e.name.charAt(0).toUpperCase() + e.name.slice(1) : e.name,
           valor: e.amount,
           categoria: e.category,
           data: new Date(e.date).toLocaleDateString("pt-BR"),
@@ -224,7 +224,7 @@ export default function DespesasPage() {
       if (response && response.id) {
         const saved: Despesa = {
           id: response.id,
-          nome: response.name,
+          nome: response.name ? response.name.charAt(0).toUpperCase() + response.name.slice(1) : response.name,
           valor: response.amount,
           categoria: response.category,
           data: new Date(response.date).toLocaleDateString("pt-BR"),
@@ -305,7 +305,7 @@ export default function DespesasPage() {
           <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               onClick={() => setIsExportDialogOpen(true)}
               size="sm"
             >

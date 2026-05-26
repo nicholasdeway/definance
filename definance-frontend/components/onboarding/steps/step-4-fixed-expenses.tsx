@@ -2,7 +2,6 @@
 
 import React, { Fragment } from "react"
 import { Check, Plus, Trash2 } from "lucide-react"
-import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -90,11 +89,8 @@ export const Step4FixedExpenses = () => {
         {fixedExpenseCategories.map((cat, index) => {
           const isSelected = cat.key in selectedExpenses
           return (
-            <motion.button
+            <button
               key={cat.key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.02 }}
               type="button"
               onClick={() => toggleExpense(cat.key)}
               className={cn(
@@ -107,7 +103,7 @@ export const Step4FixedExpenses = () => {
               <div className={cn(
                 "flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                 isSelected 
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
+                  ? "bg-primary text-primary-foreground shadow-sm" 
                   : "bg-muted dark:bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
               )}>
                 <cat.icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
@@ -132,7 +128,7 @@ export const Step4FixedExpenses = () => {
                   <Check className="h-2 w-2 text-primary" />
                 </div>
               )}
-            </motion.button>
+            </button>
           )
         })}
       </div>
@@ -152,9 +148,7 @@ export const Step4FixedExpenses = () => {
                   .filter((cat) => ["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
                     <Fragment key={cat.key}>
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                      <div 
                         className="flex items-center gap-3 rounded-2xl border border-border/50 dark:border-white/5 bg-muted/10 dark:bg-white/[0.02] p-3 sm:p-4"
                       >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -179,7 +173,7 @@ export const Step4FixedExpenses = () => {
                             )}
                           />
                         </div>
-                      </motion.div>
+                      </div>
 
                       {/* Sub-triagem para Empréstimo embutido em Contas de Consumo */}
                       {["luz", "agua", "celular"].includes(cat.key) && (
@@ -250,10 +244,8 @@ export const Step4FixedExpenses = () => {
                 {fixedExpenseCategories
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
                   .map((cat) => (
-                    <motion.div 
+                    <div 
                       key={cat.key} 
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
                       className="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5 sm:p-3"
                     >
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -278,7 +270,7 @@ export const Step4FixedExpenses = () => {
                           )}
                         />
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
               </div>
             </div>
@@ -295,10 +287,8 @@ export const Step4FixedExpenses = () => {
           </div>
           <div className="space-y-3 sm:space-y-4">
             {customExpenses.map((exp, idx) => (
-              <motion.div 
+              <div 
                 key={exp.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
                 className="group relative space-y-3 sm:space-y-4 rounded-2xl border border-white/5 bg-white/[0.02] p-3 sm:p-4 pb-4"
               >
                 <div className="flex items-center justify-between border-b border-white/5 pb-2">
@@ -353,16 +343,14 @@ export const Step4FixedExpenses = () => {
                     />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       )}
 
       {/* Botão adicionar personalizado */}
-      <motion.button
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+      <button
         type="button"
         onClick={addCustomExpense}
         className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border dark:border-white/10 p-3 sm:p-4 text-xs sm:text-[13px] font-semibold text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer mt-2"
@@ -371,7 +359,7 @@ export const Step4FixedExpenses = () => {
           <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
         </div>
         Adicionar outra despesa fixa
-      </motion.button>
+      </button>
     </div>
   )
 }

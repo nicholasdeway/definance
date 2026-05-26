@@ -304,7 +304,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                              className={cn(
                                 "text-center text-[9px] py-1.5 px-1 rounded-lg border transition-all duration-200",
                                 isSelected
-                                  ? "bg-primary/70 text-primary-foreground border-primary shadow-sm"
+                                  ? "bg-primary/70 text-primary-foreground border-primary/70 shadow-sm"
                                   : "bg-muted/30 border-transparent text-muted-foreground/70 hover:bg-muted/50 cursor-pointer"
                              )}
                           >

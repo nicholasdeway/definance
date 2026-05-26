@@ -319,6 +319,20 @@ namespace definance_backend.Features.Onboarding.Services
             return _dateTimeProvider.NormalizeToAppDate(date);
         }
 
+        private bool TryParseDate(string dateStr, out DateTime result)
+        {
+            result = default;
+            if (string.IsNullOrWhiteSpace(dateStr)) return false;
+
+            var formats = new[] { 
+                "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss", "yyyy-MM-ddTHH:mm:ss.fffZ", "yyyy-MM-ddTHH:mm:ss.fff",
+                "dd/MM/yyyy", "d/M/yyyy", "yyyy/MM/dd"
+            };
+
+            return DateTime.TryParse(dateStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result) ||
+                   DateTime.TryParseExact(dateStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result);
+        }
+
         private async Task SyncIncomesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Income> existingIncomes)
         {
             if (dto.Incomes == null) return;
@@ -333,7 +347,7 @@ namespace definance_backend.Features.Onboarding.Services
                 if (inc.Valor <= 0) continue;
                 
                 var datesStr = (inc.DiasRecebimento ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
-                if (datesStr.Length > 0 && DateTime.TryParse(datesStr[0].Trim(), out var dt))
+                if (datesStr.Length > 0 && TryParseDate(datesStr[0].Trim(), out var dt))
                 {
                     var configMonth = new DateTime(dt.Year, dt.Month, 1);
                     if (configMonth > maxFutureMonth)
@@ -380,10 +394,10 @@ namespace definance_backend.Features.Onboarding.Services
                     // Verificar no histórico (do mais antigo para o mais recente)
                     var configHistorica = inc.HistoricoConfiguracoes?
                         .Where(h => !string.IsNullOrEmpty(h.ValidoAte))
-                        .OrderBy(h => DateTime.TryParse(h.ValidoAte, out var d) ? d : DateTime.MaxValue)
+                        .OrderBy(h => TryParseDate(h.ValidoAte, out var d) ? d : DateTime.MaxValue)
                         .FirstOrDefault(h => 
                         {
-                            if (DateTime.TryParse(h.ValidoAte, out var d))
+                            if (TryParseDate(h.ValidoAte, out var d))
                             {
                                 var validityMonth = new DateTime(d.Year, d.Month, 1);
                                 return syncMonth <= validityMonth;
@@ -403,7 +417,7 @@ namespace definance_backend.Features.Onboarding.Services
                     }
                     else if (inc.ConfiguracaoAnterior != null && !string.IsNullOrEmpty(inc.ConfiguracaoAnterior.ValidoAte))
                     {
-                        if (DateTime.TryParse(inc.ConfiguracaoAnterior.ValidoAte, out var d))
+                        if (TryParseDate(inc.ConfiguracaoAnterior.ValidoAte, out var d))
                         {
                             var validUntilMonth = new DateTime(d.Year, d.Month, 1);
                             if (syncMonth <= validUntilMonth)
@@ -421,7 +435,7 @@ namespace definance_backend.Features.Onboarding.Services
                     if (!isUsingHistoricalConfig)
                     {
                         var datesForStart = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        if (datesForStart.Length > 0 && DateTime.TryParse(datesForStart[0].Trim(), out var dt))
+                        if (datesForStart.Length > 0 && TryParseDate(datesForStart[0].Trim(), out var dt))
                         {
                             var configStartMonth = new DateTime(dt.Year, dt.Month, 1);
                             if (syncMonth < configStartMonth)
@@ -495,7 +509,7 @@ namespace definance_backend.Features.Onboarding.Services
                             int count = 1;
                             foreach (var dateStr in dates)
                             {
-                                if (DateTime.TryParse(dateStr.Trim(), out var dt))
+                                if (TryParseDate(dateStr.Trim(), out var dt))
                                 {
                                     var paymentDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
                                     
@@ -538,7 +552,7 @@ namespace definance_backend.Features.Onboarding.Services
                     {
                         // Fixo Mensal ou Variável
                         DateTime? incomeDate = null;
-                        if (dates.Length > 0 && DateTime.TryParse(dates[0].Trim(), out var dt))
+                        if (dates.Length > 0 && TryParseDate(dates[0].Trim(), out var dt))
                         {
                             incomeDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
                         }
@@ -606,7 +620,7 @@ namespace definance_backend.Features.Onboarding.Services
 
                             int? dueDay = null;
                             DateTime? dueDate = null;
-                            if (DateTime.TryParse(parcela.Vencimento, out var dt))
+                            if (TryParseDate(parcela.Vencimento, out var dt))
                             {
                                 dueDate = NormalizeDate(dt);
                                 dueDay = dueDate.Value.Day;
@@ -652,7 +666,7 @@ namespace definance_backend.Features.Onboarding.Services
                 {
                     int? dueDay = null;
                     DateTime? dueDate = null;
-                    if (!string.IsNullOrEmpty(v.VencimentoSeguro) && DateTime.TryParse(v.VencimentoSeguro, out var dt))
+                    if (!string.IsNullOrEmpty(v.VencimentoSeguro) && TryParseDate(v.VencimentoSeguro, out var dt))
                     {
                         dueDate = NormalizeDate(dt);
                         dueDay = dueDate.Value.Day;
@@ -837,7 +851,7 @@ namespace definance_backend.Features.Onboarding.Services
                 if (d.Valor <= 0) continue;
 
                 DateTime? baseDueDate = null;
-                if (!string.IsNullOrEmpty(d.Vencimento) && DateTime.TryParse(d.Vencimento, out var dt))
+                if (!string.IsNullOrEmpty(d.Vencimento) && TryParseDate(d.Vencimento, out var dt))
                 {
                     baseDueDate = NormalizeDate(dt);
                 }

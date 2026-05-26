@@ -16,7 +16,7 @@ interface BillsAlertProps {
 }
 
 export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
-  const { overdueCount, setupCount, dueSoonCount, budgetAlertsCount, spendingAlert, spendingPct, isLoading } = useBillsNotifications()
+  const { overdueCount, setupCount, dueSoonCount, budgetAlertsCount, maxBudgetPct, spendingAlert, spendingPct, isLoading } = useBillsNotifications()
   const { showOverdueAlerts, showSetupAlerts, showDueSoonAlerts, showBudgetAlerts, showSpendingAlerts } = useSettings()
   
   if (isLoading) return null
@@ -120,7 +120,9 @@ export function BillsAlert({ onAction, className, showOnly }: BillsAlertProps) {
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 leading-none mb-0.5">Limite de Categorias</h4>
                   <p className="text-[11px] font-medium text-foreground/90">
-                    {budgetAlertsCount} {budgetAlertsCount === 1 ? 'categoria atingiu 80% do limite' : 'categorias atingiram 80% do limite'}
+                    {budgetAlertsCount === 1
+                      ? `1 categoria está em ${maxBudgetPct}% do limite`
+                      : `${budgetAlertsCount} categorias ultrapassaram o limite (máx. ${maxBudgetPct}%)`}
                   </p>
                 </div>
               </div>

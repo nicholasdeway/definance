@@ -55,7 +55,7 @@ function OnboardingWizardContent() {
     return (
       <div className="container flex min-h-screen flex-col items-center justify-center px-4 pt-26 pb-12">
         <SiteHeader variant="onboarding" />
-        <Card className="w-full max-w-xl border-border/50 bg-card/50 backdrop-blur transition-all duration-700 ease-in-out overflow-hidden">
+        <Card className="w-full max-w-xl border-border/50 bg-card transition-all duration-700 ease-in-out overflow-hidden">
           <CardHeader className="p-4 sm:p-6 pb-0 sm:pb-0">
             <CardTitle className="text-lg sm:text-xl text-card-foreground font-bold">
               Autenticação Necessária
@@ -77,7 +77,7 @@ function OnboardingWizardContent() {
       <SiteHeader variant="onboarding" />
       
       <Card className={cn(
-        "w-full border-border/50 bg-card/50 backdrop-blur transition-all duration-700 ease-in-out overflow-hidden",
+        "w-full border-border/50 bg-card transition-all duration-700 ease-in-out overflow-hidden",
         (currentStep >= 1 && currentStep <= 6) ? "max-w-2xl" : "max-w-xl"
       )}>
         <CardHeader className="p-4 sm:p-6 pb-0 sm:pb-0">

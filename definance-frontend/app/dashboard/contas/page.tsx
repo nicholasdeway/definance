@@ -4,11 +4,11 @@ import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  Plus, 
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Plus,
   Download,
   MoreHorizontal,
   CreditCard
@@ -61,11 +61,11 @@ export interface ApiBill {
 function mapApiToConta(b: ApiBill, targetMonth?: number, targetYear?: number): ContaItem {
   const rawDue = b.dueDate ?? null
   let dueDate: Date | null = null
-  
+
   if (rawDue) {
     const datePart = rawDue.split('T')[0]
     const [year, month, day] = datePart.split('-').map(Number)
-    
+
     // Se for recorrente e estivermos em um filtro mensal, projetamos o dia para o mês/ano alvo
     if (b.isRecurring && targetMonth && targetYear) {
       dueDate = new Date(targetYear, targetMonth - 1, day)
@@ -120,7 +120,7 @@ export default function ContasPage() {
         .map(c => c.name.trim())
     )).sort()
   }, [dynamicCategories])
-  
+
   const [contas, setContas] = useState<ContaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -162,7 +162,7 @@ export default function ContasPage() {
     const fetchBills = async () => {
       try {
         setIsLoading(true)
-        
+
         let queryParams = ""
         if (period.type === "monthly") {
           queryParams = `month=${period.month}&year=${period.year}`
@@ -185,11 +185,11 @@ export default function ContasPage() {
         }
 
         const data = await apiClient<ApiBill[]>(`/api/bills?${queryParams}`) || []
-        
+
         // Passamos o mês e ano do período para a projeção de contas recorrentes
         const targetMonth = period.type === "monthly" ? period.month : undefined
         const targetYear = period.type === "monthly" ? period.year : undefined
-        
+
         setContas(data.map(b => mapApiToConta(b, targetMonth, targetYear)))
       } catch (err) {
         console.error("Erro ao carregar contas:", err)
@@ -200,13 +200,13 @@ export default function ContasPage() {
     fetchBills()
   }, [period])
 
-  const setupCount = useMemo(() => 
-    contas.filter(c => !c.rawDueDate).length, 
-  [contas])
+  const setupCount = useMemo(() =>
+    contas.filter(c => !c.rawDueDate).length,
+    [contas])
 
-  const firstPendingBillId = useMemo(() => 
-    contas.find(c => !c.rawDueDate)?.id, 
-  [contas])
+  const firstPendingBillId = useMemo(() =>
+    contas.find(c => !c.rawDueDate)?.id,
+    [contas])
 
   const scrollToTabs = () => {
     setTimeout(() => {
@@ -236,9 +236,9 @@ export default function ContasPage() {
     }
   }, [searchParams, setupCount, hasTriggeredTutorial])
 
-  const overdueCount = useMemo(() => 
-    contas.filter(c => c.status === "atrasada").length, 
-  [contas])
+  const overdueCount = useMemo(() =>
+    contas.filter(c => c.status === "atrasada").length,
+    [contas])
 
   // Scroll smooth para o tutorial
   useEffect(() => {
@@ -270,15 +270,15 @@ export default function ContasPage() {
     )
   }, [contas, typeFilter, search, sortBy, selectedCategories])
 
-  const contasAVencer   = filtered.filter((c) => c.status === "vencer")
-  const contasPagas     = filtered.filter((c) => c.status === "paga")
+  const contasAVencer = filtered.filter((c) => c.status === "vencer")
+  const contasPagas = filtered.filter((c) => c.status === "paga")
   const contasAtrasadas = filtered.filter((c) => c.status === "atrasada")
 
-  const allAVencer   = contas.filter((c) => c.status === "vencer")
+  const allAVencer = contas.filter((c) => c.status === "vencer")
   const allAtrasadas = contas.filter((c) => c.status === "atrasada")
-  const allPagas     = contas.filter((c) => c.status === "paga")
+  const allPagas = contas.filter((c) => c.status === "paga")
 
-  const totalAVencer   = allAVencer.reduce((s, c) => s + c.valor, 0)
+  const totalAVencer = allAVencer.reduce((s, c) => s + c.valor, 0)
   const totalAtrasadas = allAtrasadas.reduce((s, c) => s + c.valor, 0)
 
   const openAddDialog = () => {
@@ -288,8 +288,8 @@ export default function ContasPage() {
 
   const openEditDialog = (conta: ContaItem) => {
     const inputDate = conta.rawDueDate ? conta.rawDueDate.split('T')[0] : ""
-    const isCustomCategory = conta.categoria && 
-      !todasCategoriasParaFiltro.some(cat => cat.toLowerCase() === conta.categoria.toLowerCase()) && 
+    const isCustomCategory = conta.categoria &&
+      !todasCategoriasParaFiltro.some(cat => cat.toLowerCase() === conta.categoria.toLowerCase()) &&
       conta.categoria.toLowerCase() !== "outros"
 
     setForm({
@@ -314,10 +314,10 @@ export default function ContasPage() {
       setIsSaving(true)
       const amount = parseCurrencyInput(form.valor)
       const formattedName = form.nome.trim().charAt(0).toUpperCase() + form.nome.trim().slice(1)
-      
+
       let dueDate = null
       let dueDay = null
-      
+
       if (form.dueDate) {
         const [y, m, d] = form.dueDate.split("-").map(Number)
         // Criar data ao meio-dia para evitar problemas de fuso horário ao converter para ISO
@@ -371,7 +371,7 @@ export default function ContasPage() {
     try {
       setIsPaying(true)
       const payload = date ? { paymentDate: new Date(date).toISOString() } : {}
-      const response = await apiClient<{ bill: ApiBill }>(`/api/bills/${payDialog.item.id}/pay`, { 
+      const response = await apiClient<{ bill: ApiBill }>(`/api/bills/${payDialog.item.id}/pay`, {
         method: "PUT",
         body: JSON.stringify(payload)
       })
@@ -395,9 +395,9 @@ export default function ContasPage() {
     try {
       setIsDeleting(true)
       const isParcelada = /\(\d+\/\d+\)$/.test(deleteDialog.item.nome);
-      
+
       await apiClient(`/api/bills/${deleteDialog.item.id}${isParcelada ? '?deleteAllInstallments=true' : ''}`, { method: "DELETE" })
-      
+
       if (isParcelada) {
         // Como excluímos várias, é mais seguro recarregar a página/lista
         window.dispatchEvent(new CustomEvent("finance-update"))
@@ -415,7 +415,7 @@ export default function ContasPage() {
       } else {
         setContas((prev) => prev.filter((c) => c.id !== deleteDialog.item!.id))
       }
-      
+
       setDeleteDialog({ open: false, item: null })
       window.dispatchEvent(new CustomEvent("finance-update"))
     } catch (err) {
@@ -468,7 +468,7 @@ export default function ContasPage() {
     return (
       <div className="space-y-2 sm:space-y-3">
         {lista.map((conta) => (
-          <BillItem 
+          <BillItem
             key={conta.id}
             conta={conta}
             discreetMode={discreetMode}
@@ -508,13 +508,13 @@ export default function ContasPage() {
             Nova Conta
           </Button>
 
-          <PeriodFilter 
+          <PeriodFilter
             value={period}
             onChange={setPeriod}
           >
-            <Button 
-              variant="outline" 
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer border-white/10 sm:border-border/50 text-xs sm:text-sm font-medium"
+            <Button
+              variant="outline"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer text-xs sm:text-sm font-medium"
               onClick={() => setIsExportDialogOpen(true)}
             >
               <Download className="h-3.5 w-3.5 sm:h-4 w-4" />
@@ -526,7 +526,7 @@ export default function ContasPage() {
 
       <BillsAlert onAction={handleAlertAction} />
 
-      <BillsStats 
+      <BillsStats
         totalAVencer={totalAVencer}
         allAVencerCount={allAVencer.length}
         allPagasCount={allPagas.length}
@@ -539,7 +539,7 @@ export default function ContasPage() {
       {/* Lista com Tabs + Filtro de Tipo */}
       <Card id="bills-list-section" className="border-border/50 shadow-sm scroll-mt-20">
         <CardContent className="pt-4 space-y-4">
-          <FilterBar 
+          <FilterBar
             search={search}
             onSearchChange={setSearch}
             sortBy={sortBy}
@@ -550,7 +550,7 @@ export default function ContasPage() {
             placeholder="Buscar contas..."
           />
 
-          <BillTypeFilter 
+          <BillTypeFilter
             currentFilter={typeFilter}
             onFilterChange={setTypeFilter}
             filteredCount={filtered.length}
@@ -614,8 +614,8 @@ export default function ContasPage() {
           deleteDialog.item?.isRecorrente
             ? `Esta conta é recorrente. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as contas futuras também serão apagadas.`
             : deleteDialog.item && /\(\d+\/\d+\)$/.test(deleteDialog.item.nome)
-            ? `Esta conta faz parte de um parcelamento. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as parcelas pendentes referentes aos próximos meses também serão apagadas.`
-            : undefined
+              ? `Esta conta faz parte de um parcelamento. Tem certeza que deseja excluir "${deleteDialog.item.nome}"? Todas as parcelas pendentes referentes aos próximos meses também serão apagadas.`
+              : undefined
         }
         loading={isDeleting}
       />
@@ -629,7 +629,7 @@ export default function ContasPage() {
         hasDate={!!payDialog.item?.rawDueDate}
       />
 
-      <ExportPdfDialog 
+      <ExportPdfDialog
         open={isExportDialogOpen}
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Contas"
@@ -676,8 +676,8 @@ export default function ContasPage() {
       {/* Tutorial Hint Overlay */}
       {showTutorial && (
         <>
-          <div 
-            className="fixed inset-0 z-[100] cursor-pointer" 
+          <div
+            className="fixed inset-0 z-[100] cursor-pointer"
             onClick={() => {
               setShowTutorial(false)
               scrollToTabs()
@@ -691,12 +691,12 @@ export default function ContasPage() {
               <div className="flex-1">
                 <h4 className="font-bold text-base mb-1 text-white">Como configurar o vencimento?</h4>
                 <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-                  Clique nos <strong className="text-primary">três pontinhos</strong> da conta destacada acima e escolha <strong>"Editar"</strong> para definir a data de vencimento.
+                  Clique em <strong className="text-primary">Configurar</strong> ou clique nos <strong className="text-primary">3 pontinhos</strong> para definir a data de vencimento.
                 </p>
                 <div className="flex justify-end">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setShowTutorial(false)
                       scrollToTabs()

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
+import {
   History,
   Download,
   ArrowUpCircle,
@@ -26,7 +26,7 @@ import { ReceitaDialog, type ReceitaFormState } from "@/components/dashboard/ent
 import { ExpenseFormDialog, type ExpenseFormState } from "@/components/dashboard/expenses/expense-form-dialog"
 import { TransactionDetailsModal } from "@/components/dashboard/historico/transaction-details-modal"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -80,7 +80,7 @@ interface IncomeApiResponse {
 export default function HistoricoPage() {
   const { discreetMode } = useSettings()
   const { categories: dynamicCategories } = useCategories()
-  
+
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [period, setPeriod] = useState<PeriodFilterState>({
@@ -95,7 +95,7 @@ export default function HistoricoPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [customLimit, setCustomLimit] = useState("50")
   const [typeFilter, setTypeFilter] = useState<"all" | "receita" | "despesa">("all")
-  
+
   // Estados para Detalhes e Edição
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
@@ -115,7 +115,7 @@ export default function HistoricoPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      
+
       let queryParams = ""
       if (period.type === "monthly") {
         queryParams = `month=${period.month}&year=${period.year}`
@@ -131,7 +131,7 @@ export default function HistoricoPage() {
       ])
 
       const all: Transaction[] = []
-      
+
       const formatSpecialCategory = (cat: string) => {
         if (!cat) return cat;
         const lowered = cat.toLowerCase().trim();
@@ -141,8 +141,8 @@ export default function HistoricoPage() {
 
       const safeParseDate = (dateStr: string) => {
         if (!dateStr) return new Date();
-        const normalizedDate = (dateStr.includes('Z') || dateStr.includes('+') || (dateStr.includes('-') && dateStr.length > 10)) 
-          ? dateStr 
+        const normalizedDate = (dateStr.includes('Z') || dateStr.includes('+') || (dateStr.includes('-') && dateStr.length > 10))
+          ? dateStr
           : `${dateStr}Z`;
         return new Date(normalizedDate);
       }
@@ -170,7 +170,7 @@ export default function HistoricoPage() {
         all.push(...incomesData.map(i => {
           const dateObj = safeParseDate(i.date);
           const name = i.name?.toLowerCase()
-          
+
           let formattedName = i.name;
           if (name === "mesada") formattedName = "Mesada / Auxílio";
           else if (name === "clt") formattedName = "CLT";
@@ -217,9 +217,9 @@ export default function HistoricoPage() {
     }
 
     return filterAndSortItems(
-      result, 
-      search, 
-      sortBy, 
+      result,
+      search,
+      sortBy,
       selectedCategories,
       "categoria",
       dynamicCategories
@@ -366,10 +366,10 @@ export default function HistoricoPage() {
           </div>
 
           <PeriodFilter value={period} onChange={setPeriod}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               onClick={() => setIsExportDialogOpen(true)}
             >
               <Download className="h-4 w-4" />
@@ -382,7 +382,7 @@ export default function HistoricoPage() {
       {/* Stats Summary Cards - Grid 2x2 no mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {/* Card: Todas */}
-        <Card 
+        <Card
           className={cn(
             "border-border/50 shadow-sm cursor-pointer transition-all duration-300 hover:border-primary/30 py-3 sm:py-6",
             typeFilter === "all" && "ring-2 ring-primary/20 border-primary/40 bg-primary/5"
@@ -415,7 +415,7 @@ export default function HistoricoPage() {
         </Card>
 
         {/* Card: Entradas */}
-        <Card 
+        <Card
           className={cn(
             "border-border/50 shadow-sm cursor-pointer transition-all duration-300 hover:border-emerald-500/30 py-3 sm:py-6",
             typeFilter === "receita" && "ring-2 ring-emerald-500/20 border-emerald-500/40 bg-emerald-500/5"
@@ -446,9 +446,9 @@ export default function HistoricoPage() {
             </p>
           </CardContent>
         </Card>
-        
+
         {/* Card: Saídas */}
-        <Card 
+        <Card
           className={cn(
             "border-border/50 shadow-sm cursor-pointer transition-all duration-300 hover:border-destructive/30 py-3 sm:py-6",
             typeFilter === "despesa" && "ring-2 ring-destructive/20 border-destructive/40 bg-destructive/5"
@@ -481,7 +481,7 @@ export default function HistoricoPage() {
         </Card>
 
         {/* Card: Saldo */}
-        <Card 
+        <Card
           className="border-border/50 shadow-sm transition-all duration-300 py-3 sm:py-6"
         >
           <CardHeader className="pb-0 sm:pb-2 px-3 sm:px-6 space-y-0 flex flex-row items-center justify-between">
@@ -511,7 +511,7 @@ export default function HistoricoPage() {
         </Card>
       </div>
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <Card className="border-border/50 bg-card">
         <CardHeader>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center justify-between w-full lg:w-auto">
@@ -519,7 +519,7 @@ export default function HistoricoPage() {
               <div className="lg:hidden">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground/50 whitespace-nowrap">Exibir</span>
-                  <select 
+                  <select
                     className="bg-muted/20 border border-white/5 rounded-lg text-[10px] font-bold h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer hover:bg-muted/30 transition-colors"
                     value={itemsPerPage}
                     onChange={(e) => setItemsPerPage(Number(e.target.value))}
@@ -530,7 +530,7 @@ export default function HistoricoPage() {
                     <option value={-1}>Personalizado</option>
                   </select>
                   {itemsPerPage === -1 && (
-                    <input 
+                    <input
                       type="number"
                       className="w-12 bg-muted/20 border border-white/5 rounded-lg text-[10px] font-bold h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary/30"
                       value={customLimit}
@@ -541,7 +541,7 @@ export default function HistoricoPage() {
               </div>
             </div>
             <div className="w-full lg:max-w-[520px]">
-              <FilterBar 
+              <FilterBar
                 search={search}
                 onSearchChange={setSearch}
                 sortBy={sortBy}
@@ -560,7 +560,7 @@ export default function HistoricoPage() {
             isLoading && "opacity-50 blur-[2px] pointer-events-none"
           )}>
             {paginatedTransactions.map((transaction) => (
-              <TransactionItem 
+              <TransactionItem
                 key={transaction.id}
                 transaction={transaction}
                 discreetMode={discreetMode}
@@ -572,7 +572,7 @@ export default function HistoricoPage() {
                 }}
               />
             ))}
-            
+
             {paginatedTransactions.length === 0 && !isLoading && (
               <div className="py-12 text-center border-2 border-dashed border-border/50 rounded-2xl">
                 <History className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -586,7 +586,7 @@ export default function HistoricoPage() {
                 <div className="flex items-center gap-3 order-2 sm:order-1 w-full sm:w-auto justify-start">
                   <div className="hidden sm:flex items-center gap-2">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground/50 whitespace-nowrap">Exibir</span>
-                    <select 
+                    <select
                       className="bg-muted/20 border border-white/5 rounded-lg text-[10px] font-bold h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer hover:bg-muted/30 transition-colors"
                       value={itemsPerPage}
                       onChange={(e) => setItemsPerPage(Number(e.target.value))}
@@ -597,7 +597,7 @@ export default function HistoricoPage() {
                       <option value={-1}>Personalizado</option>
                     </select>
                     {itemsPerPage === -1 && (
-                      <input 
+                      <input
                         type="number"
                         className="w-12 bg-muted/20 border border-white/5 rounded-lg text-[10px] font-bold h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary/30"
                         value={customLimit}
@@ -605,7 +605,7 @@ export default function HistoricoPage() {
                       />
                     )}
                   </div>
-                  
+
                   {totalPages > 1 && (
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest sm:border-l sm:border-white/10 sm:pl-3">
                       Pág. {currentPage} / {totalPages}
@@ -642,7 +642,7 @@ export default function HistoricoPage() {
       </Card>
 
       {/* Modal de Detalhes */}
-      <TransactionDetailsModal 
+      <TransactionDetailsModal
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         transaction={selectedTransaction}
@@ -654,7 +654,7 @@ export default function HistoricoPage() {
         }}
       />
 
-      <ExportPdfDialog 
+      <ExportPdfDialog
         open={isExportDialogOpen}
         onOpenChange={setIsExportDialogOpen}
         title="Relatório de Transações"
@@ -676,7 +676,7 @@ export default function HistoricoPage() {
 
       {/* Modais de Edição */}
       {editingIncome && (
-        <ReceitaDialog 
+        <ReceitaDialog
           open={isIncomeDialogOpen}
           onOpenChange={setIsIncomeDialogOpen}
           initialData={editingIncome}
@@ -686,7 +686,7 @@ export default function HistoricoPage() {
       )}
 
       {editingExpense && (
-        <ExpenseFormDialog 
+        <ExpenseFormDialog
           open={isExpenseDialogOpen}
           onOpenChange={setIsExpenseDialogOpen}
           form={editingExpense}
@@ -706,10 +706,10 @@ export default function HistoricoPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="rounded-xl border-white/5 bg-white/5 hover:bg-white/10">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel className="rounded-xl border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
               onClick={confirmDelete}
-              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
             >
               Excluir Registro
             </AlertDialogAction>

@@ -40,6 +40,31 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
     setCurrentPage(1)
   }, [transactions.length])
 
+  if (loading) {
+    return (
+      <Card className="border-border/50 bg-card flex flex-col h-full overflow-hidden w-full max-w-full animate-pulse">
+        <CardHeader className="flex flex-row items-center justify-between py-4 shrink-0 overflow-hidden">
+          <div className="h-4 w-36 bg-muted rounded" />
+          <div className="h-8 w-20 bg-muted rounded-lg" />
+        </CardHeader>
+        <CardContent className="flex-1 overflow-y-auto px-4 sm:px-6 space-y-3.5">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="h-8 w-8 rounded-lg bg-muted shrink-0" />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="h-3.5 w-24 bg-muted rounded" />
+                  <div className="h-2.5 w-16 bg-muted/60 rounded" />
+                </div>
+              </div>
+              <div className="h-3.5 w-12 bg-muted rounded shrink-0" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-border/50 bg-card flex flex-col h-full overflow-hidden w-full max-w-full">
       <CardHeader className="flex flex-row items-center justify-between py-4 shrink-0 overflow-hidden">
@@ -53,22 +78,7 @@ export function RecentTransactions({ transactions, loading }: RecentTransactions
       </CardHeader>
       
       <CardContent className="flex-1 overflow-y-auto px-4 sm:px-6">
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="flex items-center justify-between animate-pulse">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-muted" />
-                  <div className="space-y-2">
-                    <div className="h-3 w-24 bg-muted rounded" />
-                    <div className="h-2 w-16 bg-muted rounded" />
-                  </div>
-                </div>
-                <div className="h-4 w-12 bg-muted rounded" />
-              </div>
-            ))}
-          </div>
-        ) : transactions.length === 0 ? (
+        {transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12 text-center">
             <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
               <Wallet className="h-6 w-6 text-muted-foreground/40" />

@@ -1,7 +1,6 @@
 "use client"
 
 import { Check } from "lucide-react"
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useOnboarding } from "../hooks/use-onboarding"
 import { motivationTypes } from "../constants"
@@ -32,11 +31,8 @@ export const Step1Motivations = () => {
           const isSelected = motivations.includes(type.value)
           
           return (
-            <motion.button
+            <button
               key={type.value}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.03 }}
               type="button"
               onClick={() => toggleMotivation(type.value)}
               className={cn(
@@ -51,7 +47,7 @@ export const Step1Motivations = () => {
               <div className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
                 isSelected 
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" 
+                  ? "bg-primary text-primary-foreground shadow-sm" 
                   : "bg-muted dark:bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
               )}>
                 <type.icon className="h-5 w-5" />
@@ -71,7 +67,7 @@ export const Step1Motivations = () => {
                   <Check className="h-2.5 w-2.5 text-primary" />
                 </div>
               )}
-            </motion.button>
+            </button>
           )
         })}
       </div>
