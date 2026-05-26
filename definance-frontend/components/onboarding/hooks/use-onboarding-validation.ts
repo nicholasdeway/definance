@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 import { useOnboarding } from "./use-onboarding"
-import { ONBOARDING_ERRORS, fixedExpenseCategories } from "../constants"
+import { ONBOARDING_ERRORS, fixedExpenseCategories, incomeTypes } from "../constants"
 import { IncomeFrequency } from "../types"
 
 export const useOnboardingValidation = () => {
@@ -37,26 +37,30 @@ export const useOnboardingValidation = () => {
       case 3:
         if (incomes.length === 0 && selectedIncomeTypes.length > 0) {
           // Array vazio, mas ele selecionou fontes
-          selectedIncomeTypes.forEach(t => errors.push(ONBOARDING_ERRORS.income.missingValue(t)))
+          selectedIncomeTypes.forEach(t => {
+            const label = incomeTypes.find(type => type.value === t)?.label || t
+            errors.push(ONBOARDING_ERRORS.income.missingValue(label))
+          })
         } else {
           for (const t of selectedIncomeTypes) {
+            const label = incomeTypes.find(type => type.value === t)?.label || t
             const inc = incomes.find(i => i.tipo === t)
             if (!inc) {
-              errors.push(ONBOARDING_ERRORS.income.missingValue(t))
+              errors.push(ONBOARDING_ERRORS.income.missingValue(label))
               continue
             }
             if (!inc.valor || inc.valor === 0) {
-              errors.push(ONBOARDING_ERRORS.income.zeroValue(t))
+              errors.push(ONBOARDING_ERRORS.income.zeroValue(label))
             }
             if (!inc.frequencia) {
-              errors.push(ONBOARDING_ERRORS.income.missingFreq(t))
+              errors.push(ONBOARDING_ERRORS.income.missingFreq(label))
             } else if (inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL) {
               if (!inc.diasRecebimento || inc.diasRecebimento.trim().length === 0) {
-                errors.push(ONBOARDING_ERRORS.income.missingDays(t))
+                errors.push(ONBOARDING_ERRORS.income.missingDays(label))
               }
             } else if (inc.frequencia === IncomeFrequency.SEMANAL) {
               if (!inc.diaSemana || inc.diaSemana.trim().length === 0) {
-                errors.push(ONBOARDING_ERRORS.income.missingWeeklyDay(t))
+                errors.push(ONBOARDING_ERRORS.income.missingWeeklyDay(label))
               }
             }
           }

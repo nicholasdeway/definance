@@ -153,12 +153,12 @@ export default function GastosDiariosPage() {
       const data = await apiClient<ExpenseApiResponse[]>(`/api/Expenses?${params}`)
       const mappedData: Gasto[] = data.map(item => ({
         id: item.id,
-        descricao: item.name,
+        descricao: item.name ? item.name.charAt(0).toUpperCase() + item.name.slice(1) : item.name,
         valor: item.amount,
         categoria: item.category,
         data: formatGastoDate(item.date),
         dataReal: item.date, // Preserva a data ISO
-        hora: new Date(item.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+        hora: new Date(item.date).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
       }))
       setGastos(mappedData)
     } catch (error) {
@@ -182,12 +182,12 @@ export default function GastosDiariosPage() {
       })
       const newGasto: Gasto = {
         id: result.id,
-        descricao: result.name,
+        descricao: result.name ? result.name.charAt(0).toUpperCase() + result.name.slice(1) : result.name,
         valor: result.amount,
         categoria: result.category,
         data: formatGastoDate(result.date),
         dataReal: result.date,
-        hora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+        hora: new Date().toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
       }
       setGastos([newGasto, ...gastos])
       setInputValue("")
@@ -261,7 +261,7 @@ export default function GastosDiariosPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsExportDialogOpen(true)}
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               size="sm"
             >
               <Download className="h-4 w-4" />

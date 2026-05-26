@@ -20,7 +20,7 @@ interface CategoryDialogProps {
 }
 
 const PRESET_COLORS = [
-  "#F97316", "#22C55E", "#3B82F6", "#A855F7", "#EAB308", 
+  "#F97316", "#22C55E", "#3B82F6", "#A855F7", "#EAB308",
   "#FACC15", "#EF4444", "#10B981", "#06B6D4", "#64748b"
 ]
 
@@ -55,10 +55,10 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
   const handleSave = () => {
     if (!name.trim()) return
 
-    onSave({ 
-      name, 
-      type, 
-      color, 
+    onSave({
+      name,
+      type,
+      color,
       icon: "Tag",
       keywords: keywordList.join(","),
       monthlyLimit: limit ? parseFloat(limit) / 100 : null
@@ -86,14 +86,14 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
     >
       <div className={cn("flex flex-col h-full", isMobile ? "space-y-4" : "space-y-8")}>
         <div className={cn("flex-1", isMobile ? "space-y-4" : "space-y-6")}>
-          
+
           {/* Nome da Categoria */}
           <div className="space-y-0.5 sm:space-y-2">
             <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
               Nome da Categoria
             </Label>
-            <Input 
-              value={name} 
+            <Input
+              value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Alimentação, Lazer..."
               className={cn(
@@ -117,8 +117,8 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                     className={cn(
                       "flex-1 font-bold rounded-md md:rounded-xl transition-all cursor-pointer",
                       isMobile ? "text-[10px]" : "text-xs",
-                      type === t 
-                        ? "bg-background text-foreground shadow-sm border border-border/50" 
+                      type === t
+                        ? "bg-background text-foreground shadow-sm border border-border/50"
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -134,7 +134,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                 <TrendingUp className="h-3 w-3 text-primary/60" />
                 <Label className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Teto Mensal</Label>
               </div>
-              <CurrencyInput 
+              <CurrencyInput
                 value={limit}
                 onChange={setLimit}
                 placeholder="0,00"
@@ -153,7 +153,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
               <span className="text-[8px] opacity-40 lowercase italic font-medium tracking-normal">Separe por enter</span>
             </Label>
             <div className="flex gap-2">
-              <Input 
+              <Input
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddKeyword())}
@@ -163,19 +163,19 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
                   isMobile ? "h-9 text-[11px] px-3" : "h-11 text-sm px-4"
                 )}
               />
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleAddKeyword}
                 className={cn("rounded-lg md:rounded-2xl border-border/50 bg-muted/20 font-bold hover:bg-muted/40", isMobile ? "h-9 px-3 text-[10px]" : "h-11 px-5 text-xs")}
               >
                 Add
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-1.5 min-h-[24px]">
               {keywordList.map((kw) => (
-                <div 
-                  key={kw} 
+                <div
+                  key={kw}
                   className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full"
                 >
                   <span className="text-[10px] font-bold text-primary">{kw}</span>
@@ -210,7 +210,7 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
               </div>
               <div className="h-6 w-[1px] bg-border mx-1" />
               <div className="relative h-8 w-8 shrink-0">
-                <input 
+                <input
                   type="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
@@ -224,17 +224,17 @@ export function CategoryDialog({ open, onOpenChange, onSave, initialData, isSavi
 
         {/* Rodapé */}
         <div className="pt-4 md:pt-6 border-t border-border/50 flex items-center justify-end gap-3 md:gap-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="flex-1 md:flex-none min-w-[100px] h-9 md:h-12 text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted border border-border/50"
+            className="flex-1 md:flex-none min-w-[100px] h-9 md:h-12 text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-muted border border-border/50 cursor-pointer"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving || !name.trim()}
-            className="flex-1 md:flex-none min-w-[120px] h-9 md:h-12 bg-primary text-primary-foreground text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="flex-1 md:flex-none min-w-[120px] h-9 md:h-12 bg-primary text-primary-foreground text-[10px] text-xs md:text-sm font-bold rounded-lg md:rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {initialData ? "Salvar" : "Criar Categoria"}

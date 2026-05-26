@@ -11,6 +11,13 @@ export interface BillNotification {
   count: number
 }
 
+export interface BudgetAlert {
+  categoria: string
+  monthlyLimit: number
+  spent: number
+  pct: number
+}
+
 export function useBillsNotifications() {
   const [bills, setBills] = useState<any[]>([])
   const [analysis, setAnalysis] = useState<any>(null)
@@ -68,12 +75,18 @@ export function useBillsNotifications() {
 
     const setupBills = bills.filter(b => b.dueDay === null && b.dueDate === null)
 
-    // Alerta de gastos por categoria
-    const budgetAlerts = analysis?.categoryAnalysis?.filter((c: any) => {
-      if (!c.monthlyLimit || c.monthlyLimit <= 0) return false
+    // Alerta de gastos por categoria com porcentagem exata
+    const rawBudgetAlerts: BudgetAlert[] = (analysis?.categoryAnalysis ?? []).reduce((acc: BudgetAlert[], c: any) => {
+      if (!c.monthlyLimit || c.monthlyLimit <= 0) return acc
       const spent = c.Valor ?? c.valor ?? 0
-      return spent >= c.monthlyLimit * 0.8
-    }) || []
+      const pct = Math.round((spent / c.monthlyLimit) * 100)
+      if (pct >= 80) {
+        acc.push({ categoria: c.categoria ?? c.Categoria ?? "", monthlyLimit: c.monthlyLimit, spent, pct })
+      }
+      return acc
+    }, [])
+    const budgetAlerts = rawBudgetAlerts
+    const maxBudgetPct = budgetAlerts.length > 0 ? Math.max(...budgetAlerts.map(a => a.pct)) : 0
 
     // Alerta de gastos totais vs receita
     const totalReceitas = analysis?.totalReceitas ?? analysis?.TotalReceitas ?? 0
@@ -86,7 +99,8 @@ export function useBillsNotifications() {
       setupCount: setupBills.length,
       dueSoonCount: dueSoonBills.length,
       budgetAlertsCount: budgetAlerts.length,
-      budgetAlerts: budgetAlerts,
+      budgetAlerts,
+      maxBudgetPct,
       spendingAlert,
       spendingPct,
       totalReceitas,

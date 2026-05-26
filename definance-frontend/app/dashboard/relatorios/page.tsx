@@ -9,6 +9,7 @@ import { PeriodFilter, type PeriodFilterState } from "@/components/dashboard/per
 import { useSettings } from "@/lib/settings-context"
 import { useTheme } from "next-themes"
 import { capitalize } from "@/lib/utils"
+import { useCategories } from "@/lib/category-context"
 import { ExportPdfDialog } from "@/components/dashboard/export-pdf-dialog"
 import { BillsAlert } from "@/components/dashboard/bills-alert"
 import { incomeTypes } from "@/components/onboarding/constants"
@@ -17,6 +18,8 @@ import { MonthlyComparisonChart } from "@/components/dashboard/relatorios/monthl
 import { CategoryAnalysisChart } from "@/components/dashboard/relatorios/category-analysis-chart"
 import { BalanceEvolutionChart } from "@/components/dashboard/relatorios/balance-evolution-chart"
 import { CompositionCharts } from "@/components/dashboard/relatorios/composition-charts"
+import { useAuth } from "@/lib/auth-provider"
+import { CategoryLimitsCard, type BudgetLimitInfo } from "@/components/dashboard/relatorios/category-limits-card"
 
 interface MonthlyData {
   month: string
@@ -27,6 +30,7 @@ interface MonthlyData {
 interface CategoryData {
   categoria: string
   valor: number
+  monthlyLimit?: number
 }
 
 interface BalanceData {
@@ -81,8 +85,10 @@ const CHART_COLORS = [
 ]
 
 export default function RelatoriosPage() {
+  const { user } = useAuth()
   const { discreetMode } = useSettings()
   const { resolvedTheme } = useTheme()
+  const { categories: dynamicCategories } = useCategories()
   const isDark = resolvedTheme === "dark"
   const cursorFill = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"
 
@@ -128,14 +134,19 @@ export default function RelatoriosPage() {
       const response = await apiClient<AnalysisData>(`/api/Analysis?${queryParams}`)
       
       if (response) {
-        response.categoryAnalysis = response.categoryAnalysis.map(c => ({ ...c, categoria: capitalize(c.categoria) }))
+        let categoriesList = dynamicCategories || []
         
         // 1. Buscar progresso do onboarding e Contas (Bills) para projeção
         try {
-          const [progressData, billsData] = await Promise.all([
+          const [progressData, billsData, fetchedCategories] = await Promise.all([
             apiClient<any>("/api/onboarding/progress"),
-            apiClient<any[]>("/api/Bills")
+            apiClient<any[]>("/api/Bills"),
+            dynamicCategories.length > 0 ? Promise.resolve(dynamicCategories) : apiClient<any[]>("/api/categories")
           ])
+
+          if (fetchedCategories) {
+            categoriesList = fetchedCategories
+          }
 
           if (progressData) {
             const profileIncomes: any[] = progressData.incomes || progressData.Incomes || []
@@ -148,15 +159,42 @@ export default function RelatoriosPage() {
               let effectiveFreq = (pInc.frequencia || pInc.Frequencia || "").toLowerCase()
               let effectiveDias = pInc.diasRecebimento || pInc.DiasRecebimento || ""
 
+              const parseDateSafe = (dateStr: string) => {
+                if (!dateStr) return null
+                const cleaned = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr
+                
+                let parts = cleaned.split('-').map(Number)
+                if (parts.length === 3 && !parts.some(isNaN)) {
+                  return parts[0] > 1000 
+                    ? new Date(parts[0], parts[1] - 1, parts[2]) 
+                    : new Date(parts[2], parts[1] - 1, parts[0])
+                }
+                
+                parts = cleaned.split('/').map(Number)
+                if (parts.length === 3 && !parts.some(isNaN)) {
+                  return parts[0] > 1000 
+                    ? new Date(parts[0], parts[1] - 1, parts[2]) 
+                    : new Date(parts[2], parts[1] - 1, parts[0])
+                }
+                
+                const parsed = new Date(dateStr)
+                return isNaN(parsed.getTime()) ? null : parsed
+              }
+
               const hMin = pInc.historicoConfiguracoes || []
               const hMaj = pInc.HistoricoConfiguracoes || []
               const history = hMin.length > 0 ? hMin : hMaj
 
               if (history.length > 0) {
                 const configHistorica = [...history]
-                  .sort((a: any, b: any) => new Date(a.validoAte).getTime() - new Date(b.validoAte).getTime())
+                  .sort((a: any, b: any) => {
+                    const dateA = parseDateSafe(a.validoAte || a.ValidoAte)
+                    const dateB = parseDateSafe(b.validoAte || b.ValidoAte)
+                    return (dateA?.getTime() || 0) - (dateB?.getTime() || 0)
+                  })
                   .find((h: any) => {
-                    const vDate = new Date(h.validoAte)
+                    const vDate = parseDateSafe(h.validoAte || h.ValidoAte)
+                    if (!vDate) return false
                     const validUntilMonth = new Date(vDate.getFullYear(), vDate.getMonth(), 1)
                     return selectedMonthDate <= validUntilMonth
                   })
@@ -174,9 +212,11 @@ export default function RelatoriosPage() {
               const firstDateStr = effectiveDias.split(',')[0]?.trim()
               const baseDateStr = firstDateStr || pInc.configuradoEm || pInc.ConfiguradoEm
               if (baseDateStr) {
-                const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
-                const [y, m, d] = datePart.split('-').map(Number)
-                if (selectedMonthDate < new Date(y, m - 1, 1)) return 0
+                const pDate = parseDateSafe(baseDateStr)
+                if (pDate) {
+                  const limitMonth = new Date(pDate.getFullYear(), pDate.getMonth(), 1)
+                  if (selectedMonthDate < limitMonth) return 0
+                }
               }
 
               return effectiveValor
@@ -202,6 +242,22 @@ export default function RelatoriosPage() {
                }
                
                if (monthNum > 0) {
+                  // Evitar projeções de onboarding/contas recorrentes antes da data de criação do usuário
+                  if (user?.createdAt) {
+                    const uCreated = new Date(user.createdAt)
+                    const targetMonthDate = new Date(yearNum, monthNum - 1, 1)
+                    const limitMonthDate = new Date(uCreated.getFullYear(), uCreated.getMonth(), 1)
+                    if (targetMonthDate < limitMonthDate) {
+                      const bEntry = response.balanceEvolution.find(b => b.month === mEntry.month)
+                      if (bEntry) {
+                        (bEntry as any).receitas = mEntry.receitas;
+                        (bEntry as any).despesas = mEntry.despesas;
+                        bEntry.saldo = mEntry.receitas - mEntry.despesas
+                      }
+                      return
+                    }
+                  }
+
                  // 1. Ajustar Receitas (Onboarding)
                  let totalProjectedIncomes = 0
                  profileIncomes.forEach(pInc => {
@@ -212,6 +268,9 @@ export default function RelatoriosPage() {
                  // 2. Ajustar Despesas (Projetar Bills Recorrentes ou Pendentes)
                  let totalProjectedBills = 0
                  bills.forEach(bill => {
+                   const status = (bill.status || bill.Status || "").toLowerCase()
+                   if (status === "pago" || status === "extinta") return
+
                    const dueDate = new Date(bill.dueDate || bill.DueDate)
                    const isRecurring = bill.isRecurring || bill.IsRecurring
                    
@@ -253,29 +312,41 @@ export default function RelatoriosPage() {
 
             // --- AJUSTE DOS STATS (Mês Selecionado) ---
             let totalAdjustmentStats = 0
-            profileIncomes.forEach(pInc => {
-              const projectedValue = getProjectedForMonth(pInc, period.year, period.month)
-              const pTipo = (pInc.tipo || pInc.Tipo || "").toLowerCase()
-              
-              const existingIndex = response.incomeAnalysis.findIndex(i => {
-                const iTipo = i.tipo.toLowerCase()
-                const pTipoLower = pTipo.toLowerCase()
-                return iTipo === pTipoLower || 
-                       (incomeTypes.find(t => t.value === pTipoLower)?.label.toLowerCase() === iTipo)
-              })
-
-              if (existingIndex !== -1) {
-                const dbValor = response.incomeAnalysis[existingIndex].valor
-                if (dbValor < projectedValue) {
-                  const diff = projectedValue - dbValor
-                  response.incomeAnalysis[existingIndex].valor = projectedValue
-                  totalAdjustmentStats += diff
-                }
-              } else if (projectedValue > 0) {
-                response.incomeAnalysis.push({ tipo: pTipo, valor: projectedValue })
-                totalAdjustmentStats += projectedValue
+            let shouldAdjustStats = true
+            if (user?.createdAt) {
+              const uCreated = new Date(user.createdAt)
+              const selectedMonthDate = new Date(period.year, period.month - 1, 1)
+              const limitMonthDate = new Date(uCreated.getFullYear(), uCreated.getMonth(), 1)
+              if (selectedMonthDate < limitMonthDate) {
+                shouldAdjustStats = false
               }
-            })
+            }
+
+            if (shouldAdjustStats) {
+              profileIncomes.forEach(pInc => {
+                const projectedValue = getProjectedForMonth(pInc, period.year, period.month)
+                const pTipo = (pInc.tipo || pInc.Tipo || "").toLowerCase()
+                
+                const existingIndex = response.incomeAnalysis.findIndex(i => {
+                  const iTipo = i.tipo.toLowerCase()
+                  const pTipoLower = pTipo.toLowerCase()
+                  return iTipo === pTipoLower || 
+                         (incomeTypes.find(t => t.value === pTipoLower)?.label.toLowerCase() === iTipo)
+                })
+
+                if (existingIndex !== -1) {
+                  const dbValor = response.incomeAnalysis[existingIndex].valor
+                  if (dbValor < projectedValue) {
+                    const diff = projectedValue - dbValor
+                    response.incomeAnalysis[existingIndex].valor = projectedValue
+                    totalAdjustmentStats += diff
+                  }
+                } else if (projectedValue > 0) {
+                  response.incomeAnalysis.push({ tipo: pTipo, valor: projectedValue })
+                  totalAdjustmentStats += projectedValue
+                }
+              })
+            }
 
             response.totalReceitas = response.incomeAnalysis.reduce((sum, i) => sum + i.valor, 0)
             response.saldoFinal = response.totalReceitas - response.totalDespesas
@@ -298,6 +369,41 @@ export default function RelatoriosPage() {
           }
           return acc
         }, [] as IncomeDetailData[])
+
+        // 3. Agrupar e normalizar categorias de despesa (evita duplicidade de maiúsculas/minúsculas/acentos)
+        const normalizeStr = (str: string) => 
+          str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+        const groupedCategories = response.categoryAnalysis.reduce((acc, curr) => {
+          const catNameRaw = curr.categoria || ""
+          const catNameNormalized = normalizeStr(catNameRaw)
+          if (!catNameNormalized) return acc
+          
+          const matchedCategory = categoriesList.find((c: any) => normalizeStr(c.name || "") === catNameNormalized)
+          let nameToUse = matchedCategory ? matchedCategory.name : capitalize(catNameRaw)
+          
+          const nameNormalized = normalizeStr(nameToUse)
+          if (nameNormalized === "outros" || nameNormalized === "outro" || nameNormalized === "outroe") {
+            nameToUse = "Outros"
+          } else if (nameNormalized.startsWith("filho")) {
+            nameToUse = "Filho"
+          }
+          
+          const existing = acc.find(c => c.categoria === nameToUse)
+          if (existing) {
+            existing.valor += curr.valor
+          } else {
+            const limit = curr.monthlyLimit !== undefined ? curr.monthlyLimit : (curr as any).MonthlyLimit;
+            acc.push({ 
+              categoria: nameToUse, 
+              valor: curr.valor,
+              monthlyLimit: limit ?? matchedCategory?.monthlyLimit ?? (matchedCategory as any)?.MonthlyLimit
+            })
+          }
+          return acc
+        }, [] as CategoryData[])
+
+        response.categoryAnalysis = groupedCategories.sort((a, b) => b.valor - a.valor)
       }
       setData(response)
     } catch (error) {
@@ -307,6 +413,37 @@ export default function RelatoriosPage() {
       setLoading(false)
     }
   }
+
+  const budgetLimits = React.useMemo(() => {
+    if (!data) return []
+    const categoriesList = dynamicCategories || []
+    const normalizeStr = (str: string) => 
+      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+    return categoriesList
+      .filter((c: any) => {
+        const limit = c.monthlyLimit ?? c.MonthlyLimit
+        return limit !== null && limit !== undefined && limit > 0
+      })
+      .map((c: any) => {
+        const limit = c.monthlyLimit ?? c.MonthlyLimit
+        const analysisEntry = data.categoryAnalysis.find(
+          (a: any) => normalizeStr(a.categoria) === normalizeStr(c.name || "")
+        )
+        const spent = analysisEntry ? analysisEntry.valor : 0
+        const pct = Math.round((spent / limit) * 100)
+        return {
+          id: c.id,
+          name: c.name,
+          color: c.color,
+          icon: c.icon,
+          monthlyLimit: limit,
+          spent,
+          pct
+        }
+      })
+      .sort((a, b) => b.pct - a.pct)
+  }, [data, dynamicCategories])
 
   if (!mounted) return null
 
@@ -326,7 +463,7 @@ export default function RelatoriosPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsExportDialogOpen(true)}
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               size="sm"
             >
               <Download className="h-4 w-4" />
@@ -355,6 +492,8 @@ export default function RelatoriosPage() {
             loading={loading}
             discreetMode={discreetMode}
           />
+
+          <CategoryLimitsCard limits={budgetLimits} discreetMode={discreetMode} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="min-w-0">

@@ -8,15 +8,15 @@ import { useState, useEffect } from "react"
 
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
   </svg>
 )
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
   </svg>
 )
 
@@ -36,16 +36,16 @@ export function Footer() {
   }, [])
 
   return (
-    <footer className="border-t border-border/40 bg-muted/20 backdrop-blur-sm relative overflow-hidden">
+    <footer className="border-t border-border/60 bg-background dark:bg-muted/30 relative overflow-hidden">
       <div className="container px-6 py-16 mx-auto relative z-10">
         <div className="flex flex-col lg:flex-row lg:justify-around gap-12 lg:gap-8">
           {/* Brand Section */}
           <div className="space-y-8 max-w-sm">
             <div>
               <Link href="/" className="flex items-center gap-2.5 group">
-                <img 
-                  src="/logo1.png" 
-                  alt="Definance Logo" 
+                <img
+                  src="/logo1.png"
+                  alt="Definance Logo"
                   className="h-6 md:h-8 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
                 />
                 <span className="text-xl font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
@@ -63,8 +63,8 @@ export function Footer() {
               <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-sm group hover:border-emerald-500/40 transition-all cursor-default">
                 <WhatsAppIcon className="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform" />
                 <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600/80 dark:text-emerald-500/80 leading-none">Inteligência</span>
-                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-100">WhatsApp AI</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600/80 dark:text-emerald-500/80 leading-none">Inteligência</span>
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-100">WhatsApp AI</span>
                 </div>
               </div>
 
@@ -72,13 +72,13 @@ export function Footer() {
               <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-blue-500/5 border border-blue-500/20 shadow-sm group hover:border-blue-500/40 transition-all cursor-default">
                 <ShieldCheck className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" />
                 <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-600/80 dark:text-blue-500/80 leading-none">Proteção</span>
-                    <span className="text-xs font-bold text-blue-900 dark:text-blue-100">LGPD Compliance</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600/80 dark:text-blue-500/80 leading-none">Proteção</span>
+                  <span className="text-xs font-bold text-blue-900 dark:text-blue-100">LGPD Compliance</span>
                 </div>
               </div>
             </div>
           </div>
-          
+
           {/* Links Section Wrapper */}
           <div className="flex gap-12 md:gap-24 lg:gap-32">
             {/* Navigation */}
@@ -86,8 +86,8 @@ export function Footer() {
               <h4 className="mb-6 text-[11px] font-black uppercase tracking-[0.2em] text-foreground/50">Produto</h4>
               <ul className="space-y-4 text-sm font-medium">
                 <li>
-                  <Link 
-                    href="/#beneficios" 
+                  <Link
+                    href="/#beneficios"
                     onClick={(e) => navigateToSection('/#beneficios', e)}
                     className="text-muted-foreground transition-colors hover:text-primary"
                   >
@@ -95,8 +95,8 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link 
-                    href="/#como-funciona" 
+                  <Link
+                    href="/#como-funciona"
                     onClick={(e) => navigateToSection('/#como-funciona', e)}
                     className="text-muted-foreground transition-colors hover:text-primary"
                   >
@@ -104,8 +104,8 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link 
-                    href="/#precos" 
+                  <Link
+                    href="/#precos"
                     onClick={(e) => navigateToSection('/#precos', e)}
                     className="text-muted-foreground transition-colors hover:text-primary"
                   >
@@ -116,8 +116,8 @@ export function Footer() {
                   {!mounted ? (
                     <div className="h-4 w-20 bg-muted/20 animate-pulse rounded" />
                   ) : (
-                    <Link 
-                      href={isAuthenticated ? (user?.hasCompletedOnboarding ? "/dashboard" : "/onboarding") : "/register"} 
+                    <Link
+                      href={isAuthenticated ? (user?.hasCompletedOnboarding ? "/dashboard" : "/onboarding") : "/register"}
                       className="text-muted-foreground transition-colors hover:text-primary"
                     >
                       {isAuthenticated ? "Meu Dashboard" : "Criar conta"}
@@ -126,7 +126,7 @@ export function Footer() {
                 </li>
               </ul>
             </div>
-            
+
             {/* Legal */}
             <div>
               <h4 className="mb-6 text-[11px] font-black uppercase tracking-[0.2em] text-foreground/50">Legal</h4>
@@ -145,13 +145,13 @@ export function Footer() {
             </div>
           </div>
         </div>
-        
+
         {/* Copyright */}
         <div className="mt-16 pt-8 border-t border-border/40 flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-xs text-muted-foreground font-medium">
             © 2026 Definance. Todos os direitos reservados.
           </p>
-          
+
           <div className="flex items-center gap-4">
             <div className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group">
               <InstagramIcon className="h-4 w-4 transition-transform group-hover:scale-110" />

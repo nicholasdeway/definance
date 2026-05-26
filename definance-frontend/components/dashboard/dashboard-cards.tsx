@@ -22,8 +22,23 @@ export function DashboardCards({ data, loading, discreetMode }: DashboardCardsPr
     return (
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="border-border/50 bg-card/50 h-[80px] sm:h-[102px] flex items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/20" />
+          <Card 
+            key={i} 
+            className={cn(
+              "border-border/50 bg-card overflow-hidden py-2.5 sm:py-6 relative h-full animate-pulse",
+              i === 1 && "bg-gradient-to-br from-primary/5 via-card to-card border-primary/10"
+            )}
+          >
+            <CardHeader className="flex flex-row items-center justify-between px-3 sm:px-6 pb-0.5 sm:pb-2 pt-0">
+              <div className="h-2.5 sm:h-3 w-16 sm:w-20 bg-muted rounded" />
+              <div className="h-5 w-5 sm:h-7 sm:w-7 rounded-lg bg-muted" />
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6 pt-0 pb-0">
+              <div className="h-5 sm:h-8 w-20 sm:w-32 bg-muted rounded mt-1" />
+              <div className="flex items-center justify-between mt-0 sm:mt-1">
+                <div className="hidden sm:block h-3 w-20 bg-muted/60 rounded" />
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>

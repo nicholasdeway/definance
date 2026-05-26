@@ -158,7 +158,7 @@ export default function PurgeDataSection() {
 
   return (
     <>
-      <Card className="border-border/50 bg-card/85 dark:bg-card/65 backdrop-blur-sm relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-border flex flex-col h-full col-span-1">
+      <Card className="border-border/50 bg-card/85 dark:bg-card/65 relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-border flex flex-col h-full col-span-1">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-red-500" />

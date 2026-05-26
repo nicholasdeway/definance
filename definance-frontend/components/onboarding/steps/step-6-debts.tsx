@@ -103,7 +103,7 @@ export const Step6Debts = () => {
               value={debt.id} 
               className={cn(
                 "rounded-xl border border-border/50 bg-muted/10 dark:bg-background/50 overflow-hidden transition-all duration-300",
-                isExpanded && "border-primary/30 ring-1 ring-primary/10 shadow-lg bg-background",
+                isExpanded && "border-primary/30 ring-1 ring-primary/10 shadow bg-background",
                 hasError && "border-destructive/30"
               )}
             >

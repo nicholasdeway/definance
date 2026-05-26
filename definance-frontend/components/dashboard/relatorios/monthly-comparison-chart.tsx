@@ -53,7 +53,7 @@ export const MonthlyComparisonChart = ({
         )}>
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
-              <BarChart data={data} margin={{ left: -20, right: 10 }}>
+              <BarChart data={data} margin={{ left: 15, right: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
                 <XAxis 
                   dataKey="month" 
@@ -63,6 +63,7 @@ export const MonthlyComparisonChart = ({
                   tickFormatter={formatMonth}
                 />
                 <YAxis 
+                  width={75}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}

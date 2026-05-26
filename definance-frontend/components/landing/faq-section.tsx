@@ -47,7 +47,7 @@ export function FAQSection() {
       </div>
 
       <div className="container px-4 md:px-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -62,7 +62,7 @@ export function FAQSection() {
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -72,15 +72,15 @@ export function FAQSection() {
           <div className="rounded-3xl border border-border bg-card/60 p-0.5 md:p-1.5 shadow-xl shadow-primary/5">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`} 
+                <AccordionItem
+                  key={index}
+                  value={`item-${index}`}
                   className={cn(
                     "border-b border-border/40 px-4 md:px-8 transition-colors duration-200",
                     "hover:bg-muted/30 first:rounded-t-[1.4rem] last:rounded-b-[1.4rem] last:border-0"
                   )}
                 >
-                  <AccordionTrigger 
+                  <AccordionTrigger
                     className={cn(
                       "py-5 md:py-7 text-left text-base font-semibold hover:no-underline transition-colors duration-200 cursor-pointer",
                       "text-foreground/90 hover:text-foreground",

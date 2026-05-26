@@ -1,5 +1,4 @@
 import { Plus, Trash2, Landmark, Shield, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
-import { motion } from "framer-motion"
 
 import { Input } from "@/components/ui/input"
 import { CurrencyInput } from "@/components/ui/currency-input"
@@ -172,7 +171,7 @@ export const Step5Vehicles = () => {
               value={v.id}
               className={cn(
                 "rounded-2xl border border-border/50 dark:border-white/5 bg-muted/10 dark:bg-white/[0.02] overflow-hidden transition-all duration-300",
-                isExpanded && "border-primary/30 ring-1 ring-primary/10 shadow-2xl bg-muted/20 dark:bg-white/[0.04]",
+                isExpanded && "border-primary/30 ring-1 ring-primary/10 shadow bg-muted/20 dark:bg-white/[0.04]",
                 hasError && "border-destructive/30"
               )}
             >
@@ -239,11 +238,8 @@ export const Step5Vehicles = () => {
                       {vehicleTypes.map((t, index) => {
                         const isSelected = v.tipo === t.key
                         return (
-                          <motion.button
+                          <button
                             key={t.key}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.02 }}
                             type="button"
                             onClick={() => updateVehicle(v.id, "tipo", t.key)}
                             className={cn(
@@ -269,7 +265,7 @@ export const Step5Vehicles = () => {
                                 {t.label}
                               </span>
                             </div>
-                          </motion.button>
+                          </button>
                         )
                       })}
                     </div>
@@ -335,10 +331,8 @@ export const Step5Vehicles = () => {
                       </div>
                       
                       {v.ipvaAnos?.map((ipvaYear) => (
-                        <motion.div 
+                        <div 
                           key={ipvaYear.id} 
-                          initial={{ opacity: 0, x: -5 }}
-                          animate={{ opacity: 1, x: 0 }}
                           className="space-y-3 bg-white/[0.02] p-3 sm:p-4 rounded-xl border border-white/5 relative group"
                         >
                           <button
@@ -409,7 +403,7 @@ export const Step5Vehicles = () => {
                               <Plus className="h-3 w-3" /> Adicionar Parcela
                             </button>
                           </div>
-                        </motion.div>
+                        </div>
                       ))}
 
                       <button
@@ -438,9 +432,7 @@ export const Step5Vehicles = () => {
                     </div>
 
                     {v.financiado && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
+                      <div 
                         className="space-y-3 p-3 sm:p-4 rounded-2xl bg-primary/[0.02] border border-primary/10"
                       >
                         <div className="grid gap-3 sm:grid-cols-3">
@@ -492,7 +484,7 @@ export const Step5Vehicles = () => {
                             </div>
                           </div>
                         )}
-                      </motion.div>
+                      </div>
                     )}
 
                     {/* Seguro */}
@@ -511,9 +503,7 @@ export const Step5Vehicles = () => {
                       </div>
 
                       {v.seguro && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
+                        <div 
                           className="grid gap-3 sm:grid-cols-2 p-3 sm:p-4 rounded-2xl bg-blue-500/[0.02] border border-blue-500/10"
                         >
                           <div className="space-y-1.5">
@@ -547,7 +537,7 @@ export const Step5Vehicles = () => {
                               Recorrente mensal?
                             </Label>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -559,9 +549,7 @@ export const Step5Vehicles = () => {
       </Accordion>
 
       {/* Botão adicionar veículo */}
-      <motion.button
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+      <button
         type="button"
         onClick={addVehicle}
         className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border dark:border-white/10 p-3 sm:p-4 text-xs sm:text-[13px] font-semibold text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary cursor-pointer mt-2"
@@ -570,7 +558,7 @@ export const Step5Vehicles = () => {
           <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
         </div>
         Adicionar veículo
-      </motion.button>
+      </button>
 
       {vehicles.length === 0 && (
         <p className="text-center text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-widest mt-4 opacity-50">

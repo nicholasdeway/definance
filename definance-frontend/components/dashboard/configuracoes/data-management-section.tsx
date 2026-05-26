@@ -122,6 +122,43 @@ const formatCurrency = (val: number): string => {
   }).format(val)
 }
 
+const getBase64ImageFromUrl = async (imageUrl: string): Promise<string> => {
+  const res = await fetch(imageUrl)
+  const blob = await res.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener("load", () => resolve(reader.result as string), false)
+    reader.onerror = () => reject(new Error("Failed to read image blob"))
+    reader.readAsDataURL(blob)
+  })
+}
+
+const formatPdfText = (s: string | null | undefined): string => {
+  if (!s) return ""
+  const trimmed = s.trim()
+  const lowered = trimmed.toLowerCase()
+  if (lowered === "clt" || lowered === "pj") {
+    return trimmed.toUpperCase()
+  }
+  if (lowered === "outros" || lowered === "outro" || lowered === "outroe") {
+    return "Outros"
+  }
+  if (lowered === "viagem") return "Viagem"
+  if (lowered === "lazer") return "Lazer"
+  if (lowered === "alimentacao" || lowered === "alimentação") return "Alimentação"
+  if (lowered === "filho") return "Filho"
+  if (lowered === "veiculo" || lowered === "veículo") return "Veículo"
+  if (lowered === "moradia") return "Moradia"
+  if (lowered === "transporte") return "Transporte"
+  if (lowered === "servicos" || lowered === "serviços") return "Serviços"
+  if (lowered === "compras") return "Compras"
+
+  if (trimmed.length > 0) {
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  }
+  return trimmed
+}
+
 export default function DataManagementSection() {
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({
     incomes: true,
@@ -230,7 +267,7 @@ export default function DataManagementSection() {
     try {
       const typesParam = selectedKeys.join(",")
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api-proxy"
-      
+
       const response = await fetch(`${API_URL}/api/profile/export/csv?types=${typesParam}`, {
         credentials: "include"
       })
@@ -468,7 +505,7 @@ export default function DataManagementSection() {
   const loadGoogleScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (typeof window === "undefined") return resolve()
-      
+
       interface GoogleGsiScope {
         accounts?: {
           oauth2?: {
@@ -482,7 +519,7 @@ export default function DataManagementSection() {
           }
         }
       }
-      
+
       const win = window as unknown as { google?: GoogleGsiScope }
       if (win.google?.accounts?.oauth2) {
         return resolve()
@@ -504,7 +541,7 @@ export default function DataManagementSection() {
     setIsSheetsLoading(true)
     try {
       await loadGoogleScript()
-      
+
       interface GoogleGsiScope {
         accounts: {
           oauth2: {
@@ -553,6 +590,14 @@ export default function DataManagementSection() {
     setIsPdfLoading(true)
     try {
       const data = await apiClient<ExportDataResponse>("/api/profile/export/json")
+
+      let logoBase64 = ""
+      try {
+        logoBase64 = await getBase64ImageFromUrl("/logo.png")
+      } catch (e) {
+        console.error("Erro ao obter base64 da logo:", e)
+      }
+
       const doc = new jsPDF()
 
       const margin = 14
@@ -563,18 +608,36 @@ export default function DataManagementSection() {
       doc.setFillColor(15, 23, 42) // Slate 900
       doc.rect(0, 0, pageWidth, 40, "F")
 
-      doc.setTextColor(255, 255, 255)
-      doc.setFont("helvetica", "bold")
-      doc.setFontSize(22)
-      doc.text("DEFINANCE", margin, 18)
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, "PNG", margin, 11, 18, 18)
+        } catch (e) {
+          console.error("Erro ao adicionar imagem ao PDF:", e)
+        }
 
-      doc.setFont("helvetica", "normal")
-      doc.setFontSize(10)
-      doc.setTextColor(200, 200, 200)
-      doc.text("Relatório de Exportação Consolidado", margin, 25)
+        doc.setTextColor(255, 255, 255)
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(22)
+        doc.text("DEFINANCE", margin + 22, 20)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(10)
+        doc.setTextColor(200, 200, 200)
+        doc.text("Relatório de Exportação Consolidado", margin + 22, 29)
+      } else {
+        doc.setTextColor(255, 255, 255)
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(22)
+        doc.text("DEFINANCE", margin, 20)
+
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(10)
+        doc.setTextColor(200, 200, 200)
+        doc.text("Relatório de Exportação Consolidado", margin, 29)
+      }
 
       const formattedDate = new Date().toLocaleString("pt-BR")
-      doc.text(`Gerado em: ${formattedDate}`, pageWidth - margin - 60, 25)
+      doc.text(`Gerado em: ${formattedDate}`, pageWidth - margin - 60, 29)
 
       doc.setTextColor(30, 41, 59) // Slate 800
 
@@ -636,9 +699,9 @@ export default function DataManagementSection() {
             headers = ["Data", "Nome", "Valor", "Tipo", "Recorrente"]
             rows = (data.incomes || []).map(item => [
               formatDate(item.date),
-              item.name || "",
+              formatPdfText(item.name),
               formatCurrency(item.amount || 0),
-              item.type || "",
+              formatPdfText(item.type),
               item.isRecurring ? "Sim" : "Não"
             ])
             break
@@ -648,9 +711,9 @@ export default function DataManagementSection() {
             headers = ["Data", "Nome", "Valor", "Categoria", "Tipo", "Status", "Vencimento"]
             rows = (data.expenses || []).map(item => [
               formatDate(item.date),
-              item.name || "",
+              formatPdfText(item.name),
               formatCurrency(item.amount || 0),
-              item.category || "",
+              formatPdfText(item.category),
               item.expenseType || "",
               item.status || "",
               item.dueDate ? formatDate(item.dueDate) : ""
@@ -662,10 +725,10 @@ export default function DataManagementSection() {
             headers = ["Data", "Nome", "Valor", "Tipo", "Categoria"]
             rows = (data.history || []).map(item => [
               formatDate(item.date),
-              item.name || "",
+              formatPdfText(item.name),
               formatCurrency(item.amount || 0),
-              item.type || "",
-              item.category || ""
+              formatPdfText(item.type),
+              formatPdfText(item.category)
             ])
             break
 
@@ -674,9 +737,9 @@ export default function DataManagementSection() {
             headers = ["Data", "Nome", "Valor", "Categoria"]
             rows = (data.dailyExpenses || []).map(item => [
               formatDate(item.date),
-              item.name || "",
+              formatPdfText(item.name),
               formatCurrency(item.amount || 0),
-              item.category || ""
+              formatPdfText(item.category)
             ])
             break
 
@@ -684,7 +747,7 @@ export default function DataManagementSection() {
             title = "Minhas Contas"
             headers = ["Nome", "Valor Original", "Valor Pago", "Vencimento", "Status"]
             rows = (data.bills || []).map(item => [
-              item.name || "",
+              formatPdfText(item.name),
               formatCurrency(item.amount || 0),
               item.status === "Pago" ? formatCurrency(item.amount || 0) : "R$ 0,00",
               item.dueDate ? formatDate(item.dueDate) : (item.dueDay ? `Dia ${item.dueDay}` : ""),
@@ -698,7 +761,7 @@ export default function DataManagementSection() {
             rows = (data.goals || []).map(item => {
               const progress = item.targetAmount > 0 ? (item.currentAmount / item.targetAmount) * 100 : 0
               return [
-                item.name || "",
+                formatPdfText(item.name),
                 formatCurrency(item.targetAmount || 0),
                 formatCurrency(item.currentAmount || 0),
                 `${progress.toFixed(2)}%`,
@@ -711,7 +774,7 @@ export default function DataManagementSection() {
             title = "Categorias Personalizadas"
             headers = ["Nome", "Tipo"]
             rows = (data.categories || []).map(item => [
-              item.name || "",
+              formatPdfText(item.name),
               item.type || ""
             ])
             break
@@ -771,7 +834,7 @@ export default function DataManagementSection() {
   }
 
   return (
-    <Card className="border-border/50 bg-card/85 dark:bg-card/65 backdrop-blur-sm relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-border flex flex-col h-full col-span-1">
+    <Card className="border-border/50 bg-card/85 dark:bg-card/65 relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-border flex flex-col h-full col-span-1">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

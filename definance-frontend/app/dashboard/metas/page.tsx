@@ -150,7 +150,7 @@ export default function MetasPage() {
           <PeriodFilter value={period} onChange={setPeriod}>
             <Button
               variant="outline"
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer border-white/10 sm:border-border/50 text-xs sm:text-sm font-medium"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer text-xs sm:text-sm font-medium"
               onClick={() => setIsExportDialogOpen(true)}
               size="sm"
             >

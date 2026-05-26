@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 
 export function DashboardHeader() {
-  const { totalCount, overdueCount, setupCount, dueSoonCount, budgetAlertsCount, spendingAlert, spendingPct, isLoading } = useBillsNotifications()
+  const { totalCount, overdueCount, setupCount, dueSoonCount, budgetAlertsCount, maxBudgetPct, spendingAlert, spendingPct, isLoading } = useBillsNotifications()
   const { discreetMode, setDiscreetMode, showBudgetAlerts, showSpendingAlerts } = useSettings()
   const [desktopOpen, setDesktopOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -108,6 +108,7 @@ export function DashboardHeader() {
             setupCount={setupCount}
             dueSoonCount={dueSoonCount}
             budgetAlertsCount={budgetAlertsCount}
+            maxBudgetPct={maxBudgetPct}
             spendingAlert={spendingAlert}
             spendingPct={spendingPct}
             showBudgetAlerts={showBudgetAlerts}
@@ -151,6 +152,7 @@ export function DashboardHeader() {
               setupCount={setupCount}
               dueSoonCount={dueSoonCount}
               budgetAlertsCount={budgetAlertsCount}
+              maxBudgetPct={maxBudgetPct}
               spendingAlert={spendingAlert}
               spendingPct={spendingPct}
               showBudgetAlerts={showBudgetAlerts}
@@ -173,7 +175,7 @@ export function DashboardHeader() {
 
 function NotificationDropdown({ 
   open, setOpen, isLoading, totalCount, overdueCount, setupCount, dueSoonCount, 
-  budgetAlertsCount, spendingAlert, spendingPct, isMobile = false 
+  budgetAlertsCount, maxBudgetPct, spendingAlert, spendingPct, isMobile = false 
 }: any) {
   const { 
     showOverdueAlerts, 
@@ -286,7 +288,11 @@ function NotificationDropdown({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-blue-600 leading-tight">Limite de Categorias</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{budgetAlertsCount} categoria(s) no limite</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {budgetAlertsCount === 1
+                            ? `1 categoria em ${maxBudgetPct}% do limite`
+                            : `${budgetAlertsCount} categorias (máx. ${maxBudgetPct}%)`}
+                        </p>
                       </div>
                     </Link>
                   </DropdownMenuItem>

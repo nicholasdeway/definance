@@ -31,10 +31,21 @@ interface ExportPdfDialogProps {
   fileName?: string
 }
 
-export function ExportPdfDialog({ 
-  open, 
-  onOpenChange, 
-  title, 
+const getBase64ImageFromUrl = async (imageUrl: string): Promise<string> => {
+  const res = await fetch(imageUrl)
+  const blob = await res.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener("load", () => resolve(reader.result as string), false)
+    reader.onerror = () => reject(new Error("Failed to read image blob"))
+    reader.readAsDataURL(blob)
+  })
+}
+
+export function ExportPdfDialog({
+  open,
+  onOpenChange,
+  title,
   subtitle = "Deseja realmente baixar os dados em formato PDF?",
   data,
   columns,
@@ -42,10 +53,17 @@ export function ExportPdfDialog({
 }: ExportPdfDialogProps) {
   const [loading, setLoading] = useState(false)
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setLoading(true)
-    
+
     try {
+      let logoBase64 = ""
+      try {
+        logoBase64 = await getBase64ImageFromUrl("/logo.png")
+      } catch (e) {
+        console.error("Erro ao obter base64 da logo:", e)
+      }
+
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         toast.error("Erro ao abrir janela de impressão. Verifique seu bloqueador de popups.");
@@ -77,7 +95,7 @@ export function ExportPdfDialog({
           <body>
             <header>
               <div style="display: flex; align-items: center; gap: 15px;">
-                <img src="${window.location.origin}/logo.png" alt="Logo" style="width: 40px; height: 40px; border-radius: 8px;">
+                ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width: 40px; height: 40px; border-radius: 8px;">` : `<img src="${window.location.origin}/logo.png" alt="Logo" style="width: 40px; height: 40px; border-radius: 8px;">`}
                 <div>
                   <h1>Definance</h1>
                   <p style="margin: 0; font-size: 14px; color: #64748b;">${title}</p>
@@ -96,20 +114,59 @@ export function ExportPdfDialog({
                 ${data.map(item => `
                   <tr>
                     ${columns.map(col => {
-                      const capitalize = (s: string | number | boolean | null | undefined) => typeof s === 'string' && s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-                      let val = item[col.key];
-                      const className = col.type === 'currency' ? 'class="currency"' : '';
-                      
-                      if (col.type === 'currency') {
-                        val = formatCurrency(Number(val || 0));
-                      } else if (typeof val === 'boolean') {
-                        val = val ? 'Recorrente' : 'Não Recorrente';
-                      } else {
-                        val = capitalize(val);
-                      }
+        const formatPdfText = (s: string | number | boolean | null | undefined): string => {
+          if (s === null || s === undefined) return '';
+          if (typeof s !== 'string') return String(s);
 
-                      return `<td ${className}>${val}</td>`;
-                    }).join('')}
+          const formatTerm = (term: string): string => {
+            const trimmed = term.trim();
+            const lowered = trimmed.toLowerCase();
+
+            if (lowered === 'clt' || lowered === 'pj') {
+              return trimmed.toUpperCase();
+            }
+            if (lowered === 'outros' || lowered === 'outro' || lowered === 'outroe') {
+              return 'Outros';
+            }
+            if (lowered === 'viagem') return 'Viagem';
+            if (lowered === 'lazer') return 'Lazer';
+            if (lowered === 'alimentacao' || lowered === 'alimentação') return 'Alimentação';
+            if (lowered === 'filho') return 'Filho';
+            if (lowered === 'veiculo' || lowered === 'veículo') return 'Veículo';
+            if (lowered === 'moradia') return 'Moradia';
+            if (lowered === 'transporte') return 'Transporte';
+            if (lowered === 'servicos' || lowered === 'serviços') return 'Serviços';
+            if (lowered === 'compras') return 'Compras';
+
+            if (trimmed.length > 0) {
+              return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+            }
+            return trimmed;
+          };
+
+          if (s.startsWith('Despesa:') || s.startsWith('Receita:')) {
+            const parts = s.split(':');
+            const prefix = parts[0];
+            const value = parts.slice(1).join(':');
+            return `${formatTerm(prefix)}: ${formatTerm(value)}`;
+          }
+
+          return formatTerm(s);
+        };
+
+        let val = item[col.key];
+        const className = col.type === 'currency' ? 'class="currency"' : '';
+
+        if (col.type === 'currency') {
+          val = formatCurrency(Number(val || 0));
+        } else if (typeof val === 'boolean') {
+          val = val ? 'Recorrente' : 'Não Recorrente';
+        } else {
+          val = formatPdfText(val);
+        }
+
+        return `<td ${className}>${val}</td>`;
+      }).join('')}
                   </tr>
                 `).join('')}
               </tbody>
@@ -133,7 +190,7 @@ export function ExportPdfDialog({
 
       printWindow.document.write(html);
       printWindow.document.close();
-      
+
       toast.success("Relatório preparado com sucesso!");
       onOpenChange(false);
     } catch (error) {
@@ -157,7 +214,7 @@ export function ExportPdfDialog({
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
           <AlertDialogCancel disabled={loading} className="flex-1 cursor-pointer">Cancelar</AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               handleExport();

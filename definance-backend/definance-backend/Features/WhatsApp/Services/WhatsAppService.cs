@@ -254,7 +254,23 @@ namespace definance_backend.Features.WhatsApp.Services
                         var reply = replyElement.GetString();
                         if (!string.IsNullOrEmpty(reply))
                         {
-                            await SendWhatsAppMessageAsync(phone, reply);
+                            if (reply.Contains("[SPLIT]"))
+                            {
+                                var parts = reply.Split(new[] { "[SPLIT]" }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var part in parts)
+                                {
+                                    var trimmedPart = part.Trim();
+                                    if (!string.IsNullOrEmpty(trimmedPart))
+                                    {
+                                        await SendWhatsAppMessageAsync(phone, trimmedPart);
+                                        await Task.Delay(1000); // 1-second delay between bubbles
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                await SendWhatsAppMessageAsync(phone, reply);
+                            }
                         }
                     }
                 }
