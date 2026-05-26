@@ -338,6 +338,8 @@ namespace definance_backend.Features.Onboarding.Services
             if (dto.Incomes == null) return;
             
             var now = _dateTimeProvider.GetCurrentAppDate();
+            var user = await _userRepository.GetByIdAsync(userId);
+            var userCreatedAt = user?.CreatedAt ?? now;
             var currentMonth = new DateTime(now.Year, now.Month, 1);
 
             // Determinar o limite de meses para sincronização futura
@@ -405,15 +407,12 @@ namespace definance_backend.Features.Onboarding.Services
                             return false;
                         });
 
-                    bool isUsingHistoricalConfig = false;
-
                     if (configHistorica != null)
                     {
                         valorEfetivo = configHistorica.Valor;
                         freqEfetiva = configHistorica.Frequencia.ToLower();
                         diasEfetivos = configHistorica.DiasRecebimento ?? "";
                         diaSemanaEfetivo = configHistorica.DiaSemana;
-                        isUsingHistoricalConfig = true;
                     }
                     else if (inc.ConfiguracaoAnterior != null && !string.IsNullOrEmpty(inc.ConfiguracaoAnterior.ValidoAte))
                     {
@@ -426,24 +425,28 @@ namespace definance_backend.Features.Onboarding.Services
                                 freqEfetiva = inc.ConfiguracaoAnterior.Frequencia.ToLower();
                                 diasEfetivos = inc.ConfiguracaoAnterior.DiasRecebimento ?? "";
                                 diaSemanaEfetivo = inc.ConfiguracaoAnterior.DiaSemana;
-                                isUsingHistoricalConfig = true;
                             }
                         }
                     }
 
-                    // Se não estamos usando configuração histórica, verificar se a nova configuração já iniciou neste mês
-                    if (!isUsingHistoricalConfig)
+                    // Verificar se a configuração ativa para este período (seja histórica ou atual) já havia iniciado neste mês
+                    var datesForStart = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var baseDateStr = datesForStart.Length > 0 ? datesForStart[0].Trim() : inc.ConfiguradoEm;
+                    DateTime configStartMonth;
+                    if (!string.IsNullOrEmpty(baseDateStr) && TryParseDate(baseDateStr, out var startDt))
                     {
-                        var datesForStart = diasEfetivos.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        if (datesForStart.Length > 0 && TryParseDate(datesForStart[0].Trim(), out var dt))
-                        {
-                            var configStartMonth = new DateTime(dt.Year, dt.Month, 1);
-                            if (syncMonth < configStartMonth)
-                            {
-                                // A configuração atual ainda não iniciou e não há histórico para este mês (está antes do início)
-                                continue;
-                            }
-                        }
+                        configStartMonth = new DateTime(startDt.Year, startDt.Month, 1);
+                    }
+                    else
+                    {
+                        // Se não há data configurada (ex: renda variável), usamos o mês de criação da conta como padrão
+                        configStartMonth = new DateTime(userCreatedAt.Year, userCreatedAt.Month, 1);
+                    }
+
+                    if (syncMonth < configStartMonth)
+                    {
+                        // A configuração selecionada para este mês ainda não havia iniciado
+                        continue;
                     }
 
                     // Se esta renda for uma configuração antiga (ou seja, há uma configuração posterior ativa no futuro),
