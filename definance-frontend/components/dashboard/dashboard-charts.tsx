@@ -36,6 +36,26 @@ const CHART_COLORS = [
   "var(--chart-6)",
 ]
 
+const monthTranslations: Record<string, string> = {
+  Jan: "Jan",
+  Feb: "Fev",
+  Mar: "Mar",
+  Apr: "Abr",
+  May: "Mai",
+  Jun: "Jun",
+  Jul: "Jul",
+  Aug: "Ago",
+  Sep: "Set",
+  Oct: "Out",
+  Nov: "Nov",
+  Dec: "Dez",
+}
+
+const formatMonth = (month: any) => {
+  const monthStr = String(month || "")
+  return monthTranslations[monthStr] || monthStr
+}
+
 export function DashboardCharts({ categoryData, incomeData = [], monthlyData, loading }: DashboardChartsProps) {
   const { discreetMode } = useSettings()
   const { resolvedTheme } = useTheme()
@@ -87,8 +107,44 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
 
   if (loading || !mounted) {
     return (
-      <Card className="border-border/50 bg-card h-full flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/20" />
+      <Card className="border-border/50 bg-card h-full flex flex-col animate-pulse">
+        {/* Header Skeleton */}
+        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0 shrink-0">
+          <div className="h-3.5 w-32 bg-muted rounded" />
+          <div className="h-6 w-28 bg-muted rounded-lg" />
+        </CardHeader>
+        <CardContent className="space-y-6 flex-1 flex flex-col justify-between pt-2">
+          {/* Pie Chart & Legends Skeleton */}
+          <div className="flex flex-col items-center gap-6 md:flex-row">
+            {/* Circle for Pie Chart */}
+            <div className="relative h-44 w-44 shrink-0 flex items-center justify-center">
+              <div className="h-36 w-36 rounded-full border-[16px] border-muted/30 flex items-center justify-center" />
+            </div>
+            {/* Legends list */}
+            <div className="flex-1 w-full space-y-2.5">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-muted shrink-0" />
+                  <div className="h-3 w-16 bg-muted rounded" />
+                  <div className="hidden sm:block flex-1 border-b border-dashed border-border/30 mx-1 mb-1" />
+                  <div className="h-3 w-8 bg-muted rounded shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Area Chart Skeleton */}
+          <div className="pt-4 border-t border-border/50">
+            <div className="mx-auto h-3 w-28 bg-muted rounded mb-4" />
+            <div className="h-44 w-full bg-muted/10 rounded-xl flex items-end justify-between p-2">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-full flex flex-col justify-end w-[12%]">
+                  <div className="w-full bg-muted/20 rounded-t-lg" style={{ height: `${i * 15}%` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
       </Card>
     )
   }
@@ -204,7 +260,7 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
             discreetMode && "discreet-mode-blur"
           )}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: 10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
@@ -222,8 +278,10 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
                   axisLine={false}
                   tickLine={false}
                   dy={10}
+                  tickFormatter={formatMonth}
                 />
                 <YAxis
+                  width={70}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 9, fontWeight: "bold" }}
                   axisLine={false}
                   tickLine={false}
@@ -240,6 +298,7 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                   formatter={tooltipFormatter}
+                  labelFormatter={(label) => formatMonth(String(label ?? ""))}
                 />
                 <Area
                   type="monotone"

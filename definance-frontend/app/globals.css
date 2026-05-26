@@ -119,18 +119,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 @utility animate-shimmer-text {
-  background-image: linear-gradient(
-    to right,
-    var(--primary) 20%,
-    oklch(1 0 0 / 0.8) 50%,
-    var(--primary) 80%
-  );
+  background-image: linear-gradient(to right,
+      var(--primary) 20%,
+      oklch(1 0 0 / 0.8) 50%,
+      var(--primary) 80%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -139,11 +138,13 @@
 }
 
 @utility no-spinner {
+
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
+
   &[type="number"] {
     -moz-appearance: textfield;
   }
@@ -152,6 +153,7 @@
 @utility no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -171,6 +173,7 @@
   0% {
     background-position: -200% center;
   }
+
   100% {
     background-position: 200% center;
   }
@@ -182,45 +185,91 @@
 
 /* Auth Layout Animations & Keyframes */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 @keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
+
 @keyframes float1 {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
+
 @keyframes float2 {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
+
 @keyframes float3 {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
+
 .anim-fade-in-up {
   animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
 .anim-fade-in-up-delay-1 {
   animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   opacity: 0;
 }
+
 .anim-fade-in-up-delay-2 {
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
   opacity: 0;
 }
+
 .anim-fade-in-scale {
   animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
 .anim-float-1 {
   animation: float1 4s ease-in-out infinite;
 }
+
 .anim-float-2 {
   animation: float2 5s ease-in-out infinite 0.2s;
 }
+
 .anim-float-3 {
   animation: float3 6s ease-in-out infinite 0.5s;
 }

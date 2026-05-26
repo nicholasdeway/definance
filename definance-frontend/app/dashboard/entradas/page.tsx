@@ -22,6 +22,7 @@ import { ReceitaStats } from "@/components/dashboard/entradas/receita-stats"
 import { ReceitaItem } from "@/components/dashboard/entradas/receita-item"
 import { ReceitaDialog } from "@/components/dashboard/entradas/receita-dialog"
 import { FilterBar, type SortOption } from "@/components/dashboard/filter-bar"
+import { useAuth } from "@/lib/auth-provider"
 import { filterAndSortItems } from "@/lib/filter-utils"
 
 interface Receita {
@@ -79,6 +80,7 @@ export interface OnboardingProgressIncome {
 const baseTiposReceita = incomeTypes.map(t => t.label).concat(["Investimentos", "Aluguel", "Outros"])
 
 export default function ReceitasPage() {
+  const { user } = useAuth()
   const { discreetMode } = useSettings()
   const { categories: dynamicCategories } = useCategories()
   
@@ -111,22 +113,35 @@ export default function ReceitasPage() {
         setIsLoading(true)
         
         let queryParams = ""
+        let startDate: Date | null = null
+        let endDate: Date | null = null
+
         if (period.type === "monthly") {
+          startDate = new Date(period.year, period.month - 1, 1)
+          endDate = new Date(period.year, period.month, 0, 23, 59, 59)
           queryParams = `month=${period.month}&year=${period.year}`
         } else if (period.type === "60_days") {
           const end = new Date()
           const start = new Date()
           start.setDate(end.getDate() - 60)
+          startDate = start
+          endDate = end
           queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
         } else if (period.type === "90_days") {
           const end = new Date()
           const start = new Date()
           start.setDate(end.getDate() - 90)
+          startDate = start
+          endDate = end
           queryParams = `startDate=${start.toISOString()}&endDate=${end.toISOString()}`
         } else if (period.type === "custom") {
           if (period.startDate && period.endDate) {
-            queryParams = `startDate=${new Date(period.startDate).toISOString()}&endDate=${new Date(period.endDate).toISOString()}`
+            startDate = new Date(period.startDate)
+            endDate = new Date(period.endDate)
+            queryParams = `startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
           } else {
+            startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+            endDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59)
             queryParams = `month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}` // fallback
           }
         }
@@ -143,25 +158,13 @@ export default function ReceitasPage() {
                                inc.name.toLowerCase().startsWith(`${typeLower} (semana`) || 
                                inc.name.toLowerCase().startsWith(`${typeLower} (quinzena`)
 
-          // Lógica de projeção para entradas manuais recorrentes
-          const originalDate = new Date(inc.date)
-          let displayYear = originalDate.getFullYear()
-          let displayMonth = originalDate.getMonth()
-          let displayDay = originalDate.getDate()
-
-          // Se for recorrente e de um mês passado, projetamos para o mês atual mantendo o mesmo dia
-          if (inc.isRecurring && (originalDate.getFullYear() < period.year || (originalDate.getFullYear() === period.year && originalDate.getMonth() + 1 < period.month))) {
-            displayYear = period.year
-            displayMonth = period.month - 1
-          }
-
-          const displayDate = new Date(displayYear, displayMonth, displayDay)
+          const displayDate = new Date(inc.date)
 
           return {
             id: inc.id,
             nome: isBaseType && isStandardName
               ? `${typeInfo.label} (${typeInfo.description.split(' ')[0]})`
-              : inc.name,
+              : (inc.name ? inc.name.charAt(0).toUpperCase() + inc.name.slice(1) : inc.name),
             valor: inc.amount, 
             tipo: isBaseType ? typeInfo.label : inc.type,
             data: displayDate.toLocaleDateString("pt-BR"),
@@ -180,12 +183,35 @@ export default function ReceitasPage() {
           const profileIncomes: OnboardingProgressIncome[] = progressData.incomes || progressData.Incomes || []
           
           if (profileIncomes.length > 0) {
-            // 1. Calcular as projeções primeiro
-            const syncedIncomes = profileIncomes
-              .flatMap((inc: OnboardingProgressIncome, index: number) => {
+            // Helper para obter todos os meses no intervalo
+            const getMonthsInRange = (start: Date, end: Date) => {
+              const months: Date[] = []
+              const current = new Date(start.getFullYear(), start.getMonth(), 1)
+              const last = new Date(end.getFullYear(), end.getMonth(), 1)
+              while (current <= last) {
+                months.push(new Date(current))
+                current.setMonth(current.getMonth() + 1)
+              }
+              return months
+            }
+
+            const targetMonths = startDate && endDate
+              ? getMonthsInRange(startDate, endDate)
+              : [new Date(period.year, period.month - 1, 1)]
+
+            // 1. Calcular as projeções para cada mês do período
+            const syncedIncomes = targetMonths.flatMap((targetMonthDate) => {
+              if (user?.createdAt) {
+                const uCreated = new Date(user.createdAt)
+                const limitMonthDate = new Date(uCreated.getFullYear(), uCreated.getMonth(), 1)
+                if (targetMonthDate < limitMonthDate) {
+                  return []
+                }
+              }
+
+              return profileIncomes.flatMap((inc: OnboardingProgressIncome, index: number) => {
                 const incomeTipoValue = (inc.tipo || inc.Tipo || "").toLowerCase()
                 const typeInfo = incomeTypes.find(t => t.value === incomeTipoValue)
-                const selectedMonthDate = new Date(period.year, period.month - 1, 1)
 
                 // --- Lógica de Histórico ---
                 let effectiveValor = inc.valor || inc.Valor || 0
@@ -211,7 +237,7 @@ export default function ReceitasPage() {
                     const vDateStr = (h.validoAte || h.ValidoAte).split('T')[0]
                     const [vy, vm] = vDateStr.split('-').map(Number)
                     const validUntilMonth = new Date(vy, vm - 1, 1)
-                    return selectedMonthDate <= validUntilMonth
+                    return targetMonthDate <= validUntilMonth
                   })
 
                 if (configHistorica) {
@@ -228,13 +254,13 @@ export default function ReceitasPage() {
                   const firstDateStr = effectiveFreq === "variavel" ? "" : (effectiveDias.split(',')[0] || "").trim()
                   const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
                   
-                  const startDate = baseDateStr ? (() => {
+                  const startDateObj = baseDateStr ? (() => {
                     const datePart = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr
                     const [y, m, d] = datePart.split('-').map(Number)
                     return new Date(y, m - 1, d)
                   })() : null
                   
-                  if (startDate && selectedMonthDate < new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
+                  if (startDateObj && targetMonthDate < new Date(startDateObj.getFullYear(), startDateObj.getMonth(), 1)) {
                     return []
                   }
                 }
@@ -255,7 +281,7 @@ export default function ReceitasPage() {
                       "domingo": 0, "segunda": 1, "terca": 2, "quarta": 3, "quinta": 4, "sexta": 5, "sabado": 6
                     }
                     const targetDay = daysMap[diaSemana.toLowerCase()]
-                    const baseDate = new Date(period.year, period.month - 1, 1 + (i * 7))
+                    const baseDate = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), 1 + (i * 7))
                     const daysToAdd = (targetDay - baseDate.getDay() + 7) % 7
                     itemDate = new Date(baseDate.getTime() + (daysToAdd * 24 * 60 * 60 * 1000))
                   } else {
@@ -264,8 +290,13 @@ export default function ReceitasPage() {
                     const baseDateStr = firstDateStr || inc.configuradoEm || inc.ConfiguradoEm
                     const startDay = baseDateStr ? parseInt(baseDateStr.split('-')[2]) || 1 : 1
                     
-                    // Aplicamos o dia ao mês selecionado na tela
-                    itemDate = new Date(period.year, period.month - 1, startDay + (i * (effectiveFreq === "quinzenal" ? 15 : 0)))
+                    // Aplicamos o dia ao mês do targetMonthDate
+                    itemDate = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), startDay + (i * (effectiveFreq === "quinzenal" ? 15 : 0)))
+                  }
+
+                  // Garantir que a projeção fique no intervalo de datas do filtro de período
+                  if (startDate && endDate && (itemDate < startDate || itemDate > endDate)) {
+                    return null
                   }
 
                   const suffix = multiplier > 1 
@@ -273,7 +304,7 @@ export default function ReceitasPage() {
                     : ""
 
                   return {
-                    id: `synced-${incomeTipoValue}-${index}-${i}`,
+                    id: `synced-${incomeTipoValue}-${index}-${targetMonthDate.getFullYear()}-${targetMonthDate.getMonth()}-${i}`,
                     nome: `${label}${desc}${suffix}`,
                     valor: effectiveValor,
                     tipo: label,
@@ -288,14 +319,21 @@ export default function ReceitasPage() {
                     isSynced: true,
                     rawDate: itemDate
                   }
-                })
+                }).filter((item): item is Exclude<typeof item, null> => item !== null)
               })
+            })
 
-            // 2. Filtrar syncedIncomes (Projeções) para remover se já existir algo no banco para aquele tipo no mês
+            // 2. Filtrar syncedIncomes (Projeções) para remover se já existir algo no banco para aquele tipo NESTE MES especificamente
             const finalSyncedIncomes = syncedIncomes.filter(s => {
-               const syncedTipo = (s as any).tipoValue;
-               // Se já existe uma entrada no banco com o mesmo tipo (categoria) neste mês, removemos a projeção
-               const hasRealEntry = mappedIncomes.some(m => m.tipo.toLowerCase() === syncedTipo);
+               const syncedTipo = s.tipoValue;
+               const projectedDate = new Date(s.dataReal);
+               
+               const hasRealEntry = mappedIncomes.some(m => {
+                 if (m.tipo.toLowerCase() !== syncedTipo) return false;
+                 const realDate = new Date(m.dataReal);
+                 return realDate.getFullYear() === projectedDate.getFullYear() &&
+                        realDate.getMonth() === projectedDate.getMonth();
+               });
                return !hasRealEntry;
             });
 
@@ -419,7 +457,7 @@ export default function ReceitasPage() {
             const savedDate = new Date(response.date)
             const savedItem: Receita = {
               id: response.id,
-              nome: response.name,
+              nome: response.name ? response.name.charAt(0).toUpperCase() + response.name.slice(1) : response.name,
               valor: response.amount,
               tipo: response.type,
               data: savedDate.toLocaleDateString("pt-BR"),
@@ -531,7 +569,7 @@ export default function ReceitasPage() {
           <PeriodFilter value={period} onChange={setPeriod}>
             <Button 
               variant="outline" 
-              className="h-9 gap-2 hover:bg-primary/5 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
+              className="h-9 gap-2 bg-card hover:bg-muted border-border/50 transition-colors cursor-pointer px-3 sm:px-4 shrink-0"
               onClick={() => setIsExportDialogOpen(true)}
               size="sm"
             >

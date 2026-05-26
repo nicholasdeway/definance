@@ -45,8 +45,9 @@ interface IncomeApiResponse {
 
 export default function DashboardPage() {
   const { discreetMode } = useSettings()
-  const { overdueCount } = useBillsNotifications()
+  const { overdueCount, isLoading: billsLoading } = useBillsNotifications()
   const [loading, setLoading] = React.useState(true)
+  const isPageLoading = loading || billsLoading
   const [analysis, setAnalysis] = React.useState<AnalysisResponse | null>(null)
   const [expensesData, setExpensesData] = React.useState<ExpenseApiResponse[]>([])
   const [incomesData, setIncomesData] = React.useState<IncomeApiResponse[]>([])
@@ -63,7 +64,7 @@ export default function DashboardPage() {
   const fetchData = React.useCallback(async () => {
     // Se já estiver buscando, não inicia outra (exceto se o período mudou, que será tratado pelo AbortController)
     if (isFetchingRef.current) return
-    
+
     // Cancela requisição anterior se existir
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -76,7 +77,7 @@ export default function DashboardPage() {
 
     try {
       const queryParams = `month=${period.month}&year=${period.year}`
-      
+
       const [analysisData, expensesData, incomesData] = await Promise.all([
         apiClient<AnalysisResponse>(`/api/Analysis?${queryParams}`, { signal: controller.signal }),
         apiClient<ExpenseApiResponse[]>(`/api/Expenses?limit=10&${queryParams}`, { signal: controller.signal }),
@@ -89,11 +90,11 @@ export default function DashboardPage() {
 
       setExpensesData(expensesData || [])
       setIncomesData(incomesData || [])
-      
+
     } catch (error: unknown) {
       // Não mostra erro se for um cancelamento intencional
       if (error instanceof Error && error.name === 'AbortError') return
-      
+
       const message = error instanceof Error ? error.message : "Erro desconhecido ao carregar dashboard"
       toast.error(message)
     } finally {
@@ -112,20 +113,20 @@ export default function DashboardPage() {
 
     const formatName = (name: string) => {
       if (!name) return "Sem nome"
-      
+
       // Lista de siglas que devem ser sempre maiúsculas
       const acronyms = ["CLT", "PJ", "MEI", "FGTS", "INSS", "IRPF"]
       let formatted = name
-      
+
       acronyms.forEach(acronym => {
         const regex = new RegExp(`\\b${acronym}\\b`, "gi")
         formatted = formatted.replace(regex, acronym)
       })
-      
+
       if (formatted === name) {
         return name.charAt(0).toUpperCase() + name.slice(1)
       }
-      
+
       return formatted
     }
 
@@ -146,7 +147,7 @@ export default function DashboardPage() {
       const mappedIncomes: Transaction[] = incomesData.map(inc => {
         let displayNome = inc.name;
         const lowerName = inc.name.toLowerCase();
-        
+
         // Mantém as substituições amigáveis originais
         if (lowerName === "mesada") displayNome = "Mesada / Auxílio";
         else if (lowerName === "autonomo") displayNome = "Autônomo";
@@ -190,43 +191,43 @@ export default function DashboardPage() {
           </div>
           <p className="text-muted-foreground text-xs sm:text-sm">Bem-vindo de volta! Aqui está o resumo das suas finanças.</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2 w-full">
           <PeriodFilter value={period} onChange={setPeriod}>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={fetchData} 
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchData}
               disabled={loading}
-              className="rounded-xl border-border/50 hover:bg-primary/5 transition-all active:scale-95 h-9 w-9 shrink-0"
+              className="rounded-xl border-border/50 bg-card hover:bg-primary/5 transition-all active:scale-95 h-9 w-9 shrink-0"
             >
               <RefreshCcw className={cn("h-4 w-4 text-muted-foreground", loading && "animate-spin")} />
             </Button>
           </PeriodFilter>
         </div>
       </div>
-      
+
       <BillsAlert />
-      
-      <DashboardCards 
-        data={cardsData} 
-        loading={loading} 
-        discreetMode={discreetMode} 
+
+      <DashboardCards
+        data={cardsData}
+        loading={isPageLoading}
+        discreetMode={discreetMode}
       />
-      
+
       <div className="grid gap-6 lg:grid-cols-5 w-full overflow-hidden">
         <div className="lg:col-span-3 min-w-0">
-          <DashboardCharts 
-            categoryData={analysis?.categoryAnalysis || []} 
+          <DashboardCharts
+            categoryData={analysis?.categoryAnalysis || []}
             incomeData={analysis?.incomeAnalysis?.map(i => ({ categoria: i.tipo, valor: i.valor })) || []}
             monthlyData={analysis?.monthlyComparison || []}
-            loading={loading}
+            loading={isPageLoading}
           />
         </div>
         <div className="lg:col-span-2 min-w-0">
-          <RecentTransactions 
-            transactions={transactions} 
-            loading={loading} 
+          <RecentTransactions
+            transactions={transactions}
+            loading={isPageLoading}
           />
         </div>
       </div>

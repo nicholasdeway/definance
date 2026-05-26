@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Wallet, 
-  CreditCard, 
-  LayoutDashboard, 
-  Home, 
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Wallet,
+  CreditCard,
+  LayoutDashboard,
+  Home,
   BarChart3,
   Menu,
   Eye,
@@ -38,20 +38,20 @@ const mockTransactions = [
 function MobileDashboardContent() {
   return (
     <div className="w-full h-full bg-background p-4 overflow-hidden relative pt-20 pb-20 antialiased">
-      
+
       {/* MOCKUP TOP DOCK (Replicating DashboardHeader Mobile) */}
       <div className="absolute top-8 left-3 right-3 z-50">
         <div className="bg-background/40 backdrop-blur-2xl border border-white/10 rounded-full h-11 shadow-xl flex items-center justify-between px-2 relative">
           <div className="flex items-center gap-1">
-             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Menu className="h-3.5 w-3.5 text-primary" />
-             </div>
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Menu className="h-3.5 w-3.5 text-primary" />
+            </div>
           </div>
           <div className="flex items-center gap-0.5">
-             <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Eye className="h-3.5 w-3.5" /></div>
-             <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Moon className="h-3.5 w-3.5" /></div>
-             <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Bell className="h-3.5 w-3.5" /></div>
-             <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><LogOut className="h-3.5 w-3.5" /></div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Eye className="h-3.5 w-3.5" /></div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Moon className="h-3.5 w-3.5" /></div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><Bell className="h-3.5 w-3.5" /></div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/60"><LogOut className="h-3.5 w-3.5" /></div>
           </div>
         </div>
       </div>
@@ -80,48 +80,48 @@ function MobileDashboardContent() {
       </Card>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="p-4 rounded-2xl border border-border/50 bg-card shadow-sm">
-            <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider mb-1">Entradas</p>
-            <p className="text-sm font-bold text-card-foreground">R$ 8.500,00</p>
-          </div>
-          <div className="p-4 rounded-2xl border border-border/50 bg-card shadow-sm">
-            <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider mb-1">Saídas</p>
-            <p className="text-sm font-bold text-card-foreground text-destructive">R$ 4.350,00</p>
-          </div>
+        <div className="p-4 rounded-2xl border border-border/50 bg-card shadow-sm">
+          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider mb-1">Entradas</p>
+          <p className="text-sm font-bold text-card-foreground">R$ 8.500,00</p>
+        </div>
+        <div className="p-4 rounded-2xl border border-border/50 bg-card shadow-sm">
+          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider mb-1">Saídas</p>
+          <p className="text-sm font-bold text-card-foreground text-destructive">R$ 4.350,00</p>
+        </div>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-            <h4 className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Histórico</h4>
-            <span className="text-[9px] text-primary font-bold uppercase tracking-widest">Ver Tudo</span>
+          <h4 className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Histórico</h4>
+          <span className="text-[9px] text-primary font-bold uppercase tracking-widest">Ver Tudo</span>
         </div>
         <div className="space-y-2">
-            {mockTransactions.slice(0, 3).map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/5 border border-border/10 group active:scale-95 transition-all">
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "h-8 w-8 rounded-lg flex items-center justify-center border border-border/20 bg-muted/20",
-                          t.tipo === 'receita' ? "text-emerald-500/60" : "text-rose-500/60"
-                        )}>
-                            {t.tipo === 'receita' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold text-foreground/90 leading-tight">{t.nome}</p>
-                            <p className="text-[8px] text-muted-foreground/40 font-medium uppercase tracking-tighter">
-                              {t.categoria} • {t.data}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                       <p className={cn(
-                         "text-[11px] font-bold tracking-tight",
-                         t.tipo === 'receita' ? "text-emerald-500" : "text-foreground/90"
-                       )}>
-                         {t.tipo === 'receita' ? '+' : '-'} R$ {Math.abs(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                       </p>
-                    </div>
+          {mockTransactions.slice(0, 3).map((t) => (
+            <div key={t.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/5 border border-border/10 group active:scale-95 transition-all">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center border border-border/20 bg-muted/20",
+                  t.tipo === 'receita' ? "text-emerald-500/60" : "text-rose-500/60"
+                )}>
+                  {t.tipo === 'receita' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                 </div>
-            ))}
+                <div>
+                  <p className="text-[11px] font-bold text-foreground/90 leading-tight">{t.nome}</p>
+                  <p className="text-[8px] text-muted-foreground/40 font-medium uppercase tracking-tighter">
+                    {t.categoria} • {t.data}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-[11px] font-bold tracking-tight",
+                  t.tipo === 'receita' ? "text-emerald-500" : "text-foreground/90"
+                )}>
+                  {t.tipo === 'receita' ? '+' : '-'} R$ {Math.abs(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -152,18 +152,18 @@ function MobileDashboardContent() {
 
 function MobileMockup() {
   return (
-    <div className="relative mx-auto border-border bg-card border-[8px] md:border-[10px] rounded-[2.5rem] md:rounded-[2.8rem] h-[480px] md:h-[580px] w-[240px] md:w-[280px] shadow-2xl overflow-hidden">
-        <div className="rounded-[1.8rem] md:rounded-[2.2rem] overflow-hidden w-full h-full bg-background relative border border-white/5">
-          {/* Status Bar Simulation */}
-          <div className="absolute top-0 left-0 right-0 h-6 flex justify-between items-center px-8 z-10 bg-background/30 backdrop-blur-sm">
-              <span className="text-[10px] font-bold text-foreground">9:41</span>
-              <div className="flex gap-1 items-center">
-                  <div className="h-1 w-1 rounded-full bg-foreground/50" />
-                  <div className="h-1.5 w-3 rounded-[1px] border border-foreground/50" />
-              </div>
+    <div className="relative mx-auto border-border bg-card border-[8px] md:border-[10px] rounded-[2.5rem] md:rounded-[2.8rem] h-[480px] md:h-[580px] w-[240px] md:w-[280px] overflow-hidden">
+      <div className="rounded-[1.8rem] md:rounded-[2.2rem] overflow-hidden w-full h-full bg-background relative border border-white/5">
+        {/* Status Bar Simulation */}
+        <div className="absolute top-0 left-0 right-0 h-6 flex justify-between items-center px-8 z-10 bg-background/30 backdrop-blur-sm">
+          <span className="text-[10px] font-bold text-foreground">9:41</span>
+          <div className="flex gap-1 items-center">
+            <div className="h-1 w-1 rounded-full bg-foreground/50" />
+            <div className="h-1.5 w-3 rounded-[1px] border border-foreground/50" />
           </div>
-          <MobileDashboardContent />
         </div>
+        <MobileDashboardContent />
+      </div>
     </div>
   )
 }
@@ -174,10 +174,10 @@ function DashboardContent() {
       {/* Header with Period Filter */}
       <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-2">
-           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-              <LayoutDashboard className="h-4 w-4 text-primary" />
-           </div>
-           <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+            <LayoutDashboard className="h-4 w-4 text-primary" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
         </div>
         <div className="flex items-center gap-2 bg-card/40 backdrop-blur-md border border-border/50 p-1 rounded-xl">
           <div className="flex items-center text-muted-foreground/50 px-3 border-r border-border/20">
@@ -212,7 +212,7 @@ function DashboardContent() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Entradas */}
         <Card className="border-border/50 bg-card overflow-hidden py-6 relative">
           <CardHeader className="flex flex-row items-center justify-between px-6 pb-2 pt-0">
@@ -228,7 +228,7 @@ function DashboardContent() {
             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60 mt-1">Este mês</p>
           </CardContent>
         </Card>
-        
+
         {/* Saídas */}
         <Card className="border-border/50 bg-card overflow-hidden py-6 relative">
           <CardHeader className="flex flex-row items-center justify-between px-6 pb-2 pt-0">
@@ -244,7 +244,7 @@ function DashboardContent() {
             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide opacity-60 mt-1">Este mês</p>
           </CardContent>
         </Card>
-        
+
         {/* Contas a Vencer */}
         <Card className="border-border/50 bg-card overflow-hidden py-6 relative">
           <CardHeader className="flex flex-row items-center justify-between px-6 pb-2 pt-0">
@@ -259,7 +259,7 @@ function DashboardContent() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Main Charts Area */}
       <div className="grid grid-cols-12 gap-6">
         {/* Gastos Chart */}
@@ -268,48 +268,48 @@ function DashboardContent() {
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Análise de Gastos</h3>
           </div>
           <div className="flex items-center justify-around gap-12">
-             <div className="relative h-64 w-64">
-                <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted/5" />
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="11" strokeDasharray="80 251.2" /> {/* Lazer */}
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#0ea5e9" strokeWidth="11" strokeDasharray="60 251.2" strokeDashoffset="-85" /> {/* Moradia */}
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="11" strokeDasharray="70 251.2" strokeDashoffset="-150" /> {/* Veículo */}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Total</span>
-                  <span className="text-2xl font-bold text-foreground tracking-tight">R$ 390,00</span>
-                </div>
-             </div>
-             <div className="space-y-5 flex-1 max-w-[220px]">
-                {[
-                  { label: "Lazer", value: "31%", color: "bg-emerald-500" },
-                  { label: "Moradia", value: "31%", color: "bg-sky-500" },
-                  { label: "Veículo", value: "31%", color: "bg-amber-500" },
-                  { label: "Alimentação", value: "8%", color: "bg-indigo-500" }
-                ].map(item => (
-                  <div key={item.label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-2.5 w-2.5 rounded-full ${item.color} shadow-lg shadow-black/40`} />
-                      <span className="text-[12px] font-medium text-muted-foreground/80">{item.label}</span>
-                    </div>
-                    <span className="text-[12px] font-bold text-foreground/90">{item.value}</span>
+            <div className="relative h-64 w-64">
+              <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted/5" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="11" strokeDasharray="80 251.2" /> {/* Lazer */}
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#0ea5e9" strokeWidth="11" strokeDasharray="60 251.2" strokeDashoffset="-85" /> {/* Moradia */}
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="11" strokeDasharray="70 251.2" strokeDashoffset="-150" /> {/* Veículo */}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Total</span>
+                <span className="text-2xl font-bold text-foreground tracking-tight">R$ 390,00</span>
+              </div>
+            </div>
+            <div className="space-y-5 flex-1 max-w-[220px]">
+              {[
+                { label: "Lazer", value: "31%", color: "bg-emerald-500" },
+                { label: "Moradia", value: "31%", color: "bg-sky-500" },
+                { label: "Veículo", value: "31%", color: "bg-amber-500" },
+                { label: "Alimentação", value: "8%", color: "bg-indigo-500" }
+              ].map(item => (
+                <div key={item.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2.5 w-2.5 rounded-full ${item.color} shadow-lg shadow-black/40`} />
+                    <span className="text-[12px] font-medium text-muted-foreground/80">{item.label}</span>
                   </div>
-                ))}
-             </div>
+                  <span className="text-[12px] font-bold text-foreground/90">{item.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          
+
           <div className="mt-12 pt-8 border-t border-border/10">
             <h4 className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/20 text-center mb-8">Evolução Mensal</h4>
             <div className="h-32 w-full flex items-end gap-2 relative">
-               <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none">
-                 <path d="M0 120 Q 150 40, 300 100 T 600 20 T 900 80 T 1200 40 L 1200 150 L 0 150 Z" fill="url(#grad)" />
-                 <defs>
-                   <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                     <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.15 }} />
-                     <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0 }} />
-                   </linearGradient>
-                 </defs>
-               </svg>
+              <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none">
+                <path d="M0 120 Q 150 40, 300 100 T 600 20 T 900 80 T 1200 40 L 1200 150 L 0 150 Z" fill="url(#grad)" />
+                <defs>
+                  <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.15 }} />
+                    <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0 }} />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
           </div>
         </Card>
@@ -322,30 +322,30 @@ function DashboardContent() {
           </div>
           <div className="space-y-5">
             {mockTransactions.map((t, i) => (
-               <div key={i} className="flex justify-between items-center group cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "h-10 w-10 rounded-xl flex items-center justify-center border border-border/20 bg-muted/10 transition-all group-hover:scale-110",
-                      t.tipo === 'receita' ? "text-emerald-500/60" : "text-rose-500/60"
-                    )}>
-                      {t.tipo === 'receita' ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-foreground/90">{t.nome}</p>
-                      <p className="text-[10px] text-muted-foreground/40 font-medium">
-                        {t.categoria} • {t.data} • 18:25
-                      </p>
-                    </div>
+              <div key={i} className="flex justify-between items-center group cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center border border-border/20 bg-muted/10 transition-all group-hover:scale-110",
+                    t.tipo === 'receita' ? "text-emerald-500/60" : "text-rose-500/60"
+                  )}>
+                    {t.tipo === 'receita' ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                   </div>
-                  <div className="text-right">
-                    <p className={cn(
-                      "text-[12px] font-bold tracking-tight",
-                      t.tipo === 'receita' ? "text-emerald-500" : "text-foreground/90"
-                    )}>
-                      {t.tipo === 'receita' ? '+' : '-'} R$ {Math.abs(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <div>
+                    <p className="text-[12px] font-bold text-foreground/90">{t.nome}</p>
+                    <p className="text-[10px] text-muted-foreground/40 font-medium">
+                      {t.categoria} • {t.data} • 18:25
                     </p>
                   </div>
-               </div>
+                </div>
+                <div className="text-right">
+                  <p className={cn(
+                    "text-[12px] font-bold tracking-tight",
+                    t.tipo === 'receita' ? "text-emerald-500" : "text-foreground/90"
+                  )}>
+                    {t.tipo === 'receita' ? '+' : '-'} R$ {Math.abs(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </Card>
@@ -355,43 +355,43 @@ function DashboardContent() {
 }
 
 function WebDashboardMockup() {
-    const [scale, setScale] = useState(1)
-    const containerRef = useRef<HTMLDivElement>(null)
-  
-    useEffect(() => {
-      const handleResize = () => {
-        if (containerRef.current) {
-          const containerWidth = containerRef.current.offsetWidth
-          const targetWidth = 1200
-          setScale(containerWidth < targetWidth ? containerWidth / targetWidth : 1)
-        }
-      }
-      handleResize()
-      window.addEventListener("resize", handleResize)
-      return () => window.removeEventListener("resize", handleResize)
-    }, [])
+  const [scale, setScale] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-    return (
-        <div className="relative rounded-2xl md:rounded-3xl border border-border bg-background overflow-hidden shadow-2xl w-full max-w-6xl mx-auto shadow-black/50">
-            <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 px-4 md:px-6 py-3 md:py-4">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                    <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-rose-500/50" />
-                    <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-amber-500/50" />
-                    <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-emerald-500/50" />
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 rounded-lg md:rounded-xl bg-background/50 px-3 md:px-4 py-1 md:py-1.5 text-[9px] md:text-[11px] font-medium text-muted-foreground border border-border/30">
-                    <LayoutDashboard className="h-3.5 w-3.5" />
-                    definance.com.br/dashboard
-                </div>
-                <div className="w-10 md:w-16" />
-            </div>
-            <div ref={containerRef} className="relative overflow-hidden bg-background" style={{ height: `${640 * scale}px` }}>
-                <div className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
-                    <DashboardContent />
-                </div>
-            </div>
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth
+        const targetWidth = 1200
+        setScale(containerWidth < targetWidth ? containerWidth / targetWidth : 1)
+      }
+    }
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  return (
+    <div className="relative rounded-2xl md:rounded-3xl border border-border bg-background overflow-hidden shadow-2xl w-full max-w-6xl mx-auto shadow-black/50">
+      <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 px-4 md:px-6 py-3 md:py-4">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-rose-500/50" />
+          <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-amber-500/50" />
+          <div className="h-2 w-2 md:h-3 md:w-3 rounded-full bg-emerald-500/50" />
         </div>
-    )
+        <div className="flex items-center gap-2 md:gap-3 rounded-lg md:rounded-xl bg-background/50 px-3 md:px-4 py-1 md:py-1.5 text-[9px] md:text-[11px] font-medium text-muted-foreground border border-border/30">
+          <LayoutDashboard className="h-3.5 w-3.5" />
+          definance.com.br/dashboard
+        </div>
+        <div className="w-10 md:w-16" />
+      </div>
+      <div ref={containerRef} className="relative overflow-hidden bg-background" style={{ height: `${640 * scale}px` }}>
+        <div className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale})` }}>
+          <DashboardContent />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function DashboardPreview() {
@@ -420,7 +420,7 @@ export function DashboardPreview() {
   // Responsive Transforms
   const webScale = useTransform(smoothProgress, [0, 0.4, 0.6, 1], isMobile ? [0.95, 1, 1, 0.95] : [0.85, 1, 1, 0.9])
   const webY = useTransform(smoothProgress, [0, 1], [50, -50])
-  
+
   // Em tablet: não desloca horizontalmente, só vem de baixo levemente
   // Em mobile: vem de baixo
   // Em desktop: desloca para a esquerda (-420px)
@@ -443,7 +443,7 @@ export function DashboardPreview() {
     <section ref={containerRef} id="como-funciona" className="relative h-[200vh] md:h-[250vh] bg-background/50">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
         <div className="container px-4 md:px-6 mx-auto relative h-full flex flex-col items-center justify-center">
-          
+
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
               Um dashboard que faz sentido
@@ -459,20 +459,19 @@ export function DashboardPreview() {
             </motion.div>
 
             {/* Mockup do celular — visível em todos os tamanhos, com transforms adaptativos */}
-            <motion.div 
-              style={{ 
-                x: mobileX, 
-                y: mobileY, 
-                scale: mobileScale, 
+            <motion.div
+              style={{
+                x: mobileX,
+                y: mobileY,
+                scale: mobileScale,
                 opacity: mobileOpacity,
-                zIndex: mobileZIndex 
+                zIndex: mobileZIndex
               }}
               className="absolute"
             >
-                <div className="relative">
-                   <div className="absolute inset-6 md:inset-10 bg-black/50 blur-2xl md:blur-3xl rounded-[2rem] md:rounded-[3rem] -z-10" />
-                   <MobileMockup />
-                </div>
+              <div className="relative">
+                <MobileMockup />
+              </div>
             </motion.div>
           </div>
         </div>

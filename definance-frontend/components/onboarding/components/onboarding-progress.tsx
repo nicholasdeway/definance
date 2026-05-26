@@ -30,7 +30,7 @@ export const OnboardingProgress = () => {
                 key={step.id} 
                 className={cn(
                   "h-1.5 flex-1 rounded-full transition-all duration-500",
-                  isCompleted ? "bg-primary shadow-[0_0_8px_rgba(34,197,94,0.2)]" : 
+                  isCompleted ? "bg-primary" : 
                   isActive ? "bg-primary animate-pulse" : "bg-muted/30"
                 )} 
               />
@@ -58,9 +58,9 @@ export const OnboardingProgress = () => {
                   className={cn(
                     "flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-all duration-500 z-10",
                     isCompleted 
-                      ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(34,197,94,0.3)]" 
+                      ? "bg-primary text-primary-foreground" 
                       : isActive 
-                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110 shadow-[0_0_20px_rgba(34,197,94,0.4)]" 
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110" 
                         : "bg-muted text-muted-foreground border-2 border-transparent group-hover:border-primary/30"
                   )}
                 >
@@ -82,7 +82,7 @@ export const OnboardingProgress = () => {
                 <div 
                   className={cn(
                     "h-[3px] w-full -mx-1 rounded-full transition-all duration-700 ease-in-out",
-                    isCompleted ? "bg-primary shadow-[0_0_10px_rgba(34,197,94,0.2)]" : "bg-muted/20"
+                    isCompleted ? "bg-primary" : "bg-muted/20"
                   )} 
                 />
               )}

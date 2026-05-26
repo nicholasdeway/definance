@@ -83,7 +83,7 @@ export function PricingSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative bg-card border border-border rounded-[2rem] shadow-2xl overflow-hidden"
+            className="relative bg-card border border-border rounded-[2rem] shadow-md overflow-hidden"
           >
             {/* Top Subtle Glow */}
             <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />

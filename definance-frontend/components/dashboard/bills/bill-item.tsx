@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { 
-  MoreHorizontal, 
-  Trash2, 
+import {
+  MoreHorizontal,
+  Trash2,
   CheckCircle2,
   TrendingUp,
   Eye,
@@ -69,7 +69,7 @@ export const BillItem = ({
   const categoryIcon = (realCategory?.icon && realCategory.icon !== "MoreHorizontal") ? realCategory.icon : conta.categoria
 
   // Formata data reduzida (DD/MM/YYYY -> DD/MM/YY)
-  const dataExibicao = conta.vencimento !== "—" 
+  const dataExibicao = conta.vencimento !== "—"
     ? (isMobile ? conta.vencimento.slice(0, 5) + "/" + conta.vencimento.slice(8, 10) : conta.vencimento)
     : "—"
 
@@ -143,13 +143,13 @@ export const BillItem = ({
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className={cn(
             "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-background flex-shrink-0 border border-border/50 shadow-sm transition-colors",
-            isPaid ? "text-primary border-primary/20 bg-primary/5" : 
-            isOverdue ? "text-destructive border-destructive/20 bg-destructive/5" : 
-            "text-amber-500 border-amber-500/20 bg-amber-500/5"
+            isPaid ? "text-primary border-primary/20 bg-primary/5" :
+              isOverdue ? "text-destructive border-destructive/20 bg-destructive/5" :
+                "text-amber-500 border-amber-500/20 bg-amber-500/5"
           )}>
             <CategoryIcon name={categoryIcon} className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          
+
           <div className="min-w-0 flex-1 flex flex-col justify-center">
             <div className="flex items-center gap-1.5 overflow-hidden mb-0.5 sm:mb-0">
               <h4 className={cn(
@@ -164,7 +164,7 @@ export const BillItem = ({
                 </Badge>
               )}
             </div>
-            
+
             {/* Vencimento e Categoria (Apenas Desktop aqui) */}
             <div className="hidden sm:flex items-center gap-2 leading-tight">
               {conta.rawDueDate ? (
@@ -199,7 +199,7 @@ export const BillItem = ({
 
       {/* --- CAMADA 3 (MOBILE BOT / DESKTOP RIGHT) --- */}
       <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto shrink-0 mt-0.5 sm:mt-0">
-        
+
         {/* Aviso Canto Esquerdo (Mobile Only) */}
         <div className="sm:hidden">
           {!conta.rawDueDate ? (
@@ -272,18 +272,34 @@ export const BillItem = ({
             {isPaid ? (
               <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] sm:text-[10px] h-4 sm:h-5">Paga</Badge>
             ) : isOverdue ? (
-              <Badge variant="destructive" className="text-[9px] sm:text-[10px] h-4 sm:h-5">{Math.abs(conta.dias)}d atrasada</Badge>
+              <>
+                <Badge variant="destructive" className="text-[9px] sm:text-[10px] h-4 sm:h-5">{Math.abs(conta.dias)}d atrasada</Badge>
+                <Badge
+                  onClick={() => onPay(conta)}
+                  className="bg-primary text-primary-foreground border-primary/20 text-[8px] sm:text-[9px] font-black uppercase h-5 sm:h-6 px-3 rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg shadow-primary/10"
+                >
+                  PAGAR
+                </Badge>
+              </>
             ) : !conta.rawDueDate ? (
-              <Badge 
+              <Badge
                 onClick={() => onEdit(conta)}
-                className="bg-amber-500 text-amber-950 border-amber-500/20 text-[8px] sm:text-[9px] font-black uppercase h-5 sm:h-6 px-3 rounded-full cursor-pointer hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/10"
+                className="bg-primary/70 text-amber-950 border-primary/20 text-[8px] sm:text-[9px] font-semibold uppercase h-5 sm:h-6 px-3 rounded-full cursor-pointer hover:bg-primary transition-colors shadow-lg shadow-primary/10"
               >
                 CONFIGURAR
               </Badge>
             ) : (
-              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] sm:text-[10px] h-4 sm:h-5">
-                {conta.dias === 0 ? "Hoje" : `${conta.dias}d`}
-              </Badge>
+              <>
+                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] sm:text-[10px] h-4 sm:h-5">
+                  {conta.dias === 0 ? "Hoje" : `${conta.dias}d`}
+                </Badge>
+                <Badge
+                  onClick={() => onPay(conta)}
+                  className="bg-primary/70 text-amber-950 border-primary/20 text-[8px] sm:text-[9px] font-semibold uppercase h-5 sm:h-6 px-3 rounded-full cursor-pointer hover:bg-primary transition-colors shadow-lg shadow-primary/10"
+                >
+                  PAGAR
+                </Badge>
+              </>
             )}
           </div>
         </div>

@@ -39,7 +39,7 @@ export const CategoryAnalysisChart = ({
         )}>
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
-              <BarChart data={data} layout="vertical" margin={{ left: -20, right: 20 }}>
+              <BarChart data={data} layout="vertical" margin={{ left: -20, right: 45, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" horizontal={false} />
                 <XAxis 
                   type="number"
