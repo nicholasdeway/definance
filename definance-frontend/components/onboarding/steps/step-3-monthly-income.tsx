@@ -209,6 +209,18 @@ export const Step3MonthlyIncome = () => {
                   </div>
                 </div>
 
+                {inc.frequencia === IncomeFrequency.VARIAVEL && (
+                  <div className="bg-amber-500/5 dark:bg-amber-500/[0.02] border border-amber-500/20 dark:border-amber-500/10 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-4 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-3.5 sm:h-3.5 w-3.5 sm:w-3.5 text-amber-500" />
+                      <span className="text-[9px] sm:text-[9.5px] font-bold sm:font-black text-amber-600 dark:text-amber-500 uppercase tracking-wider">Aviso de Lançamento</span>
+                    </div>
+                    <p className="text-[10px] sm:text-[10.5px] text-muted-foreground/90 leading-relaxed">
+                      Como esta renda possui frequência variável (sem dia fixo de recebimento), ela será lançada automaticamente no 1º dia do mês atual (ou no mês de criação da conta).
+                    </p>
+                  </div>
+                )}
+
                 {/* Detalhes do Ciclo */}
                 {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
                   <div

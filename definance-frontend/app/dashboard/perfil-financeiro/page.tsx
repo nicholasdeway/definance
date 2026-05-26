@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -32,6 +33,11 @@ import { BillsAlert } from "@/components/dashboard/bills-alert"
 function FinancialProfileContent() {
   const { syncStatus, isLoadingRecovery, setCurrentStep } = useOnboarding()
   const [isGlobalSaving, setIsGlobalSaving] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useOnboardingRecovery()
   useAutoSave()
@@ -62,17 +68,17 @@ function FinancialProfileContent() {
 
   return (
     <div className="relative space-y-4 md:space-y-6">
-      {/* Overlay de Bloqueio Minimalista */}
-      {isGlobalSaving && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/30 backdrop-blur-[2px] animate-in fade-in duration-300">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Sincronizando</span>
-              <span className="text-[9px] text-muted-foreground font-medium opacity-80">Aguarde um instante</span>
+      {isGlobalSaving && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45">
+          <div className="bg-card border border-border p-4 rounded-xl flex flex-col items-center gap-3 max-w-[180px] w-[90%] text-center">
+            <Spinner className="h-5 w-5 text-primary" />
+            <div className="space-y-0.5">
+              <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-primary">Sincronizando</span>
+              <span className="block text-[9px] text-muted-foreground font-medium opacity-70">Aguarde um instante</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
