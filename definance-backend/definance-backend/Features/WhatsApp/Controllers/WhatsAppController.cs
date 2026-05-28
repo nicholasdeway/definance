@@ -11,6 +11,7 @@ namespace definance_backend.Features.WhatsApp.Controllers
     {
         private readonly IWhatsAppService _whatsAppService;
         private readonly ILogger<WhatsAppController> _logger;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> ProcessedMessages = new();
 
         public WhatsAppController(IWhatsAppService whatsAppService, ILogger<WhatsAppController> logger)
         {
@@ -49,6 +50,26 @@ namespace definance_backend.Features.WhatsApp.Controllers
             var from = form["From"].ToString();
             var body = form["Body"].ToString();
             var mediaUrl = form["MediaUrl0"].ToString();
+            var messageSid = form["MessageSid"].ToString();
+
+            if (!string.IsNullOrEmpty(messageSid))
+            {
+                // Limpa chaves com mais de 10 minutos
+                var cutoff = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(10));
+                foreach (var kvp in ProcessedMessages)
+                {
+                    if (kvp.Value < cutoff)
+                    {
+                        ProcessedMessages.TryRemove(kvp.Key, out _);
+                    }
+                }
+
+                if (!ProcessedMessages.TryAdd(messageSid, DateTime.UtcNow))
+                {
+                    _logger.LogWarning("Mensagem com MessageSid {MessageSid} duplicada ignorada (provável retry do webhook).", messageSid);
+                    return Content("<Response></Response>", "text/xml");
+                }
+            }
 
             if (string.IsNullOrEmpty(from))
             {
