@@ -3,7 +3,6 @@ import { LucideIcon } from "lucide-react"
 export enum IncomeFrequency {
   FIXO_MENSAL = "fixo_mensal",
   QUINZENAL = "quinzenal",
-  VARIAVEL = "variavel",
   SEMANAL = "semanal"
 }
 
