@@ -274,7 +274,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                     value={inc.valor ? Math.round(Number(inc.valor) * 100).toString() : ""}
                     onChange={(value) => updateIncomeValue(typeInfo.value, value)}
                     className={cn(
-                      "h-9 text-sm bg-muted/5 focus:bg-background transition-colors",
+                      "h-10 text-base bg-muted/5 focus:bg-background transition-colors cursor-pointer",
                       wasAttempted && (!inc.valor || inc.valor === 0) && "border-destructive/50"
                     )}
                   />
@@ -293,7 +293,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                 {/* Frequencia */}
                 <div className="space-y-1.5">
                   <Label className="text-[9px] uppercase text-muted-foreground/60 tracking-widest">Frequência</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {incomeFrequencies.map(freq => {
                       const isSelected = inc.frequencia === freq.value
                       return (
@@ -302,10 +302,10 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                           type="button"
                           onClick={() => updateIncome(typeInfo.value, "frequencia", freq.value)}
                           className={cn(
-                            "text-center text-[9px] py-1.5 px-1 rounded-lg border transition-all duration-200",
+                            "text-center text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold uppercase tracking-tighter transition-all duration-200 cursor-pointer",
                             isSelected
                               ? "bg-primary/70 text-primary-foreground border-primary/70 shadow-sm"
-                              : "bg-muted/30 border-transparent text-muted-foreground/70 hover:bg-muted/50 cursor-pointer"
+                              : "bg-muted/30 border-transparent text-muted-foreground/70 hover:bg-muted/50"
                           )}
                         >
                           {freq.label}
@@ -336,7 +336,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                           value={inc.diaSemana || ""}
                           onValueChange={(value) => updateIncome(typeInfo.value, "diaSemana", value)}
                         >
-                          <SelectTrigger className="w-full h-9 bg-background/50 border-primary/20 text-xs">
+                          <SelectTrigger className="w-full h-10 bg-background/50 border-primary/20 text-sm">
                             <SelectValue placeholder="Selecione o dia" />
                           </SelectTrigger>
                           <SelectContent>
@@ -358,7 +358,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                             <Button
                               variant="outline"
                               className={cn(
-                                "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                "w-full h-10 justify-start text-left font-normal text-sm bg-background border-primary/20 hover:border-primary/40",
                                 !inc.diasRecebimento && "text-muted-foreground"
                               )}
                             >
@@ -396,7 +396,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                  "w-full h-10 justify-start text-left font-normal text-sm bg-background border-primary/20 hover:border-primary/40",
                                   !inc.diasRecebimento?.split(',')[0] && "text-muted-foreground"
                                 )}
                               >
@@ -434,7 +434,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-full h-9 justify-start text-left font-normal text-xs bg-background border-primary/20 hover:border-primary/40",
+                                  "w-full h-10 justify-start text-left font-normal text-sm bg-background border-primary/20 hover:border-primary/40",
                                   !inc.diasRecebimento?.split(',')[1] && "text-muted-foreground"
                                 )}
                               >

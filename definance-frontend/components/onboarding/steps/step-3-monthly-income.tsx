@@ -187,7 +187,7 @@ export const Step3MonthlyIncome = () => {
                     wasAttempted={wasAttempted}
                     className="text-[10px] sm:text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider"
                   />
-                  <div className="grid grid-cols-2 gap-2 sm:gap-2">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-2">
                     {incomeFrequencies.map(freq => {
                       const isSelected = inc.frequencia === freq.value
                       return (
