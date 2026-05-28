@@ -109,7 +109,7 @@ function FinancialProfileContent() {
       <BillsAlert />
       <div className="grid gap-6">
         <Tabs defaultValue="renda" onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-0 bg-transparent border-none gap-2 mb-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-0 bg-transparent border-none gap-2">
             <TabsTrigger value="renda" className="text-[10px] py-2.5 px-2 leading-tight rounded-lg border font-bold transition-all uppercase tracking-tighter data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/50 data-[state=active]:shadow-sm bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 flex items-center justify-center gap-2">
               <TrendingUp className="h-3.5 w-3.5" />
               <span>Renda</span>

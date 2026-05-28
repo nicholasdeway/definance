@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/currency"
 import { format, parseISO, differenceInDays, isBefore, isAfter } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { LucideIcon, Plane, Car, Home, GraduationCap, Shield, Star } from "lucide-react"
+import { LucideIcon, Plane, Car, Home, GraduationCap, Shield, Star, Heart } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
 
 interface GoalCardProps {
@@ -39,6 +39,7 @@ const CATEGORIAS: Categoria[] = [
   { id: "moradia",  label: "Moradia",  icon: Home,          cor: "text-primary",    bgCor: "bg-primary/10"    },
   { id: "educacao", label: "Educação", icon: GraduationCap, cor: "text-red-400",    bgCor: "bg-red-400/10"    },
   { id: "reserva",  label: "Reserva",  icon: Shield,        cor: "text-yellow-400", bgCor: "bg-yellow-400/10" },
+  { id: "doacao",   label: "Doação",   icon: Heart,         cor: "text-pink-400",   bgCor: "bg-pink-400/10"   },
   { id: "outros",   label: "Outros",   icon: Star,          cor: "text-orange-400", bgCor: "bg-orange-400/10" },
 ]
 

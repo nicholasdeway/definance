@@ -34,7 +34,8 @@ import {
   Ship,
   Helicopter,
   Plane,
-  Plus
+  Plus,
+  Heart
 } from "lucide-react"
 import { Step, IncomeFrequency } from "./types"
 
@@ -76,6 +77,7 @@ export const fixedExpenseCategories = [
   { key: "alimentacao", label: "Alimentação", icon: Utensils, placeholder: "R$ 800,00" },
   { key: "saude", label: "Saúde", icon: HeartPulse, placeholder: "R$ 300,00" },
   { key: "educacao", label: "Educação", icon: BookOpen, placeholder: "R$ 500,00" },
+  { key: "doacao", label: "Doação", icon: Heart, placeholder: "R$ 100,00" },
 ]
 
 export const vehicleTypes = [

@@ -182,7 +182,8 @@ namespace definance_backend.Features.Onboarding.Services
             { "transporte", "Transporte" },
             { "alimentacao", "Alimentação" },
             { "saude", "Saúde" },
-            { "educacao", "Educação" }
+            { "educacao", "Educação" },
+            { "doacao", "Doação" }
         };
 
         private string GetExpenseLabel(string key)
@@ -774,7 +775,8 @@ namespace definance_backend.Features.Onboarding.Services
                     Category = expense.Key == "educacao" ? "Educação" : 
                                expense.Key == "saude" ? "Saúde" : 
                                expense.Key == "alimentacao" ? "Alimentação" :
-                               expense.Key == "transporte" ? "Transporte" : "Moradia",
+                               expense.Key == "transporte" ? "Transporte" : 
+                               expense.Key == "doacao" ? "Doação" : "Moradia",
                     BillType = "Fixa",
                     Status = "Pendente",
                     IsRecurring = true,
