@@ -950,7 +950,7 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
             )
         except Exception as e:
             logger.error(f"Erro na completion da IA: {str(e)}")
-            return "Desculpe, não consegui processar sua mensagem agora. Pode tentar novamente em instantes? 🧠🤖"
+            return "Desculpe, não consegui processar sua mensagem agora. Pode tentar novamente em instantes ou ser mais específico(a)? 🧠🤖"
 
         msg = resp.choices[0].message
         tool_calls = msg.tool_calls
