@@ -98,8 +98,7 @@ export const vehicleTypes = [
 export const incomeFrequencies = [
   { value: IncomeFrequency.FIXO_MENSAL, label: "Mensal" },
   { value: IncomeFrequency.QUINZENAL, label: "Quinzenal (Adiantamento + Pagamento)" },
-  { value: IncomeFrequency.SEMANAL, label: "Semanal (Por semana)" },
-  { value: IncomeFrequency.VARIAVEL, label: "Variável / Sem data fixa" }
+  { value: IncomeFrequency.SEMANAL, label: "Semanal (Por semana)" }
 ]
 
 const numberToWords = (n: number) => {

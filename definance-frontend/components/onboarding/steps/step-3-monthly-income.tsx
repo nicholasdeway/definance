@@ -150,13 +150,13 @@ export const Step3MonthlyIncome = () => {
                 <div className="space-y-1.5 sm:space-y-2">
                   <div className="flex items-center justify-between">
                     <FieldLabel
-                      label={inc.frequencia === IncomeFrequency.VARIAVEL ? "Média Mensal" : "Valor"}
+                      label="Valor"
                       required
                       isEmpty={!inc.valor || inc.valor === 0}
                       wasAttempted={wasAttempted}
                       className="text-[10px] sm:text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider"
                     />
-                    {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && inc.frequencia !== IncomeFrequency.VARIAVEL && (
+                    {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && (
                       <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-primary/10">
                         <span className="text-[8px] font-bold text-primary uppercase">Mês:</span>
                         <span className="text-[9px] sm:text-[9.5px] font-bold text-primary">
@@ -209,17 +209,7 @@ export const Step3MonthlyIncome = () => {
                   </div>
                 </div>
 
-                {inc.frequencia === IncomeFrequency.VARIAVEL && (
-                  <div className="bg-amber-500/5 dark:bg-amber-500/[0.02] border border-amber-500/20 dark:border-amber-500/10 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-4 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-3.5 sm:h-3.5 w-3.5 sm:w-3.5 text-amber-500" />
-                      <span className="text-[9px] sm:text-[9.5px] font-bold sm:font-black text-amber-600 dark:text-amber-500 uppercase tracking-wider">Aviso de Lançamento</span>
-                    </div>
-                    <p className="text-[10px] sm:text-[10.5px] text-muted-foreground/90 leading-relaxed">
-                      Como esta renda possui frequência variável (sem dia fixo de recebimento), ela será lançada automaticamente no 1º dia do mês atual (ou no mês de criação da conta).
-                    </p>
-                  </div>
-                )}
+
 
                 {/* Detalhes do Ciclo */}
                 {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
