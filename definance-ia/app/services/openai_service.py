@@ -59,7 +59,7 @@ def get_system_prompt(categories: List[str]) -> str:
     }}
 
     9. IMPORTANTE sobre o campo "name" (Descrição da transação):
-       - Formate o nome de maneira legível em PORTUGUÊS, garantindo que a primeira letra seja maiúscula. Corrija erros de digitação, ortografia e adicione acentos se necessário (ex: 'frauda' vira 'Fralda', 'cafe' vira 'Café', 'almoco' vira 'Almoço', 'pao' vira 'Pão', 'agua' vira 'Água', 'gaz' vira 'Gás').
+       - Formate o nome de maneira legível em PORTUGUÊS, garantindo que a primeira letra seja maiúscula. É ABSOLUTAMENTE OBRIGATÓRIO identificar, corrigir erros de digitação/ortografia e aplicar a acentuação correta em português (ex: se o usuário disser 'cafe', mude para 'Café'; se disser 'pao', mude para 'Pão'; se disser 'almoco', mude para 'Almoço'; se disser 'agua', mude para 'Água'; se disser 'gaz', mude para 'Gás').
        - Corrija contrações informais e gírias para manter a descrição formal (ex: 'pra' vira 'para', 'pro' vira 'para o', 'vc' vira 'você').
        - NUNCA extraia apenas o nome próprio de uma pessoa (como "Celso") como o campo "name" principal da transação. O campo "name" deve refletir o que foi comprado ou pago (ex: se o texto diz "fralda pro celso", o name deve ser "Fralda para o Celso" ou "Fralda", mas nunca apenas "Celso").
        - Preserve nomes de marcas/empresas (ex: 'Steam', 'Uber', 'Ifood').
