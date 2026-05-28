@@ -56,14 +56,14 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
 - Responda simpática e diretamente. Máximo 1 emoji.
 - Formate valores em BRL (R$ X.XXX,XX). NUNCA envie ponto como decimal (ex: use R$ 35,50, nunca 35.50).
 - Use *texto* para negrito (nunca ** ou `). Ex: *Valor:* R$ 50,00. Use " | " para separar campos.
-- Descrição da transação: 1ª letra maiúscula, corrija erros e acentos (ex: 'cafe' -> 'Café'). Corrija gírias (ex: 'pra' -> 'para', 'vc' -> 'você'). NUNCA use apenas nome de pessoa (ex: 'fralda pro celso' -> 'Fralda para o Celso', não 'Celso'). Preserve marcas ('Steam', 'Uber').
+- Descrição da transação: 1ª letra maiúscula. É ABSOLUTAMENTE OBRIGATÓRIO identificar e aplicar a acentuação correta em português em TODOS os nomes de transação que você registrar (ex: se o usuário disser 'cafe', registre 'Café'; se disser 'pao', registre 'Pão'; se disser 'almoco', registre 'Almoço'; se disser 'agua', registre 'Água'). Corrija erros de digitação e gírias (ex: 'pra' -> 'para'). NUNCA use apenas nome de pessoa (ex: 'fralda pro celso' -> 'Fralda para o Celso', não 'Celso'). Preserve marcas ('Steam', 'Uber').
 - Limites de categoria: se a transação retornar limite_mensal e porcentagem_limite, envie a resposta em 2 partes com "[SPLIT]" em linha própria:
   1. Confirmação do registro.
   2. Exatamente: Isso representa [porcentagem_limite]% do seu orçamento de [categoria_nome em minúsculo]. Fique de olho no teto mensal configurado para não se enrolar, em!
 
 # REGRAS E FERRAMENTAS
 1. Chame a ferramenta antes de responder.
-2. registrar_movimentacao: exige VALOR. Tipo é Entrada ou Saida. NUNCA invente, estime ou alucine o valor se ele não foi dito pelo usuário (ex: se disser "comprei uma skin no cs2" sem dizer quanto custou, você deve perguntar o valor amigavelmente antes de chamar a ferramenta).
+2. registrar_movimentacao: exige VALOR. Tipo é Entrada ou Saida. NUNCA invente, estime ou alucine o valor se ele não foi dito pelo usuário (ex: se disser "comprei uma roupa no shopping" sem dizer quanto custou, você deve perguntar o valor amigavelmente antes de chamar a ferramenta).
 3. registrar_conta: exige VALOR e VENCIMENTO.
 4. Baixa de conta: `listar_contas`. Se achar correspondente pendente, pergunte se quer dar baixa. Após confirmação, `pagar_conta`.
 5. Status: use "Pago" para compras/gastos que já ocorreram (uso de verbos no passado/presente como "comprei", "gastei", "paguei"). Use "Pendente" somente para contas futuras ou a pagar.
@@ -136,7 +136,7 @@ tools: List[ChatCompletionToolParam] = [
                 "type": "object",
                 "properties": {
                     "tipo": {"type": "string", "enum": ["Entrada", "Saida"], "description": "Entrada ou Saida."},
-                    "nome": {"type": "string", "description": "Nome da transação."},
+                    "nome": {"type": "string", "description": "Nome da transação (Ex: 'Café', 'Almoço', 'Pão', 'Água'). IMPORTANTE: Identifique e aplique rigorosamente a acentuação correta e ortografia em português, capitalizando a primeira letra."},
                     "valor": {"type": "number", "description": "Valor numérico da transação. Obrigatório. Se o tipo for Saida e o valor for maior que 2000, NÃO chame esta ferramenta antes de pedir confirmação ao usuário e receber sua validação na mensagem subsequente."},
                     "categoria": {"type": "string", "description": "Categoria (obrigatória para Saida)."},
                     "data": {"type": "string", "description": "Data YYYY-MM-DD. Opcional."},
@@ -177,7 +177,7 @@ tools: List[ChatCompletionToolParam] = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "nome": {"type": "string", "description": "Nome da conta."},
+                    "nome": {"type": "string", "description": "Nome da conta (Ex: 'Água', 'Luz', 'Internet', 'Gás'). IMPORTANTE: Identifique e aplique rigorosamente a acentuação correta e ortografia em português, capitalizando a primeira letra."},
                     "valor": {"type": "number", "description": "Valor da conta. Se o valor for maior que 2000, NÃO chame esta ferramenta antes de pedir confirmação ao usuário e receber sua validação na mensagem subsequente."},
                     "categoria": {"type": "string", "description": "Categoria."},
                     "data_vencimento": {"type": "string", "description": "Vencimento YYYY-MM-DD."},

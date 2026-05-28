@@ -265,7 +265,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                 {/* Valor */}
                 <div className="space-y-1.5">
                   <Label className="text-[9px] uppercase text-muted-foreground/60 tracking-widest">
-                    {inc.frequencia === IncomeFrequency.VARIAVEL ? "Valor médio mensal" : "Valor do Salário / Pro-labore"}
+                    Valor do Salário / Pro-labore
                     {(!inc.valor || inc.valor === 0) && wasAttempted && <span className="text-destructive ml-1">*</span>}
                   </Label>
                   <CurrencyInput
@@ -280,7 +280,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                   />
 
                   {/* Resumo Mensal Estimado */}
-                  {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && inc.frequencia !== IncomeFrequency.VARIAVEL && (
+                  {!!inc.valor && inc.frequencia !== IncomeFrequency.FIXO_MENSAL && (
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/5 border border-primary/10 w-fit animate-in fade-in slide-in-from-left-2">
                       <span className="text-[10px] font-bold text-primary uppercase">Total Mensal:</span>
                       <span className="text-xs font-bold text-primary">
@@ -315,17 +315,7 @@ export const MonthlyIncomeSection = ({ onSavingStateChange }: { onSavingStateCha
                   </div>
                 </div>
 
-                {inc.frequencia === IncomeFrequency.VARIAVEL && (
-                  <div className="bg-amber-500/5 dark:bg-amber-500/[0.02] border border-amber-500/20 dark:border-amber-500/10 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider">Aviso de Lançamento</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/90 leading-relaxed">
-                      Atenção: Diferente do <span className="text-primary">Onboarding</span>, as alterações de renda feitas aqui no <span className="font-bold">Perfil Financeiro</span> passarão a valer a partir do <span className="text-primary">próximo mês</span>, mantendo o histórico do mês atual intacto.
-                    </p>
-                  </div>
-                )}
+
 
                 {/* Dias de Recebimento (Definance Helper) */}
                 {(inc.frequencia === IncomeFrequency.FIXO_MENSAL || inc.frequencia === IncomeFrequency.QUINZENAL || inc.frequencia === IncomeFrequency.SEMANAL) && (
