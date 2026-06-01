@@ -10,7 +10,7 @@ namespace definance_backend.Features.Onboarding.DTOs
         public List<IncomeDetailDto> Incomes { get; set; } = new();
         public Dictionary<string, decimal> SelectedExpenses { get; set; } = new();
         public List<CustomExpenseDto> CustomExpenses { get; set; } = new();
-        public Dictionary<string, BillLoanDto> BillLoans { get; set; } = new();
+
         public List<VehicleDto> Vehicles { get; set; } = new();
         public List<DebtDto> Debts { get; set; } = new();
     }
@@ -43,11 +43,7 @@ namespace definance_backend.Features.Onboarding.DTOs
         public decimal Valor { get; set; } = 0;
     }
 
-    public class BillLoanDto
-    {
-        public bool HasLoan { get; set; }
-        public decimal Valor { get; set; } = 0;
-    }
+
 
     public class VehicleDto
     {

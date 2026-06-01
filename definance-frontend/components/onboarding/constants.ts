@@ -124,8 +124,6 @@ export const ONBOARDING_ERRORS = {
     empty: (label: string) => `Informe um valor válido para ${label}`,
     customNoName: (index: number) => `O gasto personalizado número ${numberToWords(index)} precisa de um nome`,
     customNoValue: (name: string) => `Informe um valor válido para ${name}`,
-    loanEmpty: (label: string) => `Informe o valor da parcela do empréstimo para ${label}`,
-    loanConsistency: (label: string) => `O valor do empréstimo não pode ser maior que o valor total da conta (${label})`,
   },
   vehicles: {
     noType: (index: number) => `Selecione o tipo do veículo número ${numberToWords(index)}`,

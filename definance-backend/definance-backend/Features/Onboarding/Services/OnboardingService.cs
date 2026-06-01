@@ -114,7 +114,6 @@ namespace definance_backend.Features.Onboarding.Services
             if (expenseKey != null)
             {
                 data.SelectedExpenses.Remove(expenseKey);
-                data.BillLoans.Remove(expenseKey);
                 changed = true;
             }
 
@@ -230,7 +229,6 @@ namespace definance_backend.Features.Onboarding.Services
                     {
                         if (step4Data.SelectedExpenses != null) currentData.SelectedExpenses = step4Data.SelectedExpenses;
                         if (step4Data.CustomExpenses != null) currentData.CustomExpenses = step4Data.CustomExpenses;
-                        if (step4Data.BillLoans != null) currentData.BillLoans = step4Data.BillLoans;
                     }
                     break;
                 case 5:
@@ -782,22 +780,6 @@ namespace definance_backend.Features.Onboarding.Services
                     IsRecurring = true,
                     Description = $"Vindo do Perfil Financeiro ({label})"
                 });
-
-                if (dto.BillLoans != null && dto.BillLoans.TryGetValue(expense.Key, out var loan) && loan.HasLoan && loan.Valor > 0)
-                {
-                    newBills.Add(new Bill
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = userId,
-                        Name = $"{label} (Empréstimo)",
-                        Amount = loan.Valor,
-                        Category = "Dívidas",
-                        BillType = "Fixa",
-                        Status = "Pendente",
-                        IsRecurring = true,
-                        Description = $"Empréstimo vinculado à conta de {label}"
-                    });
-                }
             }
 
             if (dto.CustomExpenses != null)

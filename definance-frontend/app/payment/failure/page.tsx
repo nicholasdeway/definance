@@ -3,8 +3,10 @@
 import { Suspense } from "react"
 import { XCircle, ArrowLeft, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-provider"
 
 function FailureContent() {
+  const { user } = useAuth()
   const router = useRouter()
 
   return (
@@ -35,7 +37,7 @@ function FailureContent() {
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <button
-            onClick={() => router.push("/dashboard/perfil")}
+            onClick={() => router.push(user && !user.isPremium ? "/dashboard/checkout" : "/dashboard/perfil")}
             className="flex-1 bg-primary/70 text-primary-foreground hover:bg-primary font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
@@ -43,11 +45,11 @@ function FailureContent() {
           </button>
 
           <button
-            onClick={() => router.push("/dashboard/perfil")}
+            onClick={() => router.push(user && !user.isPremium ? "/dashboard/checkout" : "/dashboard/perfil")}
             className="flex-1 bg-muted hover:bg-muted/80 text-foreground border border-border font-semibold py-3 px-4 rounded-xl transition-all duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao Painel
+            Voltar
           </button>
         </div>
       </div>

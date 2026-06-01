@@ -255,7 +255,6 @@ namespace definance_backend.Features.Profiles.Services
                         {
                             onboardingDto.SelectedExpenses = new();
                             onboardingDto.CustomExpenses = new();
-                            onboardingDto.BillLoans = new();
                             onboardingDto.Vehicles = new();
                             onboardingDto.Debts = new();
                             updated = true;

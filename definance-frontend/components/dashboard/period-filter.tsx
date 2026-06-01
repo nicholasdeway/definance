@@ -123,6 +123,9 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
                 }}
                 locale={ptBR}
                 initialFocus
+                captionLayout="dropdown"
+                fromYear={new Date().getFullYear() - 10}
+                toYear={new Date().getFullYear() + 20}
               />
             </PopoverContent>
           </Popover>
@@ -155,6 +158,9 @@ export function PeriodFilter({ value, onChange, children }: PeriodFilterProps) {
                 }}
                 locale={ptBR}
                 initialFocus
+                captionLayout="dropdown"
+                fromYear={new Date().getFullYear() - 10}
+                toYear={new Date().getFullYear() + 20}
               />
             </PopoverContent>
           </Popover>

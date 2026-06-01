@@ -67,9 +67,16 @@ namespace definance_backend.Features.WhatsApp.Repositories
             const string query = @"
                 SELECT 
                     id AS ""Id"", 
+                    first_name AS ""FirstName"",
+                    last_name AS ""LastName"",
                     email AS ""Email"", 
                     phone AS ""Phone"",
-                    is_whatsapp_connected AS ""IsWhatsAppConnected"" 
+                    is_whatsapp_connected AS ""IsWhatsAppConnected"",
+                    is_active AS ""IsActive"",
+                    auth_provider AS ""AuthProvider"",
+                    provider_user_id AS ""ProviderUserId"",
+                    plan_type AS ""PlanType"",
+                    premium_until AS ""PremiumUntil""
                 FROM users
                 WHERE phone = @Phone 
                   AND is_whatsapp_connected = TRUE;
@@ -101,7 +108,9 @@ namespace definance_backend.Features.WhatsApp.Repositories
                     is_whatsapp_connected AS ""IsWhatsAppConnected"",
                     is_active AS ""IsActive"",
                     auth_provider AS ""AuthProvider"",
-                    provider_user_id AS ""ProviderUserId""
+                    provider_user_id AS ""ProviderUserId"",
+                    plan_type AS ""PlanType"",
+                    premium_until AS ""PremiumUntil""
                 FROM users
                 WHERE id = @Id;
             ";

@@ -83,8 +83,8 @@ export function MarqueeSection() {
   return (
     <section className="relative bg-muted/20 py-24 md:py-32 overflow-hidden border-y border-border/50">
       {/* Subtle Background Glows */}
-      <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full bg-primary/5 blur-[100px] -z-10" />
-      <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-primary/5 blur-[100px] -z-10" />
+      <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full -z-10 opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
+      <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full -z-10 opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
 
       <div className="container relative mb-16 px-4 md:px-6">
         <motion.div 

@@ -34,11 +34,11 @@ import { useAuth } from "@/lib/auth-provider"
 function OnboardingWizardContent() {
   const { currentStep, syncStatus, stepErrors, setStepErrors, formTopRef, isLoadingRecovery } = useOnboarding()
   const { user } = useAuth()
-  
+
   // Initialize Hooks
   useOnboardingRecovery()
   useAutoSave()
-  
+
   if (isLoadingRecovery || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -75,7 +75,7 @@ function OnboardingWizardContent() {
   return (
     <div className="container flex min-h-screen flex-col items-center justify-center px-4 pt-26 pb-12">
       <SiteHeader variant="onboarding" />
-      
+
       <Card className={cn(
         "w-full border-border/50 bg-card transition-all duration-700 ease-in-out overflow-hidden",
         (currentStep >= 1 && currentStep <= 6) ? "max-w-2xl" : "max-w-xl"
@@ -121,12 +121,12 @@ function OnboardingWizardContent() {
           "relative transition-all duration-500 p-4 sm:p-6 pt-0 sm:pt-0 space-y-0"
         )}>
           <div ref={formTopRef} className="scroll-mt-32" />
-          
+
           <AnimatePresence mode="wait">
             {stepErrors.length > 0 && (
-              <ValidationErrorBox 
-                errors={stepErrors} 
-                onClose={() => setStepErrors([])} 
+              <ValidationErrorBox
+                errors={stepErrors}
+                onClose={() => setStepErrors([])}
               />
             )}
           </AnimatePresence>
@@ -135,12 +135,12 @@ function OnboardingWizardContent() {
             "transition-all duration-500",
             (currentStep >= 1 && currentStep <= 3) ? "min-h-0 sm:min-h-[160px]" : "min-h-[300px]"
           )}>
-             {currentStep === 1 && <Step1Motivations />}
-             {currentStep === 2 && <Step2IncomeType />}
-             {currentStep === 3 && <Step3MonthlyIncome />}
-             {currentStep === 4 && <Step4FixedExpenses />}
-             {currentStep === 5 && <Step5Vehicles />}
-             {currentStep === 6 && <Step6Debts />}
+            {currentStep === 1 && <Step1Motivations />}
+            {currentStep === 2 && <Step2IncomeType />}
+            {currentStep === 3 && <Step3MonthlyIncome />}
+            {currentStep === 4 && <Step4FixedExpenses />}
+            {currentStep === 5 && <Step5Vehicles />}
+            {currentStep === 6 && <Step6Debts />}
           </div>
 
           <OnboardingNavigation />
@@ -148,7 +148,7 @@ function OnboardingWizardContent() {
       </Card>
 
       <footer className="mt-8 text-center text-muted-foreground/60 text-xs">
-        <p>© 2026 Definance • Gestão Financeira</p>
+        <p>© 2026 Definance • Gestão Financeira Inteligente</p>
         <p className="mt-1 italic">Seus dados estão protegidos e criptografados.</p>
       </footer>
     </div>

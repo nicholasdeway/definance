@@ -3,9 +3,6 @@ using System.Text.RegularExpressions;
 using definance_backend.Domain.Entities;
 using definance_backend.Features.WhatsApp.DTOs;
 using definance_backend.Features.WhatsApp.Repositories;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
 using System.Text.Json;
 using System.Text;
 
@@ -32,13 +29,6 @@ namespace definance_backend.Features.WhatsApp.Services
             _logger = logger;
             _jwtService = jwtService;
 
-            var accountSid = _configuration["Twilio:AccountSID"];
-            var authToken = _configuration["Twilio:AuthToken"];
-            
-            if (!string.IsNullOrEmpty(accountSid) && !string.IsNullOrEmpty(authToken))
-            {
-                TwilioClient.Init(accountSid, authToken);
-            }
         }
 
         public async Task<WhatsAppPairingResponseDto> GeneratePairingCodeAsync(Guid userId)
@@ -113,7 +103,7 @@ namespace definance_backend.Features.WhatsApp.Services
             };
         }
 
-        public async Task HandleTwilioWebhookAsync(string fromPhone, string body, string? mediaUrl = null)
+        public async Task HandleZApiWebhookAsync(string fromPhone, string body, string? mediaUrl = null)
         {
             try 
             {
@@ -173,45 +163,66 @@ namespace definance_backend.Features.WhatsApp.Services
                     return;
                 }
 
+                // Verificar se o plano Premium está ativo
+                if (!user.IsPremium)
+                {
+                    await SendWhatsAppMessageAsync(fromPhone, 
+                        "⚠️ Sua assinatura Premium expirou ou o seu período de teste acabou.\n\n" +
+                        "Para continuar lançando seus gastos e utilizando a inteligência artificial pelo WhatsApp, ative sua assinatura em:\n" +
+                        "https://definance.com.br/dashboard/checkout");
+                    return;
+                }
+
                 // 3. Send to AI Service
                 await ForwardToAIServiceAsync(user.Id, normalizedPhone, text, mediaUrl);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error handling Twilio webhook");
+                _logger.LogError(ex, "Error handling Z-API webhook");
             }
         }
 
         public async Task SendWhatsAppMessageAsync(string to, string message)
         {
-            var twilioNumber = _configuration["Twilio:PhoneNumber"];
-            
-            if (string.IsNullOrEmpty(twilioNumber))
+            var instanceId = _configuration["ZApi:InstanceId"];
+            var token = _configuration["ZApi:Token"];
+
+            if (string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(token))
             {
-                _logger.LogWarning("Twilio phone number is not configured.");
+                _logger.LogWarning("Z-API instanceId or token is not configured.");
                 return;
             }
 
-            // Must include whatsapp: prefix and a '+' sign before the number if it doesn't have one
-            var rawTo = to.Replace("whatsapp:", "").Trim();
-            if (!rawTo.StartsWith("+")) rawTo = "+" + rawTo;
-            var toNum = $"whatsapp:{rawTo}";
-
-            var rawFrom = twilioNumber.Replace("whatsapp:", "").Trim();
-            if (!rawFrom.StartsWith("+")) rawFrom = "+" + rawFrom;
-            var fromNum = $"whatsapp:{rawFrom}";
+            var cleanPhone = Regex.Replace(to.Replace("whatsapp:", ""), @"\D", "");
+            var url = $"https://api.z-api.io/instances/{instanceId}/token/{token}/send-text";
 
             try
             {
-                await MessageResource.CreateAsync(
-                    body: message,
-                    from: new PhoneNumber(fromNum),
-                    to: new PhoneNumber(toNum)
-                );
+                var payload = new
+                {
+                    phone = cleanPhone,
+                    message = message
+                };
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+                var clientToken = _configuration["ZApi:ClientToken"];
+                if (!string.IsNullOrEmpty(clientToken))
+                {
+                    request.Headers.Add("Client-Token", clientToken);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to send WhatsApp message via Z-API. Status: {Status}, Error: {Error}", response.StatusCode, errorContent);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send WhatsApp message");
+                _logger.LogError(ex, "Failed to send WhatsApp message via Z-API");
             }
         }
 
