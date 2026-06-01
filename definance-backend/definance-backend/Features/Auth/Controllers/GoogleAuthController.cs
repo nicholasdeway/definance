@@ -207,8 +207,11 @@ namespace definance_backend.Features.Auth.Controllers
                 if (string.IsNullOrWhiteSpace(user.ProviderEmail))
                     user.ProviderEmail = emailNorm;
 
-                if (!string.IsNullOrWhiteSpace(picture))
+                if (!string.IsNullOrWhiteSpace(picture) && 
+                    (string.IsNullOrWhiteSpace(user.PictureUrl) || user.PictureUrl.Contains("googleusercontent.com")))
+                {
                     user.PictureUrl = picture;
+                }
 
                 if (!user.IsActive)
                 {

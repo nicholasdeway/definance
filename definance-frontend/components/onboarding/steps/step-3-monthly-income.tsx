@@ -9,13 +9,8 @@ import { incomeTypes, incomeFrequencies } from "../constants"
 import { IncomeDetail, IncomeFrequency } from "../types"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { parseCurrencyInput, formatCurrency } from "@/lib/currency"
-import { format, parseISO, isValid } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { formatDateBR, generateId } from "@/lib/utils"
+import { DatePicker } from "@/components/ui/date-picker"
+import { generateId } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -25,15 +20,6 @@ import {
 } from "@/components/ui/select"
 
 export const Step3MonthlyIncome = () => {
-  const safeParseISO = (dateStr: string | undefined | null) => {
-    if (!dateStr) return undefined
-    try {
-      const date = parseISO(dateStr)
-      return isValid(date) ? date : undefined
-    } catch (e) {
-      return undefined
-    }
-  }
 
   const {
     selectedIncomeTypes,
@@ -253,93 +239,40 @@ export const Step3MonthlyIncome = () => {
                           </SelectContent>
                         </Select>
                       ) : inc.frequencia === IncomeFrequency.FIXO_MENSAL ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full h-9 justify-start text-left font-bold text-[11px] bg-muted/30 dark:bg-white/[0.04] border-border/50 dark:border-primary/10 rounded-lg hover:bg-muted/50 dark:hover:bg-white/[0.06] transition-all",
-                                !inc.diasRecebimento && "text-muted-foreground",
-                                wasAttempted && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "") && "border-destructive/30"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary/60" />
-                              {safeParseISO(inc.diasRecebimento) ? formatDateBR(inc.diasRecebimento) : <span>Definir data</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={safeParseISO(inc.diasRecebimento)}
-                              onSelect={(date) => {
-                                if (date && isValid(date)) {
-                                  updateIncome(typeInfo.value, "diasRecebimento", format(date, "yyyy-MM-dd"))
-                                }
-                              }}
-                              locale={ptBR}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <DatePicker
+                          date={inc.diasRecebimento}
+                          onChange={(date) => updateIncome(typeInfo.value, "diasRecebimento", date)}
+                          className={cn(
+                            "h-9 bg-muted/30 dark:bg-white/[0.04] border-border/50 dark:border-primary/10 rounded-lg",
+                            wasAttempted && (!inc.diasRecebimento || inc.diasRecebimento.trim() === "") && "border-destructive/30"
+                          )}
+                          placeholder="Definir data"
+                        />
                       ) : (
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full h-8 justify-start text-left font-bold text-[10px] bg-white/[0.04] border-primary/10 rounded-lg px-2",
-                                    !inc.diasRecebimento?.split(',')[0] && "text-muted-foreground"
-                                  )}
-                                >
-                                  {inc.diasRecebimento?.split(',')[0] ? formatDateBR(inc.diasRecebimento.split(',')[0]) : <span>Data 1</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={safeParseISO(inc.diasRecebimento?.split(',')[0])}
-                                  onSelect={(date) => {
-                                    if (date && isValid(date)) {
-                                      const dates = inc.diasRecebimento?.split(',') || ["", ""]
-                                      updateIncome(typeInfo.value, "diasRecebimento", `${format(date, "yyyy-MM-dd")},${dates[1] || ""}`)
-                                    }
-                                  }}
-                                  locale={ptBR}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                            <DatePicker
+                              date={inc.diasRecebimento?.split(',')[0]}
+                              onChange={(date) => {
+                                const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                updateIncome(typeInfo.value, "diasRecebimento", `${date},${dates[1] || ""}`)
+                              }}
+                              className="h-8 bg-white/[0.04] border-primary/10 rounded-lg w-full"
+                              placeholder="Data 1"
+                              size="sm"
+                            />
                           </div>
                           <div className="space-y-1">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full h-8 justify-start text-left font-bold text-[10px] bg-white/[0.04] border-primary/10 rounded-lg px-2",
-                                    !inc.diasRecebimento?.split(',')[1] && "text-muted-foreground"
-                                  )}
-                                >
-                                  {inc.diasRecebimento?.split(',')[1] ? formatDateBR(inc.diasRecebimento.split(',')[1]) : <span>Data 2</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={safeParseISO(inc.diasRecebimento?.split(',')[1])}
-                                  onSelect={(date) => {
-                                    if (date && isValid(date)) {
-                                      const dates = inc.diasRecebimento?.split(',') || ["", ""]
-                                      updateIncome(typeInfo.value, "diasRecebimento", `${dates[0] || ""},${format(date, "yyyy-MM-dd")}`)
-                                    }
-                                  }}
-                                  locale={ptBR}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                            <DatePicker
+                              date={inc.diasRecebimento?.split(',')[1]}
+                              onChange={(date) => {
+                                const dates = inc.diasRecebimento?.split(',') || ["", ""]
+                                updateIncome(typeInfo.value, "diasRecebimento", `${dates[0] || ""},${date}`)
+                              }}
+                              className="h-8 bg-white/[0.04] border-primary/10 rounded-lg w-full"
+                              placeholder="Data 2"
+                              size="sm"
+                            />
                           </div>
                         </div>
                       )}

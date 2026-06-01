@@ -10,7 +10,6 @@ export const useOnboardingValidation = () => {
     selectedIncomeTypes,
     selectedExpenses,
     customExpenses,
-    billLoans,
     vehicles,
     debts,
     setStepErrors,
@@ -75,14 +74,6 @@ export const useOnboardingValidation = () => {
 
           if (billValue === 0) {
             errors.push(ONBOARDING_ERRORS.expenses.empty(label))
-          }
-          if (billLoans[catKey]?.hasLoan) {
-            const loanValue = billLoans[catKey].valor || 0
-            if (loanValue === 0) {
-              errors.push(ONBOARDING_ERRORS.expenses.loanEmpty(label))
-            } else if (loanValue > billValue) {
-              errors.push(ONBOARDING_ERRORS.expenses.loanConsistency(label))
-            }
           }
         }
         for (let i = 0; i < customExpenses.length; i++) {
@@ -161,7 +152,6 @@ export const useOnboardingValidation = () => {
     incomes,
     selectedExpenses,
     customExpenses,
-    billLoans,
     vehicles,
     debts
   ])

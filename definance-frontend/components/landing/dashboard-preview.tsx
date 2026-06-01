@@ -41,7 +41,7 @@ function MobileDashboardContent() {
 
       {/* MOCKUP TOP DOCK (Replicating DashboardHeader Mobile) */}
       <div className="absolute top-8 left-3 right-3 z-50">
-        <div className="bg-background/40 backdrop-blur-2xl border border-white/10 rounded-full h-11 shadow-xl flex items-center justify-between px-2 relative">
+        <div className="bg-background/95 border border-white/10 rounded-full h-11 shadow-md flex items-center justify-between px-2 relative">
           <div className="flex items-center gap-1">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <Menu className="h-3.5 w-3.5 text-primary" />
@@ -69,7 +69,7 @@ function MobileDashboardContent() {
       </div>
 
       <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card mb-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 blur-2xl -mr-10 -mt-10 rounded-full" />
+        <div className="absolute top-0 right-0 w-20 h-20 -mr-10 -mt-10 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
         <CardContent className="p-5 pt-6">
           <p className="text-[10px] font-bold text-muted-foreground/80 mb-1 uppercase tracking-wider">Saldo em conta</p>
           <div className="text-2xl font-bold text-card-foreground tracking-tight">
@@ -127,7 +127,7 @@ function MobileDashboardContent() {
 
       {/* MOCKUP BOTTOM DOCK (Replicating MobileNav) */}
       <div className="absolute bottom-4 left-3 right-3 z-50">
-        <div className="bg-background/40 backdrop-blur-2xl border border-white/10 rounded-full h-14 shadow-2xl flex items-center justify-around px-2 relative">
+        <div className="bg-background/95 border border-white/10 rounded-full h-14 shadow-lg flex items-center justify-around px-2 relative">
           <div className="flex flex-col items-center justify-center h-10 w-12 text-primary">
             <Home className="h-4 w-4 mb-0.5" />
             <span className="text-[7px] font-bold uppercase tracking-tighter">Início</span>
@@ -155,7 +155,7 @@ function MobileMockup() {
     <div className="relative mx-auto border-border bg-card border-[8px] md:border-[10px] rounded-[2.5rem] md:rounded-[2.8rem] h-[480px] md:h-[580px] w-[240px] md:w-[280px] overflow-hidden">
       <div className="rounded-[1.8rem] md:rounded-[2.2rem] overflow-hidden w-full h-full bg-background relative border border-white/5">
         {/* Status Bar Simulation */}
-        <div className="absolute top-0 left-0 right-0 h-6 flex justify-between items-center px-8 z-10 bg-background/30 backdrop-blur-sm">
+        <div className="absolute top-0 left-0 right-0 h-6 flex justify-between items-center px-8 z-10 bg-background/80">
           <span className="text-[10px] font-bold text-foreground">9:41</span>
           <div className="flex gap-1 items-center">
             <div className="h-1 w-1 rounded-full bg-foreground/50" />
@@ -179,7 +179,7 @@ function DashboardContent() {
           </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
         </div>
-        <div className="flex items-center gap-2 bg-card/40 backdrop-blur-md border border-border/50 p-1 rounded-xl">
+        <div className="flex items-center gap-2 bg-card/90 border border-border/50 p-1 rounded-xl">
           <div className="flex items-center text-muted-foreground/50 px-3 border-r border-border/20">
             <CalendarDays className="h-4 w-4 mr-2" />
             <span className="text-[10px] font-bold uppercase tracking-widest">Período:</span>
@@ -398,12 +398,20 @@ export function DashboardPreview() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
+  const [scaleMultiplier, setScaleMultiplier] = useState(1)
 
   useEffect(() => {
     const checkSize = () => {
       const w = window.innerWidth
       setIsMobile(w < 768)
       setIsTablet(w >= 768 && w < 1100)
+
+      const h = window.innerHeight
+      if (h < 850) {
+        setScaleMultiplier(Math.max(0.6, h / 850))
+      } else {
+        setScaleMultiplier(1)
+      }
     }
     checkSize()
     window.addEventListener("resize", checkSize)
@@ -417,13 +425,12 @@ export function DashboardPreview() {
 
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 })
 
-  // Responsive Transforms
-  const webScale = useTransform(smoothProgress, [0, 0.4, 0.6, 1], isMobile ? [0.95, 1, 1, 0.95] : [0.85, 1, 1, 0.9])
+  // Responsive Transforms with Height-Aware Multiplier
+  const rawWebScale = useTransform(smoothProgress, [0, 0.4, 0.6, 1], isMobile ? [0.95, 1, 1, 0.95] : [0.85, 1, 1, 0.9])
+  const webScale = useTransform(rawWebScale, (s) => s * scaleMultiplier)
   const webY = useTransform(smoothProgress, [0, 1], [50, -50])
 
-  // Em tablet: não desloca horizontalmente, só vem de baixo levemente
-  // Em mobile: vem de baixo
-  // Em desktop: desloca para a esquerda (-420px)
+  // Mobile mockup transforms
   const mobileX = useTransform(
     smoothProgress, [0.3, 0.6],
     isMobile ? [0, 0] : isTablet ? [0, 0] : [0, -420]
@@ -432,29 +439,36 @@ export function DashboardPreview() {
     smoothProgress, [0.3, 0.6],
     isMobile ? [120, 20] : isTablet ? [80, -20] : [100, 0]
   )
-  const mobileScale = useTransform(
+  const rawMobileScale = useTransform(
     smoothProgress, [0.3, 0.6],
     isMobile ? [0.5, 0.75] : isTablet ? [0.45, 0.65] : [0.65, 0.85]
   )
+  const mobileScale = useTransform(rawMobileScale, (s) => s * scaleMultiplier)
   const mobileOpacity = useTransform(smoothProgress, [0.3, 0.45], [0, 1])
   const mobileZIndex = useTransform(smoothProgress, [0, 0.5, 1], [10, 30, 30])
 
   return (
-    <section ref={containerRef} id="como-funciona" className="relative h-[200vh] md:h-[250vh] bg-background/50">
+    <section ref={containerRef} id="como-funciona" className="relative h-[200vh] md:h-[250vh] bg-background border-t border-border/50">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
-        <div className="container px-4 md:px-6 mx-auto relative h-full flex flex-col items-center justify-center">
+        <div className="container px-4 md:px-6 mx-auto relative h-full flex flex-col items-center justify-center pt-24 pb-12">
 
-          <div className="mx-auto mb-16 max-w-2xl text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="mx-auto mb-8 md:mb-12 max-w-2xl text-center"
+          >
+            <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
               Um dashboard que faz sentido
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Interface limpa e intuitiva. Veja sua situação financeira de forma clara e objetiva.
             </p>
-          </div>
+          </motion.div>
 
           <div className="relative w-full max-w-5xl flex items-center justify-center">
-            <motion.div style={{ scale: webScale, y: webY, zIndex: 10 }} className="relative w-full shadow-2xl shadow-black/50">
+            <motion.div style={{ scale: webScale, y: webY, zIndex: 10, willChange: "transform" }} className="relative w-full shadow-2xl shadow-black/50">
               <WebDashboardMockup />
             </motion.div>
 
@@ -465,7 +479,8 @@ export function DashboardPreview() {
                 y: mobileY,
                 scale: mobileScale,
                 opacity: mobileOpacity,
-                zIndex: mobileZIndex
+                zIndex: mobileZIndex,
+                willChange: "transform"
               }}
               className="absolute"
             >

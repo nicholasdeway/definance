@@ -12,10 +12,9 @@ import { ptBR } from "date-fns/locale"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { PremiumModal } from "@/components/ui/premium-modal"
 import { useCategories } from "@/lib/category-context"
-import { ShoppingBag, Loader2, Save, Plus, Calendar as CalendarIcon, Mic, MicOff } from "lucide-react"
+import { ShoppingBag, Loader2, Save, Plus, Calendar as CalendarIcon } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { cn } from "@/lib/utils"
-import { useSpeechToText } from "@/hooks/use-speech-to-text"
 
 interface GastoDialogProps {
   open: boolean
@@ -34,7 +33,6 @@ export const GastoDialog = ({
 }: GastoDialogProps) => {
   const { categories } = useCategories()
   const isMobile = useIsMobile()
-  const { isListening, transcript, startListening, stopListening } = useSpeechToText()
   
   const [formData, setFormData] = useState({
     id: "",
@@ -78,12 +76,7 @@ export const GastoDialog = ({
     }
   }, [initialData, open])
 
-  // Atualiza a descrição conforme a fala
-  useEffect(() => {
-    if (transcript) {
-      setFormData(prev => ({ ...prev, nome: transcript }))
-    }
-  }, [transcript])
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -124,30 +117,15 @@ export const GastoDialog = ({
               <Label htmlFor="nome" className="text-[9px] md:text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
                 Descrição do Gasto
               </Label>
-              <button
-                type="button"
-                onClick={isListening ? stopListening : startListening}
-                className={cn(
-                  "flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer relative",
-                  isListening 
-                    ? "bg-primary/20 text-primary" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {isListening && <span className="absolute inset-0 rounded-lg animate-ping bg-primary/20 pointer-events-none" />}
-                <span className={cn("text-[9px] font-black uppercase tracking-widest transition-opacity", isListening ? "opacity-100" : "opacity-0")}>Ouvindo...</span>
-                {isListening ? <Mic className="h-3 w-3 md:h-3.5 md:w-3.5" /> : <Mic className="h-3 w-3 md:h-3.5 md:w-3.5" />}
-              </button>
             </div>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder={isListening ? "Escutando..." : (isMobile ? "Ex: Almoço, Uber..." : "Ex: Almoço no Centro, Uber Casa...")}
+              placeholder={isMobile ? "Ex: Almoço, Uber..." : "Ex: Almoço no Centro, Uber Casa..."}
               className={cn(
                 "bg-muted/20 border-border/50 rounded-lg md:rounded-2xl transition-all focus:bg-muted/30",
-                isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5",
-                isListening && "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02] placeholder:text-primary/70 placeholder:font-semibold animate-pulse"
+                isMobile ? "h-8 text-[11px] px-2" : "h-12 text-lg px-5"
               )}
               required
             />
@@ -192,7 +170,7 @@ export const GastoDialog = ({
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.data ? parseISO(formData.data) : undefined}
@@ -203,6 +181,9 @@ export const GastoDialog = ({
                     }}
                     locale={ptBR}
                     initialFocus
+                    captionLayout="dropdown"
+                    fromYear={new Date().getFullYear() - 10}
+                    toYear={new Date().getFullYear() + 20}
                   />
                 </PopoverContent>
               </Popover>

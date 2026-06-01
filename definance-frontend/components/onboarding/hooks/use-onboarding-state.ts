@@ -22,8 +22,6 @@ export interface OnboardingState {
   setSelectedExpenses: React.Dispatch<React.SetStateAction<Record<string, number>>>
   customExpenses: CustomExpense[]
   setCustomExpenses: React.Dispatch<React.SetStateAction<CustomExpense[]>>
-  billLoans: Record<string, { hasLoan: boolean; valor: number }>
-  setBillLoans: React.Dispatch<React.SetStateAction<Record<string, { hasLoan: boolean; valor: number }>>>
   vehicles: Vehicle[]
   setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>
   debts: Debt[]
@@ -54,11 +52,6 @@ export const useOnboardingState = (): OnboardingState => {
   const [incomes, setIncomes] = useState<IncomeDetail[]>([])
   const [selectedExpenses, setSelectedExpenses] = useState<Record<string, number>>({})
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([])
-  const [billLoans, setBillLoans] = useState<Record<string, { hasLoan: boolean; valor: number }>>({
-    luz: { hasLoan: false, valor: 0 },
-    agua: { hasLoan: false, valor: 0 },
-    celular: { hasLoan: false, valor: 0 }
-  })
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [debts, setDebts] = useState<Debt[]>([])
   const [isLoadingRecovery, setIsLoadingRecovery] = useState(true)
@@ -75,35 +68,15 @@ export const useOnboardingState = (): OnboardingState => {
       case 1: return motivations
       case 2: return selectedIncomeTypes
       case 3: return incomes
-      case 4: return { selectedExpenses, customExpenses, billLoans }
+      case 4: return { selectedExpenses, customExpenses }
       case 5: return vehicles
       case 6: return debts
       default: return null
     }
-  }, [motivations, selectedIncomeTypes, incomes, selectedExpenses, customExpenses, billLoans, vehicles, debts])
+  }, [motivations, selectedIncomeTypes, incomes, selectedExpenses, customExpenses, vehicles, debts])
 
   // ── Orphan Data Cleanup
   useEffect(() => {
-    const selectedKeys = Object.keys(selectedExpenses)
-    const loanKeys = Object.keys(billLoans)
-
-    // Filtra apenas chaves que não estão selecionadas mas possuem empréstimo marcado como ativo
-    const orphanedKeys = loanKeys.filter(key =>
-      !selectedKeys.includes(key) && billLoans[key].hasLoan
-    )
-
-    if (orphanedKeys.length > 0) {
-      setBillLoans(prev => {
-        const next = { ...prev }
-        orphanedKeys.forEach(key => {
-          if (next[key]) {
-            next[key] = { hasLoan: false, valor: 0 }
-          }
-        })
-        return next
-      })
-    }
-
     // Limpa rendas orfãs (caso ele desmarque 'clt' por exemplo, o incomeDetails de 'clt' some)
     setIncomes(prev => prev.filter(inc => selectedIncomeTypes.includes(inc.tipo)))
 
@@ -112,7 +85,7 @@ export const useOnboardingState = (): OnboardingState => {
     if (selectedIncomeTypes.some(t => !validIncomeValues.includes(t))) {
       setSelectedIncomeTypes(prev => prev.filter(t => validIncomeValues.includes(t)))
     }
-  }, [selectedExpenses, billLoans, selectedIncomeTypes])
+  }, [selectedExpenses, selectedIncomeTypes])
 
   return React.useMemo(() => ({
     currentStep,
@@ -127,8 +100,6 @@ export const useOnboardingState = (): OnboardingState => {
     setSelectedExpenses,
     customExpenses,
     setCustomExpenses,
-    billLoans,
-    setBillLoans,
     vehicles,
     setVehicles,
     debts,
@@ -151,7 +122,6 @@ export const useOnboardingState = (): OnboardingState => {
     incomes,
     selectedExpenses,
     customExpenses,
-    billLoans,
     vehicles,
     debts,
     isLoadingRecovery,

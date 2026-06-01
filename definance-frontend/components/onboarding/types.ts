@@ -88,7 +88,6 @@ export interface OnboardingProgress {
   incomes?: IncomeDetail[]
   selectedExpenses?: Record<string, number>
   customExpenses?: CustomExpense[]
-  billLoans?: Record<string, { hasLoan: boolean; valor: number }>
   vehicles?: Vehicle[]
   debts?: Debt[]
 }

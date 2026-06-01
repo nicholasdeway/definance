@@ -92,16 +92,15 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
       </div>
 
       {/* Desktop Nav (original) */}
-      <nav 
-        className={`pointer-events-auto hidden lg:flex relative items-center justify-between transition-all duration-250 border ${
-          isScrolled 
-            ? 'w-[96%] max-w-8xl bg-background/40 backdrop-blur-2xl border-border/40 rounded-2xl py-3 px-7 shadow-lg' 
+      <nav
+        className={`pointer-events-auto hidden lg:flex relative items-center justify-between transition-all duration-250 border ${isScrolled
+            ? 'w-[96%] max-w-8xl bg-background/40 backdrop-blur-2xl border-border/40 rounded-2xl py-3 px-7 shadow-lg'
             : `w-full max-w-none bg-background/95 border-border/40 border-b py-3 px-6 ${isOnboarding ? 'shadow-md' : ''}`
-        }`}
+          }`}
       >
         {/* Logo */}
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="flex items-center gap-2 z-10"
           onClick={handleLogoClick}
         >
@@ -115,9 +114,9 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
         {!isOnboarding && (
           <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8 z-10">
             {navLinks.map((link) => (
-              <a 
-                key={link.name} 
-                href={link.href} 
+              <a
+                key={link.name}
+                href={link.href}
                 onClick={(e) => handleScrollClick(e, link.href)}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
@@ -129,7 +128,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
 
         <div className="flex items-center gap-3 z-10">
           <ThemeToggle />
-          
+
           {!mounted || isLoading ? (
             <div className="h-9 w-24 bg-muted/20 animate-pulse rounded-lg hidden md:block" />
           ) : !isAuthenticated && !isOnboarding ? (
@@ -140,11 +139,10 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                 </Button>
               </Link>
               <Link href="/login">
-                <Button 
-                  size="sm" 
-                  className={`cursor-pointer bg-primary text-primary-foreground hover:bg-primary/70 transition-all ${
-                    isScrolled ? 'shadow-lg shadow-primary/20' : ''
-                  }`}
+                <Button
+                  size="sm"
+                  className={`cursor-pointer bg-primary text-primary-foreground hover:bg-primary/70 transition-all ${isScrolled ? 'shadow-lg shadow-primary/20' : ''
+                    }`}
                 >
                   Entrar
                 </Button>
@@ -166,7 +164,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                   </Link>
                 )}
               </div>
-              
+
               <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
@@ -179,8 +177,8 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                 <div className="h-6 w-px bg-border/40 mx-1 hidden sm:block" />
               )}
 
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size={isOnboarding ? "sm" : "icon"}
                 onClick={handleLogout}
                 className={`cursor-pointer text-muted-foreground hover:text-destructive transition-colors ${isOnboarding ? 'gap-2 font-medium px-2' : 'hidden lg:flex'}`}
@@ -190,7 +188,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
               </Button>
             </div>
           )}
-          
+
           {/* Mobile hamburger hidden — handled by floating dock above */}
         </div>
       </nav>
@@ -201,16 +199,16 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
       {!isOnboarding && (
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               className="pointer-events-auto fixed left-4 right-4 top-20 bg-background/95 backdrop-blur-xl border border-white/10 p-6 flex flex-col gap-4 lg:hidden rounded-2xl shadow-2xl z-40"
             >
               {navLinks.map((link) => (
-                <a 
-                  key={link.name} 
-                  href={link.href} 
+                <a
+                  key={link.name}
+                  href={link.href}
                   onClick={(e) => handleScrollClick(e, link.href)}
                   className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -258,7 +256,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
           )}
         </AnimatePresence>
       )}
-      <OnboardingExitDialog 
+      <OnboardingExitDialog
         isOpen={showExitDialog}
         onOpenChange={setShowExitDialog}
         onConfirm={() => {

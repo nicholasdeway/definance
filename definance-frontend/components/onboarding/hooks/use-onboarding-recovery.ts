@@ -11,7 +11,6 @@ export const useOnboardingRecovery = () => {
     setIncomes,
     setSelectedExpenses,
     setCustomExpenses,
-    setBillLoans,
     setVehicles,
     setDebts,
     setCurrentStep,
@@ -51,7 +50,6 @@ export const useOnboardingRecovery = () => {
           const incomesList = getVal(data, "incomes")
           const expenses = getVal(data, "selectedExpenses")
           const cExpenses = getVal(data, "customExpenses")
-          const loans = getVal(data, "billLoans")
           const vList = getVal(data, "vehicles")
           const dList = getVal(data, "debts")
           const cStep = getVal(data, "currentStep")
@@ -61,7 +59,6 @@ export const useOnboardingRecovery = () => {
           if (incomesList) setIncomes(incomesList)
           if (expenses) setSelectedExpenses(expenses)
           if (cExpenses) setCustomExpenses(cExpenses)
-          if (loans) setBillLoans(loans)
 
           if (vList) {
             const sanitizedVehicles = vList.map((v: any, index: number) => ({
@@ -105,8 +102,7 @@ export const useOnboardingRecovery = () => {
           lastSavedHashesRef.current[3] = JSON.stringify(incomesList || [])
           lastSavedHashesRef.current[4] = JSON.stringify({
             selectedExpenses: expenses || {},
-            customExpenses: cExpenses || [],
-            billLoans: loans || {}
+            customExpenses: cExpenses || []
           })
           lastSavedHashesRef.current[5] = JSON.stringify(vList || [])
           lastSavedHashesRef.current[6] = JSON.stringify(dList || [])
@@ -127,7 +123,6 @@ export const useOnboardingRecovery = () => {
     setSelectedIncomeTypes,
     setSelectedExpenses,
     setCustomExpenses,
-    setBillLoans,
     setVehicles,
     setDebts,
     setCurrentStep,

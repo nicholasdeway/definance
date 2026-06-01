@@ -197,7 +197,7 @@ export function BillFormDialog({
                     </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover shadow-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={form.dueDate ? parseISO(form.dueDate) : undefined}
@@ -208,6 +208,9 @@ export function BillFormDialog({
                     }}
                     locale={ptBR}
                     initialFocus
+                    captionLayout="dropdown"
+                    fromYear={new Date().getFullYear() - 10}
+                    toYear={new Date().getFullYear() + 20}
                   />
                 </PopoverContent>
               </Popover>

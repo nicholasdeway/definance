@@ -1,69 +1,18 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Sparkles, CheckCircle2, CreditCard, QrCode, Calendar, Zap, AlertCircle, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Sparkles, CheckCircle2, Check, CreditCard, QrCode, Calendar, Zap, AlertCircle } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-provider"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 export function PlansSection() {
   const { user, refreshUser } = useAuth()
-  const searchParams = useSearchParams()
   const router = useRouter()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
-  const [verifyingSession, setVerifyingSession] = useState(false)
   const [showRefundModal, setShowRefundModal] = useState(false)
-  const [showGatewayModal, setShowGatewayModal] = useState(false)
-  const hasVerified = useRef(false)
-
-  const upgradeStatus = searchParams?.get("upgrade")
-  const sessionId = searchParams?.get("session_id")
-  const paymentId = searchParams?.get("payment_id")
-
-  useEffect(() => {
-    async function verifySession() {
-      // Guard against React Strict Mode double-invocation in development
-      if (hasVerified.current) return
-
-      if (upgradeStatus === "success" && (sessionId || paymentId)) {
-        hasVerified.current = true
-        setVerifyingSession(true)
-        try {
-          const res = await apiClient<{ isPaid: boolean }>("/api/subscription/verify-session", {
-            method: "POST",
-            body: JSON.stringify({
-              sessionId: sessionId || undefined,
-              paymentId: paymentId || undefined
-            })
-          })
-          if (res.isPaid) {
-            toast.success("Parabéns! Sua assinatura Premium foi ativada com sucesso! 🎉")
-            await refreshUser(true)
-          } else {
-            toast.error("O pagamento ainda não foi confirmado. Caso tenha pago, aguarde alguns instantes.")
-          }
-        } catch (err) {
-          console.error("Erro ao verificar sessão de pagamento:", err)
-          toast.error("Erro ao sincronizar assinatura. Se o pagamento foi feito, ela será ativada automaticamente pelo nosso sistema em breve.")
-        } finally {
-          setVerifyingSession(false)
-          // Limpa os parâmetros da URL para evitar loops de verificação
-          router.replace("/dashboard/perfil")
-        }
-      } else if (upgradeStatus === "pending") {
-        hasVerified.current = true
-        toast.info("Seu pagamento está pendente ou em análise. Assim que for confirmado, sua assinatura Premium será liberada! ⏳")
-        router.replace("/dashboard/perfil")
-      } else if (upgradeStatus === "cancel") {
-        hasVerified.current = true
-        toast.info("O processo de assinatura foi cancelado.")
-        router.replace("/dashboard/perfil")
-      }
-    }
-    verifySession()
-  }, [upgradeStatus, sessionId, paymentId, refreshUser, router])
 
   // Reset loadingPlan if returning via back button (bfcache)
   useEffect(() => {
@@ -77,26 +26,6 @@ export function PlansSection() {
       window.removeEventListener("pageshow", handlePageShow)
     }
   }, [])
-
-  const handleCheckout = async (planType: string, gateway: string) => {
-    setLoadingPlan(planType)
-    try {
-      const originUrl = window.location.origin
-      const res = await apiClient<{ url: string }>("/api/subscription/checkout", {
-        method: "POST",
-        body: JSON.stringify({ planType, originUrl, gateway })
-      })
-      if (res.url) {
-        window.location.href = res.url
-      } else {
-        toast.error("Não foi possível gerar a página de checkout. Tente novamente.")
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao iniciar pagamento.")
-    } finally {
-      setLoadingPlan(null)
-    }
-  }
 
   const handlePortal = async () => {
     setLoadingPlan("portal")
@@ -144,16 +73,6 @@ export function PlansSection() {
     } catch {
       return ""
     }
-  }
-
-  if (verifyingSession) {
-    return (
-      <div className="bg-card border border-border rounded-3xl p-8 flex flex-col items-center justify-center space-y-4">
-        <Spinner className="h-10 w-10 text-primary animate-spin" />
-        <h3 className="text-lg font-semibold text-foreground">Confirmando pagamento...</h3>
-        <p className="text-xs text-muted-foreground text-center">Por favor, aguarde enquanto validamos sua transação.</p>
-      </div>
-    )
   }
 
   const isPremium = user?.isPremium
@@ -301,9 +220,9 @@ export function PlansSection() {
                 </div>
               </div>
               <button
-                onClick={() => setShowGatewayModal(true)}
+                onClick={() => router.push("/dashboard/checkout?plan=annual")}
                 disabled={loadingPlan !== null}
-                className="shrink-0 flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+                className="shrink-0 flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
               >
                 {loadingPlan === "annual" ? <Spinner className="h-4 w-4 text-primary-foreground animate-spin" /> : <Zap className="w-4 h-4" />}
                 Fazer Upgrade Agora
@@ -314,21 +233,30 @@ export function PlansSection() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {/* Plano Mensal */}
-          <div className="border border-border/70 rounded-2xl p-6 bg-card flex flex-col justify-between space-y-6 hover:border-primary/40 transition-all duration-300 relative group">
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg text-foreground">Premium Mensal</h3>
-                  <p className="text-xs text-muted-foreground">Ideal para pagamentos graduais</p>
+          <div className="border border-border/70 rounded-[2rem] p-6 bg-card flex flex-col justify-between space-y-6 hover:border-primary/40 transition-all duration-300 relative group shadow-sm">
+            <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-primary/5 to-transparent rounded-t-[2rem] pointer-events-none" />
+
+            <div className="space-y-5 relative z-10">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-widest border border-primary/20">
+                    Recorrente Mensal
+                  </span>
                 </div>
-                <span className="text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
-                  Recorrente
-                </span>
+                <h3 className="font-extrabold text-xl text-foreground tracking-tight">Premium Mensal</h3>
+                <p className="text-xs text-muted-foreground">Ideal para testar sem compromisso</p>
               </div>
 
-              <div className="flex items-baseline gap-1 text-foreground">
-                <span className="text-2xl font-bold tracking-tight">R$ 19,90</span>
-                <span className="text-xs text-muted-foreground">/ mês</span>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-lg font-medium text-foreground opacity-60">R$</span>
+                  <span className="text-4xl font-extrabold text-foreground tracking-tighter">19</span>
+                  <span className="text-lg font-medium text-foreground opacity-60">,90</span>
+                  <span className="text-muted-foreground text-[10px] font-bold ml-1.5 opacity-40">/mês</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic font-normal opacity-60">
+                  Plano mensal recorrente - Cancele quando quiser
+                </p>
               </div>
 
               <div className="h-px bg-border/50 w-full" />
@@ -350,68 +278,80 @@ export function PlansSection() {
             </div>
 
             <button
-              onClick={() => handleCheckout("monthly", "stripe")}
-              disabled={loadingPlan !== null}
-              className="w-full bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground font-semibold py-3 px-4 rounded-xl border border-primary/20 transition-all duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => router.push("/dashboard/checkout?plan=monthly")}
+              className="w-full h-11 text-[10px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-wider lg:tracking-[0.2em] rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative z-10"
             >
-              {loadingPlan === "monthly" ? <Spinner className="h-4 w-4" /> : <CreditCard className="w-4 h-4" />}
+              <CreditCard className="w-4 h-4" />
               Escolher Plano Mensal
             </button>
           </div>
 
           {/* Plano Anual */}
-          <div className="border border-primary/30 rounded-2xl p-6 bg-primary/5/20 flex flex-col justify-between space-y-6 hover:border-primary transition-all duration-300 relative group shadow-md shadow-primary/5">
-            {/* Pop de Melhor Opção */}
-            <span className="absolute -top-3 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-extrabold uppercase tracking-wider py-1 px-3 rounded-full border border-amber-400 shadow-sm animate-bounce">
-              Melhor Custo-Benefício
-            </span>
+          <div className="relative group/annual">
+            {/* Glowing background container */}
+            <div className="absolute -inset-0.5 rounded-[2rem] bg-gradient-to-r from-primary to-amber-500 opacity-20 blur-lg pointer-events-none group-hover/annual:opacity-30 transition-opacity duration-300" />
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg text-foreground flex items-center gap-1.5">
-                    Premium Anual <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Parcelado em até 12x de R$ 16,65</p>
+            <div className="relative border border-primary/30 rounded-[2rem] p-6 bg-card flex flex-col justify-between space-y-6 hover:border-primary/60 transition-all duration-300 shadow-md shadow-primary/5 h-full">
+              {/* Top Subtle Glow */}
+              <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-primary/5 to-transparent rounded-t-[2rem] pointer-events-none" />
+
+              {/* Pop de Melhor Opção */}
+              <span className="absolute -top-3 right-6 bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[8px] font-extrabold uppercase tracking-widest py-1 px-3 rounded-full border border-amber-400 shadow-lg shadow-amber-500/20 z-20">
+                Melhor Custo-Benefício
+              </span>
+
+              <div className="space-y-5 relative z-10">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[9px] font-semibold uppercase tracking-widest border border-amber-500/20 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 fill-amber-500" /> Economia de 15%
+                    </span>
+                  </div>
+                  <h3 className="font-extrabold text-xl text-foreground tracking-tight">Premium Anual</h3>
+                  <p className="text-xs text-muted-foreground">Parcelado em até 12x no cartão</p>
                 </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-lg font-medium text-foreground opacity-60">R$</span>
+                    <span className="text-4xl font-extrabold text-foreground tracking-tighter">16</span>
+                    <span className="text-lg font-medium text-foreground opacity-60">,65</span>
+                    <span className="text-muted-foreground text-[10px] font-bold ml-1.5 opacity-40">/mês</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic font-normal opacity-60">
+                    Cobrado anualmente (R$ 199,90 à vista)
+                  </p>
+                  <div className="mt-1 text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-emerald-500" /> Economize R$ 38,90 por ano
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/50 w-full" />
+
+                <ul className="space-y-3.5 text-xs text-muted-foreground">
+                  <li className="flex items-center gap-2 text-foreground font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
+                    Parcelamento em até 12x no cartão
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
+                    Disponível pagamento via PIX
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
+                    Todos os benefícios do Definance
+                  </li>
+                </ul>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-baseline gap-1 text-foreground">
-                  <span className="text-2xl font-bold tracking-tight">R$ 199,90</span>
-                  <span className="text-xs text-muted-foreground">/ ano à vista</span>
-                </div>
-                <p className="text-[10px] text-primary font-semibold flex items-center gap-1">
-                  <Zap className="w-3 h-3 fill-primary" /> Economize R$ 38,90 por ano
-                </p>
-              </div>
-
-              <div className="h-px bg-primary/10 w-full" />
-
-              <ul className="space-y-3.5 text-xs text-muted-foreground">
-                <li className="flex items-center gap-2 text-foreground font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
-                  Parcelamento em até 12x no cartão
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
-                  Disponível pagamento via PIX
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 fill-primary/10" />
-                  Todos os benefícios do Definance
-                </li>
-              </ul>
+              <button
+                onClick={() => router.push("/dashboard/checkout?plan=annual")}
+                className="w-full h-11 text-[10px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-wider lg:tracking-[0.2em] rounded-xl bg-primary/70 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative z-10"
+              >
+                <QrCode className="w-4 h-4" />
+                Escolher Plano Anual
+              </button>
             </div>
-
-            <button
-              onClick={() => setShowGatewayModal(true)}
-              disabled={loadingPlan !== null}
-              className="w-full bg-primary/70 hover:bg-primary text-primary-foreground font-semibold py-3 px-4 rounded-xl shadow-lg shadow-primary/15 transition-all duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {loadingPlan === "annual" ? <Spinner className="h-4 w-4" /> : <QrCode className="w-4 h-4" />}
-              Escolher Plano Anual
-            </button>
           </div>
         </div>
       )}
@@ -450,93 +390,7 @@ export function PlansSection() {
         </div>
       )}
 
-      {/* Gateway Selection Modal */}
-      {showGatewayModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-card border border-border/80 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 animate-in fade-in zoom-in-95 duration-200 relative overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  Escolha como pagar
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Selecione a melhor opção de pagamento para sua assinatura Premium Anual.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowGatewayModal(false)}
-                className="text-muted-foreground hover:text-foreground rounded-lg p-1.5 hover:bg-muted/80 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Gateway Options */}
-            <div className="grid gap-4">
-              {/* Option 1: Stripe */}
-              <button
-                onClick={() => {
-                  setShowGatewayModal(false)
-                  handleCheckout("annual", "stripe")
-                }}
-                disabled={loadingPlan !== null}
-                className="w-full text-left bg-muted/40 hover:bg-muted/80 border border-border/80 hover:border-primary/40 rounded-2xl p-5 transition-all duration-300 flex items-start gap-4 group cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 p-2 group-hover:scale-105 transition-transform duration-200 shadow-sm border border-border">
-                  <img src="/stripe.png" alt="Stripe Logo" className="w-full h-full object-contain" />
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <span className="text-sm font-bold text-foreground truncate">Cartão de Crédito (Stripe)</span>
-                    <span className="text-[9px] font-extrabold bg-primary/15 text-primary border border-primary/20 rounded-full px-2 py-0.5 uppercase tracking-wider whitespace-nowrap self-start sm:self-auto">
-                      Renovação Automática
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Pagamento <strong>à vista</strong> apenas. Renova automaticamente a cada 1 ano no seu cartão. Ideal para manter sua conta ativa sem preocupações.
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 2: Mercado Pago */}
-              <button
-                onClick={() => {
-                  setShowGatewayModal(false)
-                  handleCheckout("annual", "mercadopago")
-                }}
-                disabled={loadingPlan !== null}
-                className="w-full text-left bg-muted/40 hover:bg-muted/80 border border-border/80 hover:border-amber-500/40 rounded-2xl p-5 transition-all duration-300 flex items-start gap-4 group cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 p-2 group-hover:scale-105 transition-transform duration-200 shadow-sm border border-border">
-                  <img src="/mercadopago.png" alt="Mercado Pago Logo" className="w-full h-full object-contain" />
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <span className="text-sm font-bold text-foreground truncate">Pix ou Parcelado (Mercado Pago)</span>
-                    <span className="text-[9px] font-extrabold bg-amber-500/15 text-amber-500 border border-amber-500/20 rounded-full px-2 py-0.5 uppercase tracking-wider whitespace-nowrap self-start sm:self-auto">
-                      Sem Renovação
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Pague via <strong>PIX</strong> ou parcele em até <strong>12x no Cartão</strong>. <strong>Pagamento único</strong>. O plano expira em 1 ano e não será cobrado novamente de forma automática.
-                  </p>
-                </div>
-              </button>
-            </div>
-
-            {/* Cancel Button */}
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowGatewayModal(false)}
-                className="py-2.5 px-4 text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                Voltar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

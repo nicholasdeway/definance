@@ -152,8 +152,8 @@ export const Step5Vehicles = () => {
         {vehicles.map((v, idx) => {
           const tipoInfo = vehicleTypes.find(t => t.key === v.tipo)
           const isExpanded = expandedValue === v.id
-          
-          const hasIpvaError = v.ipvaAnos && v.ipvaAnos.length > 0 && v.ipvaAnos.some(y => 
+
+          const hasIpvaError = v.ipvaAnos && v.ipvaAnos.length > 0 && v.ipvaAnos.some(y =>
             !y.ano || y.ano.length < 4 || y.parcelas.length === 0 || y.parcelas.some(p => !p.valor || !p.vencimento)
           )
 
@@ -244,15 +244,15 @@ export const Step5Vehicles = () => {
                             onClick={() => updateVehicle(v.id, "tipo", t.key)}
                             className={cn(
                               "relative flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 rounded-xl border p-2.5 sm:p-2 text-center sm:text-left transition-all duration-200 cursor-pointer group sm:h-[54px]",
-                              isSelected 
-                                ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10" 
+                              isSelected
+                                ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/10"
                                 : "border-border/50 bg-muted/20 hover:border-primary/20 hover:bg-primary/5 dark:border-white/5 dark:bg-white/5"
                             )}
                           >
                             <div className={cn(
                               "flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300",
-                              isSelected 
-                                ? "bg-primary text-primary-foreground" 
+                              isSelected
+                                ? "bg-primary text-primary-foreground"
                                 : "bg-muted dark:bg-white/10 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
                             )}>
                               <t.icon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -324,15 +324,15 @@ export const Step5Vehicles = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                       <div className="flex items-center justify-between">
                         <Label className="text-[10px] sm:text-[11px] font-bold text-primary/80 uppercase tracking-tight">Parcelamento de IPVA</Label>
                       </div>
-                      
+
                       {v.ipvaAnos?.map((ipvaYear) => (
-                        <div 
-                          key={ipvaYear.id} 
+                        <div
+                          key={ipvaYear.id}
                           className="space-y-3 bg-white/[0.02] p-3 sm:p-4 rounded-xl border border-white/5 relative group"
                         >
                           <button
@@ -342,7 +342,7 @@ export const Step5Vehicles = () => {
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
-                          
+
                           <div className="flex flex-col sm:flex-row gap-3">
                             <div className="space-y-1 w-full sm:max-w-[120px]">
                               <Label className="text-[9px] font-bold text-muted-foreground uppercase">Ano Base</Label>
@@ -394,7 +394,7 @@ export const Step5Vehicles = () => {
                                 </div>
                               </div>
                             ))}
-                            
+
                             <button
                               type="button"
                               onClick={() => addIpvaInstallment(v.id, ipvaYear.id)}
@@ -432,7 +432,7 @@ export const Step5Vehicles = () => {
                     </div>
 
                     {v.financiado && (
-                      <div 
+                      <div
                         className="space-y-3 p-3 sm:p-4 rounded-2xl bg-primary/[0.02] border border-primary/10"
                       >
                         <div className="grid gap-3 sm:grid-cols-3">
@@ -503,7 +503,7 @@ export const Step5Vehicles = () => {
                       </div>
 
                       {v.seguro && (
-                        <div 
+                        <div
                           className="grid gap-3 sm:grid-cols-2 p-3 sm:p-4 rounded-2xl bg-blue-500/[0.02] border border-blue-500/10"
                         >
                           <div className="space-y-1.5">
@@ -525,7 +525,7 @@ export const Step5Vehicles = () => {
                               placeholder="Vencimento"
                             />
                           </div>
-                          
+
                           <div className="flex items-center gap-2 pt-1 sm:col-span-2">
                             <Switch
                               id={`v-seg-rec-${v.id}`}
