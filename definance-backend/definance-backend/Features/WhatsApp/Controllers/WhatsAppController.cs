@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using definance_backend.Features.WhatsApp.Services;
+using definance_backend.Features.WhatsApp.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -45,12 +46,19 @@ namespace definance_backend.Features.WhatsApp.Controllers
 
         [AllowAnonymous]
         [HttpPost("webhook")]
-        public async Task<IActionResult> TwilioWebhook([FromForm] IFormCollection form)
+        public async Task<IActionResult> ZApiWebhook([FromBody] ZApiWebhookDto payload)
         {
-            var from = form["From"].ToString();
-            var body = form["Body"].ToString();
-            var mediaUrl = form["MediaUrl0"].ToString();
-            var messageSid = form["MessageSid"].ToString();
+            if (payload == null)
+            {
+                return BadRequest();
+            }
+
+            var from = payload.Phone ?? payload.Data?.Phone;
+            var body = payload.Text?.Message ?? payload.Message ?? payload.Data?.Text?.Message ?? payload.Data?.Message ?? "";
+            var mediaUrl = payload.Audio?.AudioUrl ?? payload.Audio?.MediaUrl ?? payload.Audio?.Url ?? 
+                           payload.Data?.Audio?.AudioUrl ?? payload.Data?.Audio?.MediaUrl ?? payload.Data?.Audio?.Url ?? "";
+            var messageSid = payload.MessageId ?? payload.ZaapId ?? payload.Id ?? 
+                             payload.Data?.MessageId ?? payload.Data?.ZaapId ?? payload.Data?.Id;
 
             if (!string.IsNullOrEmpty(messageSid))
             {
@@ -66,13 +74,14 @@ namespace definance_backend.Features.WhatsApp.Controllers
 
                 if (!ProcessedMessages.TryAdd(messageSid, DateTime.UtcNow))
                 {
-                    _logger.LogWarning("Mensagem com MessageSid {MessageSid} duplicada ignorada (provável retry do webhook).", messageSid);
-                    return Content("<Response></Response>", "text/xml");
+                    _logger.LogWarning("Mensagem com MessageId {MessageId} duplicada ignorada (provável retry do webhook).", messageSid);
+                    return Ok();
                 }
             }
 
             if (string.IsNullOrEmpty(from))
             {
+                _logger.LogWarning("Z-API Webhook recebido sem número de remetente (Phone).");
                 return BadRequest();
             }
 
@@ -83,11 +92,12 @@ namespace definance_backend.Features.WhatsApp.Controllers
             }
             else if (string.IsNullOrEmpty(body))
             {
+                _logger.LogWarning("Z-API Webhook recebido sem conteúdo de mensagem ou áudio.");
                 return BadRequest();
             }
             
-            await _whatsAppService.HandleTwilioWebhookAsync(from, body, string.IsNullOrEmpty(mediaUrl) ? null : mediaUrl);
-            return Content("<Response></Response>", "text/xml");
+            await _whatsAppService.HandleZApiWebhookAsync(from, body, string.IsNullOrEmpty(mediaUrl) ? null : mediaUrl);
+            return Ok();
         }
     }
 }

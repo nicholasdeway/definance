@@ -25,7 +25,7 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function WhatsAppModal({ open, onOpenChange, status, activationCode, expiresAt }: WhatsAppModalProps) {
   const [showQR, setShowQR] = React.useState(false)
   const code = activationCode || "Carregando..."
-  const whatsappUrl = activationCode ? `https://wa.me/14155238886?text=${encodeURIComponent(activationCode)}` : ""
+  const whatsappUrl = activationCode ? `https://wa.me/5527981009312?text=${encodeURIComponent(activationCode)}` : ""
 
   // Reset QR toggle when modal closes
   React.useEffect(() => {
@@ -63,8 +63,8 @@ export function WhatsAppModal({ open, onOpenChange, status, activationCode, expi
             onClick={() => setShowQR(false)}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300",
-              !showQR 
-                ? "bg-background dark:bg-white/10 text-primary dark:text-white shadow-sm ring-1 ring-border/20 dark:ring-white/5" 
+              !showQR
+                ? "bg-background dark:bg-white/10 text-primary dark:text-white shadow-sm ring-1 ring-border/20 dark:ring-white/5"
                 : "text-muted-foreground dark:text-white/40 hover:text-foreground dark:hover:text-white/70"
             )}
           >
@@ -75,8 +75,8 @@ export function WhatsAppModal({ open, onOpenChange, status, activationCode, expi
             onClick={() => setShowQR(true)}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300",
-              showQR 
-                ? "bg-background dark:bg-white/10 text-primary dark:text-white shadow-sm ring-1 ring-border/20 dark:ring-white/5" 
+              showQR
+                ? "bg-background dark:bg-white/10 text-primary dark:text-white shadow-sm ring-1 ring-border/20 dark:ring-white/5"
                 : "text-muted-foreground dark:text-white/40 hover:text-foreground dark:hover:text-white/70"
             )}
           >

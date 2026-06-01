@@ -7,13 +7,9 @@ import {
   Plus,
   Trash2,
   Loader2,
-  AlertCircle,
-  Calendar as CalendarIcon
+  AlertCircle
 } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format, parseISO } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
     Accordion,
     AccordionContent,
@@ -271,36 +267,15 @@ export const DebtsSection = ({ onSavingStateChange }: { onSavingStateChange?: (s
                                             isEmpty={!debt.vencimento} 
                                             wasAttempted={wasAttempted} 
                                         />
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className={cn(
-                                                        "w-full justify-start text-left font-normal bg-background h-9 px-3",
-                                                        !debt.vencimento && "text-muted-foreground",
-                                                        wasAttempted && !debt.vencimento && "border-destructive/50"
-                                                    )}
-                                                >
-                                                    <CalendarIcon className="mr-2 h-4 w-4 text-primary opacity-70" />
-                                                    <span className="text-sm">
-                                                        {debt.vencimento ? format(parseISO(debt.vencimento), "dd/MM/yyyy") : "Selecione a data"}
-                                                    </span>
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 rounded-2xl border-border/50 bg-popover shadow-xl" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={debt.vencimento ? parseISO(debt.vencimento) : undefined}
-                                                    onSelect={(date) => {
-                                                        if (date) {
-                                                            updateDebt(debt.id, "vencimento", format(date, "yyyy-MM-dd"))
-                                                        }
-                                                    }}
-                                                    locale={ptBR}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                        <DatePicker
+                                            date={debt.vencimento}
+                                            onChange={(date) => updateDebt(debt.id, "vencimento", date)}
+                                            className={cn(
+                                                "h-9 bg-background",
+                                                wasAttempted && !debt.vencimento && "border-destructive/50"
+                                            )}
+                                            placeholder="Selecione a data"
+                                        />
                                     </div>
 
                                     <div className="flex items-center justify-between pt-2">

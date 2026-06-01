@@ -20,12 +20,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://definance.com.br'),
   title: 'Definance | Gestão Financeira Inteligente',
   description: 'Controle total da sua vida financeira. Organize seus gastos, entenda seu dinheiro e tome decisões melhores.',
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
     apple: '/logo.png',
+  },
+  openGraph: {
+    title: 'Definance | Gestão Financeira Inteligente',
+    description: 'Controle total da sua vida financeira. Organize seus gastos, entenda seu dinheiro e tome decisões melhores.',
+    url: 'https://definance.com.br',
+    siteName: 'Definance',
+    images: [
+      {
+        url: '/logo.png',
+        width: 192,
+        height: 192,
+      },
+    ],
+    locale: 'pt_BR',
+    type: 'website',
   },
 };
 

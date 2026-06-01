@@ -58,7 +58,7 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
 - Use *texto* para negrito (nunca ** ou `). Ex: *Valor:* R$ 50,00. Use " | " para separar campos.
 - Descrição da transação: 1ª letra maiúscula. É ABSOLUTAMENTE OBRIGATÓRIO identificar e aplicar a acentuação correta em português em TODOS os nomes de transação que você registrar (ex: se o usuário disser 'cafe', registre 'Café'; se disser 'pao', registre 'Pão'; se disser 'almoco', registre 'Almoço'; se disser 'agua', registre 'Água'). Corrija erros de digitação e gírias (ex: 'pra' -> 'para'). NUNCA use apenas nome de pessoa (ex: 'fralda pro celso' -> 'Fralda para o Celso', não 'Celso'). Preserve marcas ('Steam', 'Uber').
 - Limites de categoria: se a transação retornar limite_mensal e porcentagem_limite, envie a resposta em 2 partes com "[SPLIT]" em linha própria:
-  1. Confirmação do registro.
+  1. A mensagem completa do template de "Confirmação de Registro" preenchida com os dados da transação.
   2. Exatamente: Isso representa [porcentagem_limite]% do seu orçamento de [categoria_nome em minúsculo]. Fique de olho no teto mensal configurado para não se enrolar, em!
 
 # REGRAS E FERRAMENTAS
@@ -69,16 +69,16 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
 5. Status: use "Pago" para compras/gastos que já ocorreram (uso de verbos no passado/presente como "comprei", "gastei", "paguei"). Use "Pendente" somente para contas futuras ou a pagar.
 6. Confirmação de Valores Altos (CRÍTICO): Se o valor de um gasto/despesa (Saida) ou conta a pagar for maior que R$ 2.000,00, você NUNCA deve registrar (não chame registrar_movimentacao nem registrar_conta) imediatamente. Pergunte primeiro se o valor de R$ X.XXX,XX está correto para o item/conta e peça a confirmação do usuário (ex: "O valor de R$ 10.000,00 para 'Figurinha da Copa' está correto?"). Só realize o registro após o usuário confirmar em mensagem subsequente.
 
-# TEMPLATES OBRIGATÓRIOS
+# TEMPLATES OBRIGATÓRIOS (Você DEVE preencher todos os dados entre colchetes. NUNCA retorne os colchetes com os placeholders como '[Valor]', '[Nome]' ou a palavra '[SCHEMA]'/'[TEMPLATE]'):
 - Confirmação de Registro:
-  [Despesa/Entrada/Conta/Conta Fixa] no [Nome] registrada com sucesso! 📊💸
+  *Despesa* (ou *Entrada* / *Conta* / *Conta Fixa*) *[Nome]* registrada com sucesso! 📊💸
   *Valor:* R$ [Valor]
   *Categoria:* [Categoria] (omitir se Entrada)
   *Descrição:* [Nome]
   *Status:* [Status]
   *Data:* [DD/MM/YYYY]
 - Resumo Financeiro:
-  Nicholas, aqui está o resumo financeiro para o período solicitado:
+  {first_name}, aqui está o resumo financeiro para o período solicitado:
   *Total de Receitas:* R$ [totalReceitas]
   *Total de Despesas:* R$ [totalDespesas]
   *Saldo:* R$ [saldoFinal]
@@ -89,16 +89,16 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
   [Se contasPendentes > 0] Você tem [X] conta(s) pendente(s) em aberto.
 - Listagem de Contas:
   - Se o usuário perguntar especificamente por CONTAS PAGAS (ex: "quais contas paguei esse mês?"):
-    Nicholas, você tem [X] conta(s) paga(s) no período solicitado:
-    * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], Pago. (Se vazia: "Nicholas, você não tem contas pagas no período solicitado.")
+    {first_name}, você tem [X] conta(s) paga(s) no período solicitado:
+    * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], Pago. (Se vazia: "{first_name}, você não tem contas pagas no período solicitado.")
     [Se houver contas pendentes no período] Além disso, você tem [Y] conta(s) pendente(s) em aberto.
   - Se o usuário perguntar por CONTAS PENDENTES / EM ABERTO ou de forma geral (sem especificar pagas/pendentes):
-    Nicholas, você tem [X] conta(s) pendente(s) em aberto:
-    * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], [Status]. (Se vazia: "Nicholas, você não tem contas em aberto no momento.")
+    {first_name}, você tem [X] conta(s) pendente(s) em aberto:
+    * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], [Status]. (Se vazia: "{first_name}, você não tem contas em aberto no momento.")
     [Se houver contas pagas no período] Além disso, você tem [Y] conta(s) paga(s) no período.
 - Listagem de Metas:
-  Nicholas, aqui estão suas metas de economia:
-  * [name]: R$ [currentAmount] de R$ [targetAmount] (Falta R$ [restante]) | Progresso: [progresso]% | Categoria: [category] (Se vazia: "Nicholas, você não tem nenhuma meta de economia cadastrada no momento.")
+  {first_name}, aqui estão suas metas de economia:
+  * [name]: R$ [currentAmount] de R$ [targetAmount] (Falta R$ [restante]) | Progresso: [progresso]% | Categoria: [category] (Se vazia: "{first_name}, você não tem nenhuma meta de economia cadastrada no momento.")
 - Depósito em Meta:
   Depósito de R$ [Valor] realizado com sucesso na meta [name]! 📊💸
   *Novo Saldo da Meta:* R$ [currentAmount] de R$ [targetAmount]
@@ -295,6 +295,8 @@ def _sanitize_date(date_str: str | None) -> str:
     """Corrige anos antecipados e normaliza DD/MM/YYYY → YYYY-MM-DD."""
     if not date_str:
         return get_now_sp().strftime("%Y-%m-%dT%H:%M:%S")
+    
+    # 1. Normaliza formato com barras (DD/MM/YYYY)
     if "/" in date_str:
         try:
             parts = re.split(r"[T ]", date_str)
@@ -304,6 +306,8 @@ def _sanitize_date(date_str: str | None) -> str:
             date_str = f"{y}-{m}-{d}T{time_part}"
         except Exception as e:
             logger.warning(f"Falha ao normalizar data com barra '{date_str}': {e}")
+            
+    # 2. Corrige ano alucinado se for anterior ao ano atual
     current_year = get_today_sp().year
     m = re.match(r"^(\d{4})-(.*)$", date_str)
     if m:
@@ -311,7 +315,15 @@ def _sanitize_date(date_str: str | None) -> str:
         if gy < current_year:
             corrected = f"{current_year}-{m.group(2)}"
             logger.info(f"Data corrigida de '{date_str}' para '{corrected}' (ano alucinado pela IA: {gy})")
-            return corrected
+            date_str = corrected
+
+    # 3. Normaliza espaços para 'T' e garante padrão ISO
+    date_str = date_str.replace(" ", "T")
+
+    # 4. Se a data contiver apenas YYYY-MM-DD (comprimento 10), preenche com a hora atual
+    if len(date_str) == 10:
+        date_str = f"{date_str}T{get_now_sp().strftime('%H:%M:%S')}"
+
     return date_str
 
 
@@ -570,8 +582,6 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
 
                 # Sanitiza data
                 data = _sanitize_date(data)
-                if len(data) == 10:
-                    data = f"{data}T{get_now_sp().strftime('%H:%M:%S')}"
 
                 if tipo == "Entrada":
                     url = f"{settings.BACKEND_URL}/api/Incomes"
@@ -922,8 +932,10 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
     except Exception as e:
         logger.warning(f"Não foi possível carregar categorias para o prompt: {e}")
 
+    first_name = user_name.split()[0] if user_name else "Usuário"
     system_prompt = SYSTEM_PROMPT.format(
         user_name=user_name,
+        first_name=first_name,
         today_date=hoje_str,
         weekday=dia_semana,
         categorias_disponiveis=categorias_disponiveis
@@ -1090,4 +1102,7 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
             clean.append(m)
     history.extend(clean)
     conversation_histories[phone_number] = history[-12:]
+    
+    # Garantia final contra asteriscos duplos (negrito markdown padrão)
+    final_reply = final_reply.replace("**", "*")
     return final_reply

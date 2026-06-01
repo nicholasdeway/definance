@@ -23,8 +23,6 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
     setSelectedExpenses, 
     customExpenses, 
     setCustomExpenses, 
-    billLoans, 
-    setBillLoans, 
     wasAttempted 
   } = useOnboarding()
   const { persistStep } = useAutoSave()
@@ -37,7 +35,7 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
     setIsSaving(true);
     onSavingStateChange?.(true);
     try {
-      const success = await persistStep(4, { selectedExpenses, customExpenses, billLoans });
+      const success = await persistStep(4, { selectedExpenses, customExpenses });
       if (success) {
         await apiClient("/api/onboarding/sync-fixed-expenses", { method: "POST" });
         window.dispatchEvent(new CustomEvent("finance-update"));
@@ -66,20 +64,7 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
     setSelectedExpenses(prev => ({ ...prev, [key]: decimalValue }))
   }
 
-  const toggleBillLoan = (key: string) => {
-    setBillLoans(prev => ({
-      ...prev,
-      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || 0 }
-    }))
-  }
 
-  const setBillLoanValue = (key: string, raw: string) => {
-    const decimalValue = parseCurrencyInput(raw)
-    setBillLoans(prev => ({
-      ...prev,
-      [key]: { ...prev[key], valor: decimalValue }
-    }))
-  }
 
   const addCustomExpense = () => {
     setCustomExpenses(prev => [
@@ -143,7 +128,7 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
       {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
         <div className="space-y-3 border-t border-border/50 pt-4">
-          {/* Seção 1: Contas com Opção de Empréstimo */}
+          {/* Seção 1: Contas de Consumo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -151,12 +136,19 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
                 <span className="text-[8px] text-muted-foreground/40 uppercase tracking-wider">Contas de Consumo</span>
                 <span className="h-px flex-1 bg-border/50" />
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => ["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
-                  .map((cat) => (
-                    <Fragment key={cat.key}>
-                      <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+                  .map((cat, idx, arr) => {
+                    const isLastAndOdd = arr.length % 2 !== 0 && idx === arr.length - 1;
+                    return (
+                      <div 
+                        key={cat.key} 
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2.5",
+                          isLastAndOdd && "sm:col-span-2"
+                        )}
+                      >
                         <cat.icon className="h-5 w-5 text-primary transition-colors" />
                         <div className="flex-1 space-y-1">
                           <FieldLabel 
@@ -164,6 +156,7 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
                             required 
                             isEmpty={!selectedExpenses[cat.key]} 
                             wasAttempted={wasAttempted} 
+                            className="text-xs"
                           />
                           <CurrencyInput
                             id={`exp-${cat.key}`}
@@ -171,65 +164,14 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
                             value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
-                              "h-9 bg-background text-sm",
+                              "h-8 bg-background text-sm",
                               wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
                             )}
                           />
                         </div>
                       </div>
-
-                      {/* Sub-triagem para Empréstimo embutido em Contas de Consumo */}
-                      {["luz", "agua", "celular"].includes(cat.key) && (
-                        <div className="rounded-xl border border-primary/10 bg-primary/5 p-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="space-y-0.5">
-                              <Label htmlFor={`loan-toggle-${cat.key}`} className="text-[11px] font-semibold text-primary/80 uppercase tracking-tight">
-                                Empréstimo embutido?
-                              </Label>
-                              <p className="text-[9px] text-muted-foreground">Parcelas descontadas diretamente na conta</p>
-                            </div>
-                            <Switch
-                              id={`loan-toggle-${cat.key}`}
-                              checked={billLoans[cat.key]?.hasLoan || false}
-                              onCheckedChange={() => toggleBillLoan(cat.key)}
-                            />
-                          </div>
-                          {billLoans[cat.key]?.hasLoan && (
-                            <div className="space-y-2 pt-2 border-t border-primary/10 animate-in zoom-in-95 duration-200">
-                              <div className="space-y-1">
-                                <FieldLabel 
-                                  label="Valor da parcela de empréstimo" 
-                                  required 
-                                  isEmpty={!billLoans[cat.key]?.valor} 
-                                  wasAttempted={wasAttempted} 
-                                />
-                                <CurrencyInput
-                                  id={`loan-value-${cat.key}`}
-                                  placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? Math.round(Number(billLoans[cat.key].valor) * 100).toString() : ""}
-                                  onChange={(value) => setBillLoanValue(cat.key, value)}
-                                  className={cn(
-                                    "h-8 bg-background/50 text-xs font-medium",
-                                    wasAttempted && !billLoans[cat.key]?.valor && "border-destructive/50"
-                                  )}
-                                />
-                              </div>
-                              {selectedExpenses[cat.key] && billLoans[cat.key]?.valor && (
-                                <div className="rounded-lg bg-background/40 p-2 border border-primary/5">
-                                  <p className="text-[10px] text-muted-foreground flex items-center justify-between">
-                                    <span>Consumo real estimado:</span>
-                                    <span className="flex items-center gap-2 font-bold text-primary">
-                                      {formatCurrency(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
-                                    </span>
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Fragment>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -245,30 +187,39 @@ export const FixedExpensesSection = ({ onSavingStateChange }: { onSavingStateCha
               <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
-                  .map((cat) => (
-                    <div key={cat.key} className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2.5">
-                      <cat.icon className="h-5 w-5 text-primary" />
-                      <div className="flex-1 space-y-1">
-                        <FieldLabel 
-                          label={cat.label} 
-                          required 
-                          isEmpty={!selectedExpenses[cat.key]} 
-                          wasAttempted={wasAttempted} 
-                          className="text-xs"
-                        />
-                        <CurrencyInput
-                          id={`exp-${cat.key}`}
-                          placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
-                          onChange={(value) => setExpenseValue(cat.key, value)}
-                          className={cn(
-                            "h-8 bg-background text-sm",
-                            wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
-                          )}
-                        />
+                  .map((cat, idx, arr) => {
+                    const isLastAndOdd = arr.length % 2 !== 0 && idx === arr.length - 1;
+                    return (
+                      <div 
+                        key={cat.key} 
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2.5",
+                          isLastAndOdd && "sm:col-span-2"
+                        )}
+                      >
+                        <cat.icon className="h-5 w-5 text-primary" />
+                        <div className="flex-1 space-y-1">
+                          <FieldLabel 
+                            label={cat.label} 
+                            required 
+                            isEmpty={!selectedExpenses[cat.key]} 
+                            wasAttempted={wasAttempted} 
+                            className="text-xs"
+                          />
+                          <CurrencyInput
+                            id={`exp-${cat.key}`}
+                            placeholder={cat.placeholder}
+                            value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
+                            onChange={(value) => setExpenseValue(cat.key, value)}
+                            className={cn(
+                              "h-8 bg-background text-sm",
+                              wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
+                            )}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}

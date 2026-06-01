@@ -37,7 +37,7 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-20 md:py-32 bg-muted/30 overflow-hidden border-y border-border/50">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
       </div>
       
       <div className="container px-4 md:px-6">
@@ -57,7 +57,7 @@ export function HeroSection() {
           
           <p className="mb-10 text-pretty text-lg text-muted-foreground md:text-xl">
             Organize seus gastos, entenda seu dinheiro e tome decisões melhores. 
-            Simplifique suas finanças com uma plataforma intuitiva e poderosa.
+            Simplifique suas finanças com uma plataforma intuitiva and poderosa.
           </p>
           
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -77,7 +77,7 @@ export function HeroSection() {
             <Link href="/#como-funciona" onClick={(e) => navigateToSection('/#como-funciona', e)}>
               <Button 
                 variant="outline" 
-                className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/50 backdrop-blur-sm hover:bg-muted/50 transition-all"
+                className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/90 hover:bg-muted/50 transition-all"
               >
                 <Play className="mr-2 h-4 w-4 fill-current" />
                 Ver como funciona

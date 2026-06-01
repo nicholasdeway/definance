@@ -18,8 +18,6 @@ export const Step4FixedExpenses = () => {
     setSelectedExpenses, 
     customExpenses, 
     setCustomExpenses, 
-    billLoans, 
-    setBillLoans, 
     wasAttempted 
   } = useOnboarding()
 
@@ -37,19 +35,7 @@ export const Step4FixedExpenses = () => {
     setSelectedExpenses(prev => ({ ...prev, [key]: parseCurrencyInput(raw) }))
   }
 
-  const toggleBillLoan = (key: string) => {
-    setBillLoans(prev => ({
-      ...prev,
-      [key]: { hasLoan: !prev[key]?.hasLoan, valor: prev[key]?.valor || 0 }
-    }))
-  }
 
-  const setBillLoanValue = (key: string, raw: string) => {
-    setBillLoans(prev => ({
-      ...prev,
-      [key]: { ...prev[key], valor: parseCurrencyInput(raw) }
-    }))
-  }
 
   const addCustomExpense = () => {
     setCustomExpenses(prev => [
@@ -136,31 +122,36 @@ export const Step4FixedExpenses = () => {
       {/* Inputs de valor para categorias pré-definidas selecionadas */}
       {Object.keys(selectedExpenses).length > 0 && (
         <div className="space-y-4 sm:space-y-6 border-t border-border dark:border-white/5 pt-4 sm:pt-6">
-          {/* Seção 1: Contas com Opção de Empréstimo */}
+          {/* Seção 1: Contas de Consumo */}
           {fixedExpenseCategories.some(c => ["luz", "agua", "celular"].includes(c.key) && c.key in selectedExpenses) && (
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2 px-1">
                 <span className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Contas de Consumo</span>
                 <span className="h-px flex-1 bg-white/5" />
               </div>
-              <div className="grid gap-3 sm:gap-4">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => ["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
-                  .map((cat) => (
-                    <Fragment key={cat.key}>
+                  .map((cat, idx, arr) => {
+                    const isLastAndOdd = arr.length % 2 !== 0 && idx === arr.length - 1;
+                    return (
                       <div 
-                        className="flex items-center gap-3 rounded-2xl border border-border/50 dark:border-white/5 bg-muted/10 dark:bg-white/[0.02] p-3 sm:p-4"
+                        key={cat.key} 
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5 sm:p-3",
+                          isLastAndOdd && "sm:col-span-2"
+                        )}
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                          <cat.icon className="h-5 w-5" />
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <cat.icon className="h-4 w-4" />
                         </div>
-                        <div className="flex-1 space-y-1 sm:space-y-1.5">
+                        <div className="flex-1 space-y-1">
                           <FieldLabel 
                             label={cat.label} 
                             required 
                             isEmpty={!selectedExpenses[cat.key]} 
                             wasAttempted={wasAttempted} 
-                            className="text-[10px] sm:text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider"
+                            className="text-[9px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wider"
                           />
                           <CurrencyInput
                             id={`exp-${cat.key}`}
@@ -168,67 +159,14 @@ export const Step4FixedExpenses = () => {
                             value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
                             onChange={(value) => setExpenseValue(cat.key, value)}
                             className={cn(
-                              "h-9 sm:h-10 bg-muted/30 dark:bg-white/[0.03] border-border/50 dark:border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-muted/40 dark:focus:bg-white/[0.05]",
+                              "h-8 sm:h-9 bg-white/[0.03] border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-white/[0.05]",
                               wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
                             )}
                           />
                         </div>
                       </div>
-
-                      {/* Sub-triagem para Empréstimo embutido em Contas de Consumo */}
-                      {["luz", "agua", "celular"].includes(cat.key) && (
-                        <div className="rounded-2xl border border-primary/10 bg-primary/[0.02] p-3 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="space-y-0.5">
-                              <Label htmlFor={`loan-toggle-${cat.key}`} className="text-[10px] sm:text-[11px] font-bold text-primary/80 uppercase tracking-tight">
-                                Empréstimo embutido?
-                              </Label>
-                              <p className="text-[9px] sm:text-[10px] text-muted-foreground">Parcelas descontadas diretamente na conta</p>
-                            </div>
-                            <Switch
-                              id={`loan-toggle-${cat.key}`}
-                              checked={billLoans[cat.key]?.hasLoan || false}
-                              onCheckedChange={() => toggleBillLoan(cat.key)}
-                              className="scale-90 sm:scale-100"
-                            />
-                          </div>
-                          {billLoans[cat.key]?.hasLoan && (
-                            <div className="space-y-2.5 pt-3 border-t border-primary/10 animate-in zoom-in-95 duration-200">
-                              <div className="space-y-1.5">
-                                <FieldLabel 
-                                  label="Valor da parcela" 
-                                  required 
-                                  isEmpty={!billLoans[cat.key]?.valor} 
-                                  wasAttempted={wasAttempted} 
-                                  className="text-[9px] sm:text-[10px] font-medium text-primary/60 uppercase tracking-wider"
-                                />
-                                <CurrencyInput
-                                  id={`loan-value-${cat.key}`}
-                                  placeholder="R$ 0,00"
-                                  value={billLoans[cat.key]?.valor ? Math.round(Number(billLoans[cat.key].valor) * 100).toString() : ""}
-                                  onChange={(value) => setBillLoanValue(cat.key, value)}
-                                  className={cn(
-                                    "h-8 sm:h-9 bg-white/[0.04] border-primary/10 text-xs sm:text-sm font-bold",
-                                    wasAttempted && !billLoans[cat.key]?.valor && "border-destructive/50"
-                                  )}
-                                />
-                              </div>
-                              {!!selectedExpenses[cat.key] && !!billLoans[cat.key]?.valor && (
-                                <div className="rounded-xl bg-white/[0.02] p-2.5 border border-primary/5 animate-in zoom-in-95 duration-200">
-                                  <p className="text-[10px] sm:text-[11px] text-muted-foreground flex justify-between items-center">
-                                    <span className="opacity-80">Consumo real:</span>
-                                    <span className="font-bold text-primary text-[11px] sm:text-xs">
-                                      {formatCurrency(Math.max(0, (selectedExpenses[cat.key] || 0) - billLoans[cat.key].valor))}
-                                    </span>
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Fragment>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -243,35 +181,41 @@ export const Step4FixedExpenses = () => {
               <div className="grid gap-3 sm:grid-cols-2">
                 {fixedExpenseCategories
                   .filter((cat) => !["luz", "agua", "celular"].includes(cat.key) && cat.key in selectedExpenses)
-                  .map((cat) => (
-                    <div 
-                      key={cat.key} 
-                      className="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5 sm:p-3"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <cat.icon className="h-4 w-4" />
+                  .map((cat, idx, arr) => {
+                    const isLastAndOdd = arr.length % 2 !== 0 && idx === arr.length - 1;
+                    return (
+                      <div 
+                        key={cat.key} 
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5 sm:p-3",
+                          isLastAndOdd && "sm:col-span-2"
+                        )}
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <cat.icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <FieldLabel 
+                            label={cat.label} 
+                            required 
+                            isEmpty={!selectedExpenses[cat.key]} 
+                            wasAttempted={wasAttempted} 
+                            className="text-[9px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wider"
+                          />
+                          <CurrencyInput
+                            id={`exp-${cat.key}`}
+                            placeholder={cat.placeholder}
+                            value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
+                            onChange={(value) => setExpenseValue(cat.key, value)}
+                            className={cn(
+                              "h-8 sm:h-9 bg-white/[0.03] border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-white/[0.05]",
+                              wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
+                            )}
+                          />
+                        </div>
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <FieldLabel 
-                          label={cat.label} 
-                          required 
-                          isEmpty={!selectedExpenses[cat.key]} 
-                          wasAttempted={wasAttempted} 
-                          className="text-[9px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wider"
-                        />
-                        <CurrencyInput
-                          id={`exp-${cat.key}`}
-                          placeholder={cat.placeholder}
-                          value={selectedExpenses[cat.key] !== undefined ? Math.round(Number(selectedExpenses[cat.key]) * 100).toString() : ""}
-                          onChange={(value) => setExpenseValue(cat.key, value)}
-                          className={cn(
-                            "h-8 sm:h-9 bg-white/[0.03] border-white/10 text-sm font-medium sm:font-semibold rounded-lg sm:rounded-xl transition-all focus:bg-white/[0.05]",
-                            wasAttempted && !selectedExpenses[cat.key] && "border-destructive/50"
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           )}

@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { useSearchParams, useRouter } from "next/navigation"
 
 function SuccessContent() {
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [verifying, setVerifying] = useState(true)
@@ -89,10 +89,10 @@ function SuccessContent() {
             </p>
           </div>
           <button
-            onClick={() => router.push("/dashboard/perfil")}
+            onClick={() => router.push(user && !user.isPremium ? "/dashboard/checkout" : "/dashboard/perfil")}
             className="w-full bg-primary/70 hover:bg-primary text-primary-foreground font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
           >
-            Voltar para o Perfil
+            Voltar
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

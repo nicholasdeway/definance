@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-provider"
 import { useSectionNavigation } from "@/lib/scroll-utils"
-import { ShieldCheck, Brain } from "lucide-react"
+import { ShieldCheck, Brain, Mail } from "lucide-react"
 import { useState, useEffect } from "react"
 
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -141,6 +141,11 @@ export function Footer() {
                     Privacidade
                   </Link>
                 </li>
+                <li>
+                  <Link href="mailto:suporte@definance.com.br" className="text-muted-foreground transition-colors hover:text-primary">
+                    Suporte
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -153,6 +158,13 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-4">
+            <a
+              href="mailto:suporte@definance.com.br"
+              className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group"
+              title="E-mail"
+            >
+              <Mail className="h-4 w-4 transition-transform group-hover:scale-110" />
+            </a>
             <div className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group">
               <InstagramIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
             </div>

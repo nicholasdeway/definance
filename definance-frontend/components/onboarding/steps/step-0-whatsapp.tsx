@@ -25,7 +25,7 @@ export function Step0WhatsApp() {
   const [isVerifying, setIsVerifying] = React.useState(false)
   const [showQR, setShowQR] = React.useState(false)
 
-  const whatsappUrl = code ? `https://wa.me/14155238886?text=${encodeURIComponent(code)}` : ""
+  const whatsappUrl = code ? `https://wa.me/5527981009312?text=${encodeURIComponent(code)}` : ""
 
   // Atualiza o contexto — OnboardingWizard avança automaticamente quando isWhatsAppConnected === true
   const handleConnected = React.useCallback(async () => {

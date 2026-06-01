@@ -41,9 +41,8 @@ const faqs = [
 export function FAQSection() {
   return (
     <section id="faq" className="relative overflow-hidden py-24 md:py-32">
-      {/* Background Decor */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 bottom-0 h-[400px] w-[800px] -translate-x-1/2 translate-y-1/2 rounded-full bg-primary/5 blur-3xl opacity-50" />
+        <div className="absolute left-1/2 bottom-0 h-[400px] w-[800px] -translate-x-1/2 translate-y-1/2 rounded-full opacity-5 pointer-events-none" style={{ background: 'radial-gradient(ellipse, var(--primary) 0%, transparent 70%)' }} />
       </div>
 
       <div className="container px-4 md:px-6">

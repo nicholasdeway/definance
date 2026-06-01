@@ -25,7 +25,6 @@ export const OnboardingNavigation = () => {
     incomes,
     selectedExpenses,
     customExpenses,
-    billLoans,
     vehicles,
     debts
   } = useOnboarding()
@@ -91,7 +90,6 @@ export const OnboardingNavigation = () => {
       const mappedIncomes = incomes.map(inc => ({ ...inc, valor: inc.valor }))
       const mappedSelectedExpenses = Object.fromEntries(Object.entries(selectedExpenses).map(([k, v]) => [k, v]))
       const mappedCustomExpenses = customExpenses.map(exp => ({ ...exp, valor: exp.valor }))
-      const mappedBillLoans = Object.fromEntries(Object.entries(billLoans).map(([k, v]) => [k, { ...v, valor: v.valor }]))
       const mappedVehicles = vehicles.map(v => ({ 
         ...v, 
         ipva: v.ipva || 0, 
@@ -108,7 +106,6 @@ export const OnboardingNavigation = () => {
         incomes: mappedIncomes,
         selectedExpenses: mappedSelectedExpenses,
         customExpenses: mappedCustomExpenses,
-        billLoans: mappedBillLoans,
         vehicles: mappedVehicles,
         debts: mappedDebts
       }

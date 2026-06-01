@@ -78,7 +78,10 @@ export function PricingSection() {
         </div>
 
         {/* Pricing Card */}
-        <div className="max-w-sm mx-auto scale-[0.95] md:scale-100">
+        <div className="max-w-sm mx-auto scale-[0.95] md:scale-100 relative">
+          {/* Glowing background container */}
+          <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-primary to-accent opacity-20 blur-xl pointer-events-none" />
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -99,16 +102,16 @@ export function PricingSection() {
               <div className="flex items-baseline justify-center gap-0.5">
                 <span className="text-xl font-medium text-foreground opacity-60">R$</span>
                 <span className="text-5xl font-bold text-foreground tracking-tighter">
-                  {isAnnual ? "16" : "19"}
+                  {isAnnual ? "199" : "19"}
                 </span>
                 <span className="text-xl font-medium text-foreground opacity-60">
-                  ,{isAnnual ? "65" : "90"}
+                  ,{isAnnual ? "90" : "90"}
                 </span>
-                <span className="text-muted-foreground text-[10px] font-bold ml-1.5 opacity-40">/mês</span>
+                <span className="text-muted-foreground text-[10px] font-bold ml-1.5 opacity-40">{isAnnual ? "/ano" : "/mês"}</span>
               </div>
 
               <p className="mt-2 text-[10px] text-muted-foreground font-normal italic opacity-60">
-                {isAnnual ? "ou R$ 199,90 à vista" : "Plano mensal sem fidelidade"}
+                {isAnnual ? "Equivale a R$ 16,65/mês" : "Plano mensal sem fidelidade"}
               </p>
 
               {isAnnual && (
@@ -153,16 +156,16 @@ export function PricingSection() {
 
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { label: "Dashboard Web", icon: "Web" },
-                  { label: "IA no WhatsApp", icon: "Chat" },
-                  { label: "Áudio e Texto", icon: "Mic" },
-                  { label: "Relatórios IA", icon: "Chart" },
-                  { label: "Categorias Ilimitadas", icon: "List" },
-                  { label: "Consultas IA", icon: "Search" }
+                  { label: "Definance  WhatsApp Ilimitado" },
+                  { label: "Dashboard Completo" },
+                  { label: "Categorias Ilimitadas" },
+                  { label: "Relatórios IA" },
+                  { label: "Controle de Metas e Objetivos" },
+                  { label: "Suporte humanizado" }
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-muted/30 border border-border/50 group hover:bg-muted/50 transition-colors">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-                      <Check className="h-3 w-3 text-primary" />
+                    <div className="h-5 w-5 rounded-full bg-rose-500/10 flex items-center justify-center shrink-0 border border-rose-500/20">
+                      <Check className="h-3 w-3 text-rose-500" />
                     </div>
                     <span className="text-[10px] font-medium text-foreground/60 leading-tight uppercase tracking-normal">
                       {item.label}

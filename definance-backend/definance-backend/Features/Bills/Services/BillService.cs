@@ -157,7 +157,7 @@ namespace definance_backend.Features.Bills.Services
             using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
             var bill = await GetAndValidateUserBillAsync(userId, billId);
-            DateTime finalPaymentDate = paymentDate.HasValue ? NormalizeDate(paymentDate.Value) : _dateTimeProvider.GetExactAppDateTime();
+            DateTime finalPaymentDate = paymentDate.HasValue ? _dateTimeProvider.PreserveExactAppDateTime(paymentDate.Value) : _dateTimeProvider.GetExactAppDateTime();
 
             bill.Status = "Pago";
             bill.UpdatedAt = DateTime.UtcNow;

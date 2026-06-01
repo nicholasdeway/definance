@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Shield, UserCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 import { toast } from "sonner"
@@ -20,6 +21,11 @@ export default function PerfilPage() {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const [profile, setProfile] = useState({
     firstName: "",
@@ -135,7 +141,6 @@ export default function PerfilPage() {
 
   return (
     <div className="relative space-y-6">
-      <BillsAlert />
       <ImageCropperModal
         image={selectedImage}
         isOpen={isCropperOpen}
@@ -143,13 +148,17 @@ export default function PerfilPage() {
         onCropComplete={handleCropComplete}
       />
 
-      {isActionLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px] transition-all duration-300">
-          <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-            <Spinner className="h-10 w-10 text-primary" />
-            <p className="text-sm font-medium text-muted-foreground">Carregando...</p>
+      {isActionLoading && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45">
+          <div className="bg-card border border-border p-4 rounded-xl flex flex-col items-center gap-3 max-w-[180px] w-[90%] text-center">
+            <Spinner className="h-5 w-5 text-primary" />
+            <div className="space-y-0.5">
+              <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-primary">Salvando</span>
+              <span className="block text-[9px] text-muted-foreground font-medium opacity-70">Aguarde um instante</span>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="flex flex-col gap-6 items-start">
@@ -165,6 +174,8 @@ export default function PerfilPage() {
           <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{user?.role === 'admin' ? 'Administrador' : 'Membro'}</span>
         </div>
       </div>
+
+      <BillsAlert />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna da Esquerda: Informações e Assinatura */}
