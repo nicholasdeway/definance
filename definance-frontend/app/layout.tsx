@@ -35,9 +35,9 @@ export const metadata: Metadata = {
     siteName: 'Definance',
     images: [
       {
-        url: '/logo.png',
-        width: 192,
-        height: 192,
+        url: '/logo2.png',
+        width: 1200,
+        height: 630,
       },
     ],
     locale: 'pt_BR',

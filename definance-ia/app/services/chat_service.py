@@ -92,10 +92,9 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
     {first_name}, você tem [X] conta(s) paga(s) no período solicitado:
     * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], Pago. (Se vazia: "{first_name}, você não tem contas pagas no período solicitado.")
     [Se houver contas pendentes no período] Além disso, você tem [Y] conta(s) pendente(s) em aberto.
-  - Se o usuário perguntar por CONTAS PENDENTES / EM ABERTO ou de forma geral (sem especificar pagas/pendentes):
-    {first_name}, você tem [X] conta(s) pendente(s) em aberto:
-    * [Nome] no valor de R$ [Valor], com vencimento em [DD/MM/YYYY], [Status]. (Se vazia: "{first_name}, você não tem contas em aberto no momento.")
-    [Se houver contas pagas no período] Além disso, você tem [Y] conta(s) paga(s) no período.
+  - Se o usuário perguntar por CONTAS PENDENTES / EM ABERTO / ATRASADAS ou de forma geral:
+    Use EXATAMENTE os dados já formatados que a ferramenta listar_contas retorna no campo "mensagem_formatada". NÃO reformate, NÃO reordene, NÃO remova seções. Reproduza o conteúdo de "mensagem_formatada" literalmente como a sua resposta.
+    NUNCA liste contas fora do formato categorizado. Se a ferramenta retornou "mensagem_formatada", use-a diretamente.
 - Listagem de Metas:
   {first_name}, aqui estão suas metas de economia:
   * [name]: R$ [currentAmount] de R$ [targetAmount] (Falta R$ [restante]) | Progresso: [progresso]% | Categoria: [category] (Se vazia: "{first_name}, você não tem nenhuma meta de economia cadastrada no momento.")
@@ -825,9 +824,112 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                 if mes: params["month"] = mes
                 if ano: params["year"] = ano
                 resp = await http.get(f"{settings.BACKEND_URL}/api/Bills", params=params, headers=headers)
-                if resp.status_code == 200:
-                    return resp.json()
-                return {"erro": f"Erro do servidor backend (status {resp.status_code})"}
+                if resp.status_code != 200:
+                    return {"erro": f"Erro do servidor backend (status {resp.status_code})"}
+                
+                bills = resp.json()
+                today = get_today_sp()
+
+                atrasadas = []  # Pendente + vencimento no passado
+                pendentes = []  # Pendente + vencimento no futuro (ou sem data)
+                pagas = []
+
+                for b in bills:
+                    status = (b.get("status") or b.get("Status") or "").strip()
+                    nome_bill = b.get("name") or b.get("Name") or "Sem nome"
+                    valor = b.get("amount") or b.get("Amount") or 0.0
+                    categoria = b.get("category") or b.get("Category") or "Outros"
+                    due_str = b.get("dueDate") or b.get("DueDate") or ""
+                    bill_id = b.get("id") or b.get("Id") or ""
+
+                    # Parse da data de vencimento
+                    due_date = None
+                    if due_str:
+                        try:
+                            due_date = datetime.datetime.fromisoformat(due_str.replace("Z", "+00:00")).date()
+                        except Exception:
+                            try:
+                                due_date = datetime.datetime.strptime(due_str[:10], "%Y-%m-%d").date()
+                            except Exception:
+                                pass
+
+                    due_fmt = due_date.strftime("%d/%m/%Y") if due_date else "Sem data"
+
+                    entry = {
+                        "id": bill_id,
+                        "nome": nome_bill,
+                        "valor": float(valor),
+                        "valor_fmt": format_currency_brl(float(valor)),
+                        "categoria": categoria,
+                        "vencimento": due_fmt,
+                        "status": status,
+                    }
+
+                    if status.lower() == "pago":
+                        pagas.append(entry)
+                    elif due_date and due_date < today:
+                        entry["status"] = "Atrasada"
+                        atrasadas.append(entry)
+                    else:
+                        pendentes.append(entry)
+
+                # Agrupa por categoria
+                def agrupar_por_categoria(lista):
+                    grupos = {}
+                    for item in lista:
+                        cat = item["categoria"]
+                        if cat not in grupos:
+                            grupos[cat] = []
+                        grupos[cat].append(item)
+                    return grupos
+
+                atrasadas_agrupadas = agrupar_por_categoria(atrasadas)
+                pendentes_agrupadas = agrupar_por_categoria(pendentes)
+
+                total_atrasado = sum(b["valor"] for b in atrasadas)
+                total_pendente = sum(b["valor"] for b in pendentes)
+
+                # Monta mensagem formatada para a IA reproduzir
+                linhas = []
+
+                if atrasadas:
+                    linhas.append(f"⚠️ *Contas Atrasadas ({len(atrasadas)}):*")
+                    for cat, items in atrasadas_agrupadas.items():
+                        linhas.append(f"📌 *{cat}*")
+                        for item in items:
+                            linhas.append(f"• {item['nome']} | R$ {item['valor_fmt']} | Venc: {item['vencimento']}")
+                    linhas.append("")
+
+                if pendentes:
+                    linhas.append(f"🕐 *Contas Pendentes ({len(pendentes)}):*")
+                    for cat, items in pendentes_agrupadas.items():
+                        linhas.append(f"📌 *{cat}*")
+                        for item in items:
+                            linhas.append(f"• {item['nome']} | R$ {item['valor_fmt']} | Venc: {item['vencimento']}")
+                    linhas.append("")
+
+                if atrasadas or pendentes:
+                    if atrasadas:
+                        linhas.append(f"*Total Atrasado:* R$ {format_currency_brl(total_atrasado)}")
+                    if pendentes:
+                        linhas.append(f"*Total Pendente:* R$ {format_currency_brl(total_pendente)}")
+
+                if not atrasadas and not pendentes:
+                    linhas.append("Você não tem contas em aberto no momento.")
+
+                if pagas:
+                    linhas.append(f"\nAlém disso, você tem {len(pagas)} conta(s) paga(s) no período.")
+
+                return {
+                    "mensagem_formatada": "\n".join(linhas),
+                    "resumo": {
+                        "total_atrasadas": len(atrasadas),
+                        "total_pendentes": len(pendentes),
+                        "total_pagas": len(pagas),
+                        "valor_atrasado": format_currency_brl(total_atrasado),
+                        "valor_pendente": format_currency_brl(total_pendente),
+                    }
+                }
 
             # -------------------- PAGAR CONTA --------------------
             elif name == "pagar_conta":

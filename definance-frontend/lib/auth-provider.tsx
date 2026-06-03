@@ -412,7 +412,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkAuth])
 
   const deleteAccount = useCallback(async (currentPassword?: string): Promise<{ success: boolean; message?: string }> => {
-    setIsActionLoading(true)
     setAuthError(null)
     try {
       await apiClient("/api/profile", {
@@ -425,8 +424,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const message = error instanceof Error ? error.message : "Erro ao excluir conta"
       setAuthError(message)
       return { success: false, message }
-    } finally {
-      setIsActionLoading(false)
     }
   }, [logout])
 

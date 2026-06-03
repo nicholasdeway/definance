@@ -77,13 +77,13 @@ namespace definance_backend.Features.Onboarding.Services
                 var existingIncomes = (await _incomeRepository.GetByUserIdAsync(userId)).ToList();
                 var existingBills = (await _billRepository.GetByUserIdAsync(userId)).ToList();
 
-                // Processamento paralelo das sincronizações
-                await Task.WhenAll(
-                    SyncIncomesOptimizedAsync(userId, dto, existingIncomes),
-                    SyncFixedExpensesOptimizedAsync(userId, dto, existingBills),
-                    SyncVehiclesOptimizedAsync(userId, dto, existingBills),
-                    SyncDebtsOptimizedAsync(userId, dto, existingBills)
-                );
+                // Incomes usa repositório separado, pode rodar em paralelo.
+                // Bills devem ser sequenciais para evitar race condition com snapshot compartilhado.
+                var incomesTask = SyncIncomesOptimizedAsync(userId, dto, existingIncomes);
+                await SyncFixedExpensesOptimizedAsync(userId, dto, existingBills);
+                await SyncVehiclesOptimizedAsync(userId, dto, existingBills);
+                await SyncDebtsOptimizedAsync(userId, dto, existingBills);
+                await incomesTask;
             }
             catch (Exception ex)
             {
@@ -315,7 +315,12 @@ namespace definance_backend.Features.Onboarding.Services
 
         private DateTime NormalizeDate(DateTime date)
         {
-            return _dateTimeProvider.NormalizeToAppDate(date);
+            if (date == default)
+            {
+                var utcNow = DateTime.UtcNow;
+                return DateTime.SpecifyKind(new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0), DateTimeKind.Unspecified);
+            }
+            return DateTime.SpecifyKind(new DateTime(date.Year, date.Month, date.Day, 0, 0, 0), DateTimeKind.Unspecified);
         }
 
         private bool TryParseDate(string dateStr, out DateTime result)
@@ -328,18 +333,25 @@ namespace definance_backend.Features.Onboarding.Services
                 "dd/MM/yyyy", "d/M/yyyy", "yyyy/MM/dd"
             };
 
-            return DateTime.TryParse(dateStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result) ||
-                   DateTime.TryParseExact(dateStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result);
+            bool parsed = DateTime.TryParse(dateStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result) ||
+                          DateTime.TryParseExact(dateStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result);
+
+            if (parsed && (result.Year < 1920 || result.Year > 2100))
+            {
+                return false;
+            }
+
+            return parsed;
         }
 
         private async Task SyncIncomesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Income> existingIncomes)
         {
             if (dto.Incomes == null) return;
             
-            var now = _dateTimeProvider.GetCurrentAppDate();
+            var now = DateTime.UtcNow;
             var user = await _userRepository.GetByIdAsync(userId);
             var userCreatedAt = user?.CreatedAt ?? now;
-            var currentMonth = new DateTime(now.Year, now.Month, 1);
+            var currentMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
             // Determinar o limite de meses para sincronização futura
             var maxFutureMonth = currentMonth;
@@ -513,7 +525,8 @@ namespace definance_backend.Features.Onboarding.Services
                             {
                                 if (TryParseDate(dateStr.Trim(), out var dt))
                                 {
-                                    var paymentDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
+                                    int day = Math.Min(dt.Day, DateTime.DaysInMonth(syncMonth.Year, syncMonth.Month));
+                                    var paymentDate = new DateTime(syncMonth.Year, syncMonth.Month, day, 0, 0, 0, DateTimeKind.Unspecified);
                                     
                                     newIncomes.Add(new Income
                                     {
@@ -542,7 +555,7 @@ namespace definance_backend.Features.Onboarding.Services
                                     Name = $"{inc.Tipo} (Quinzena {i + 1})",
                                     Amount = valorEfetivo,
                                     Type = inc.Tipo,
-                                    Date = new DateTime(syncMonth.Year, syncMonth.Month, i == 0 ? 1 : 15, 0, 0, 0),
+                                    Date = new DateTime(syncMonth.Year, syncMonth.Month, i == 0 ? 1 : 15, 0, 0, 0, DateTimeKind.Unspecified),
                                     IsRecurring = isRecurring,
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
@@ -556,7 +569,8 @@ namespace definance_backend.Features.Onboarding.Services
                         DateTime? incomeDate = null;
                         if (dates.Length > 0 && TryParseDate(dates[0].Trim(), out var dt))
                         {
-                            incomeDate = new DateTime(syncMonth.Year, syncMonth.Month, dt.Day, 0, 0, 0);
+                            int day = Math.Min(dt.Day, DateTime.DaysInMonth(syncMonth.Year, syncMonth.Month));
+                            incomeDate = new DateTime(syncMonth.Year, syncMonth.Month, day, 0, 0, 0, DateTimeKind.Unspecified);
                         }
 
                         newIncomes.Add(new Income
@@ -588,13 +602,11 @@ namespace definance_backend.Features.Onboarding.Services
 
         private async Task SyncVehiclesOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
         {
-            var now = _dateTimeProvider.GetCurrentAppDate();
-            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
-
+            // Não aplicamos filtro temporal aqui pois IPVAs podem ter vencimento no passado
+            // e precisam ser deletados antes de serem recriados para evitar duplicação.
             var toDelete = existingBills.Where(b => 
                 b.Category == "Veículo" && 
                 b.Status == "Pendente" && 
-                (b.DueDate ?? b.CreatedAt) >= currentMonthStart &&
                 (
                     (b.Description != null && (b.Description.Contains("Perfil") || b.Description.Contains("Onboarding") || b.Description.Contains("Sincronizado")) && !b.Description.Contains("(Instância)")) ||
                     b.Name.Contains("IPVA") || b.Name.Contains("Seguro") || b.Name.Contains("Parcela") || b.Name.Contains("Financiamento") || b.Name.Contains("Multa")
@@ -739,8 +751,8 @@ namespace definance_backend.Features.Onboarding.Services
         {
             if (dto.SelectedExpenses == null) return;
 
-            var now = _dateTimeProvider.GetCurrentAppDate();
-            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+            var now = DateTime.UtcNow;
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
             var toDelete = existingBills.Where(b => 
                 b.Status == "Pendente" && 
@@ -811,8 +823,8 @@ namespace definance_backend.Features.Onboarding.Services
 
         private async Task SyncDebtsOptimizedAsync(Guid userId, OnboardingSubmissionDto dto, List<Bill> existingBills)
         {
-            var now = _dateTimeProvider.GetCurrentAppDate();
-            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
+            var now = DateTime.UtcNow;
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
             var toDelete = existingBills.Where(b => 
                 b.Category == "Dívidas" && 
