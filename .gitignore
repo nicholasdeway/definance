@@ -500,3 +500,7 @@ definance-ia/pyrightconfig.json
 **/pyrightconfig.json
 **/test_chat.py
 **/.vscode/
+
+# ASP.NET Core appsettings
+**/appsettings.json
+**/appsettings.*.json

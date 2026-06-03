@@ -56,6 +56,25 @@ const formatMonth = (month: any) => {
   return monthTranslations[monthStr] || monthStr
 }
 
+function limitPieData<T extends { valor: number }>(
+  data: T[],
+  labelKey: keyof T,
+  otherLabel: string = "Outro"
+): T[] {
+  const sorted = [...data].sort((a, b) => b.valor - a.valor);
+  if (sorted.length <= 5) return sorted;
+
+  const top4 = sorted.slice(0, 4);
+  const remainingSum = sorted.slice(4).reduce((sum, item) => sum + item.valor, 0);
+
+  const otherItem = {
+    [labelKey]: otherLabel,
+    valor: remainingSum
+  } as unknown as T;
+
+  return [...top4, otherItem];
+}
+
 export function DashboardCharts({ categoryData, incomeData = [], monthlyData, loading }: DashboardChartsProps) {
   const { discreetMode } = useSettings()
   const { resolvedTheme } = useTheme()
@@ -97,13 +116,39 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
 
   const currentPieData = useMemo(() => {
     const data = activeTab === "gastos" ? categoryData : incomeData
-    return data.map(item => ({
+    const formatted = data.map(item => ({
       ...item,
       categoria: formatCategoryName(item.categoria)
     }))
+    return limitPieData(formatted, "categoria")
   }, [activeTab, categoryData, incomeData])
 
   const total = currentPieData.reduce((sum, item) => sum + item.valor, 0)
+
+  const CustomTooltip = useMemo(() => {
+    const TooltipComponent = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const item = payload[0].payload
+        const name = item.categoria || ""
+        const percentage = total > 0 ? ((item.valor / total) * 100).toFixed(0) : "0"
+        const color = payload[0].color || "var(--primary)"
+
+        return (
+          <div className="bg-card border border-border px-3 py-2.5 rounded-xl shadow-lg text-xs font-bold space-y-1 relative z-[50]">
+            <div className="text-foreground">{name}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span>Participação</span>
+              <span className="text-foreground">{percentage}%</span>
+            </div>
+          </div>
+        )
+      }
+      return null
+    }
+    TooltipComponent.displayName = "CustomPieTooltip"
+    return TooltipComponent
+  }, [total])
 
   if (loading || !mounted) {
     return (
@@ -193,40 +238,32 @@ export function DashboardCharts({ categoryData, incomeData = [], monthlyData, lo
               "relative h-44 w-44 shrink-0 transition-all duration-300",
               discreetMode && "discreet-mode-blur"
             )}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={currentPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="valor"
-                    nameKey="categoria"
-                  >
-                    {currentPieData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "bold"
-                    }}
-                    itemStyle={{ color: "var(--foreground)" }}
-                    formatter={tooltipFormatter}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Total</span>
                 <span className="text-sm font-black text-card-foreground">
                   {total > 1000 ? `R$ ${(total / 1000).toFixed(1)}k` : formatCurrency(total)}
                 </span>
+              </div>
+              <div className="relative z-10 w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={currentPieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="valor"
+                      nameKey="categoria"
+                    >
+                      {currentPieData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
 

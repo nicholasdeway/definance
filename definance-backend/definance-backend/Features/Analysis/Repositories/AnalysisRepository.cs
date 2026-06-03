@@ -136,7 +136,7 @@ namespace definance_backend.Features.Analysis.Repositories
                     to_char(m.month, 'Mon') as Month,
                     COALESCE(i.total, 0) as Receitas,
                     COALESCE(e.total, 0) as Despesas,
-                    m.month as RawDate
+                    m.month::timestamp as RawDate
                 FROM months m
                 LEFT JOIN income_sums i ON m.month = i.month
                 LEFT JOIN expense_sums e ON m.month = e.month
@@ -207,7 +207,7 @@ namespace definance_backend.Features.Analysis.Repositories
                 SELECT
                     to_char(month, 'Mon') as Month,
                     net as Saldo,
-                    month as RawDate
+                    month::timestamp as RawDate
                 FROM monthly_net
                 ORDER BY month ASC;
             ";

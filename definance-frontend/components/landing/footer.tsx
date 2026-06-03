@@ -80,7 +80,7 @@ export function Footer() {
           </div>
 
           {/* Links Section Wrapper */}
-          <div className="flex gap-12 md:gap-24 lg:gap-32">
+          <div className="flex flex-wrap gap-12 md:gap-24 lg:gap-32">
             {/* Navigation */}
             <div>
               <h4 className="mb-6 text-[11px] font-black uppercase tracking-[0.2em] text-foreground/50">Produto</h4>
@@ -141,10 +141,16 @@ export function Footer() {
                     Privacidade
                   </Link>
                 </li>
-                <li>
-                  <Link href="mailto:suporte@definance.com.br" className="text-muted-foreground transition-colors hover:text-primary">
-                    Suporte
-                  </Link>
+              </ul>
+            </div>
+
+            {/* Contato */}
+            <div>
+              <h4 className="mb-6 text-[11px] font-black uppercase tracking-[0.2em] text-foreground/50">Contato</h4>
+              <ul className="space-y-4 text-sm font-medium">
+                <li className="text-muted-foreground flex items-center gap-2 select-all">
+                  <Mail className="h-4 w-4 text-muted-foreground/75" />
+                  <span>suporte@definance.com.br</span>
                 </li>
               </ul>
             </div>
@@ -158,13 +164,12 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-4">
-            <a
-              href="mailto:suporte@definance.com.br"
+            <div
               className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group"
               title="E-mail"
             >
               <Mail className="h-4 w-4 transition-transform group-hover:scale-110" />
-            </a>
+            </div>
             <div className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group">
               <InstagramIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
             </div>
