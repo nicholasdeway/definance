@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { formatCurrency } from "@/lib/currency"
@@ -23,6 +24,25 @@ interface CompositionChartsProps {
   chartColors: string[]
 }
 
+function limitPieData<T extends { valor: number }>(
+  data: T[],
+  labelKey: keyof T,
+  otherLabel: string = "Outro"
+): T[] {
+  const sorted = [...data].sort((a, b) => b.valor - a.valor);
+  if (sorted.length <= 5) return sorted;
+
+  const top4 = sorted.slice(0, 4);
+  const remainingSum = sorted.slice(4).reduce((sum, item) => sum + item.valor, 0);
+
+  const otherItem = {
+    [labelKey]: otherLabel,
+    valor: remainingSum
+  } as unknown as T;
+
+  return [...top4, otherItem];
+}
+
 export const CompositionCharts = ({
   incomeAnalysis,
   categoryAnalysis,
@@ -34,6 +54,73 @@ export const CompositionCharts = ({
     const finalValue = Array.isArray(value) ? value[0] : value
     return formatCurrency(Number(finalValue || 0))
   }
+
+  const limitedIncomeAnalysis = useMemo(() => {
+    return limitPieData(incomeAnalysis, "tipo");
+  }, [incomeAnalysis]);
+
+  const limitedCategoryAnalysis = useMemo(() => {
+    return limitPieData(categoryAnalysis, "categoria");
+  }, [categoryAnalysis]);
+
+  const totalIncome = useMemo(() => {
+    return limitedIncomeAnalysis.reduce((sum, item) => sum + item.valor, 0);
+  }, [limitedIncomeAnalysis]);
+
+  const totalCategory = useMemo(() => {
+    return limitedCategoryAnalysis.reduce((sum, item) => sum + item.valor, 0);
+  }, [limitedCategoryAnalysis]);
+
+  const CustomIncomeTooltip = useMemo(() => {
+    const TooltipComponent = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const item = payload[0].payload
+        const name = item.tipo || ""
+        const percentage = totalIncome > 0 ? ((item.valor / totalIncome) * 100).toFixed(0) : "0"
+        const color = payload[0].color || "var(--primary)"
+
+        return (
+          <div className="bg-card border border-border px-3 py-2.5 rounded-xl shadow-lg text-xs font-bold space-y-1">
+            <div className="text-foreground">{name}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span>Participação</span>
+              <span className="text-foreground">{percentage}%</span>
+            </div>
+          </div>
+        )
+      }
+      return null
+    }
+    TooltipComponent.displayName = "CustomIncomeTooltip"
+    return TooltipComponent
+  }, [totalIncome])
+
+  const CustomCategoryTooltip = useMemo(() => {
+    const TooltipComponent = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const item = payload[0].payload
+        const name = item.categoria || ""
+        const percentage = totalCategory > 0 ? ((item.valor / totalCategory) * 100).toFixed(0) : "0"
+        const color = payload[0].color || "var(--primary)"
+
+        return (
+          <div className="bg-card border border-border px-3 py-2.5 rounded-xl shadow-lg text-xs font-bold space-y-1">
+            <div className="text-foreground">{name}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span>Participação</span>
+              <span className="text-foreground">{percentage}%</span>
+            </div>
+          </div>
+        )
+      }
+      return null
+    }
+    TooltipComponent.displayName = "CustomCategoryTooltip"
+    return TooltipComponent
+  }, [totalCategory])
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Detalhamento da Composição</h2>
@@ -48,11 +135,11 @@ export const CompositionCharts = ({
                 "h-[250px] overflow-hidden transition-[filter] duration-300",
                 discreetMode && "discreet-mode-blur"
               )}>
-                {incomeAnalysis.length > 0 ? (
+                {limitedIncomeAnalysis.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
                     <PieChart>
                       <Pie
-                        data={incomeAnalysis}
+                        data={limitedIncomeAnalysis}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -61,18 +148,11 @@ export const CompositionCharts = ({
                         dataKey="valor"
                         nameKey="tipo"
                       >
-                        {incomeAnalysis.map((entry, index) => (
+                        {limitedIncomeAnalysis.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        formatter={tooltipFormatter} 
-                        contentStyle={{
-                          backgroundColor: "var(--card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                      />
+                      <Tooltip content={<CustomIncomeTooltip />} />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px' }}/>
                     </PieChart>
                   </ResponsiveContainer>
@@ -94,11 +174,11 @@ export const CompositionCharts = ({
                 "h-[250px] overflow-hidden transition-[filter] duration-300",
                 discreetMode && "discreet-mode-blur"
               )}>
-                {categoryAnalysis.length > 0 ? (
+                {limitedCategoryAnalysis.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={300}>
                     <PieChart>
                       <Pie
-                        data={categoryAnalysis}
+                        data={limitedCategoryAnalysis}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -107,18 +187,11 @@ export const CompositionCharts = ({
                         dataKey="valor"
                         nameKey="categoria"
                       >
-                        {categoryAnalysis.map((entry, index) => (
+                        {limitedCategoryAnalysis.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        formatter={tooltipFormatter} 
-                        contentStyle={{
-                          backgroundColor: "var(--card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                      />
+                      <Tooltip content={<CustomCategoryTooltip />} />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px' }}/>
                     </PieChart>
                   </ResponsiveContainer>

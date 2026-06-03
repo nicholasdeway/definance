@@ -120,7 +120,26 @@ export const ReceitaDialog = ({
     const formatName = (name: string) => {
       const trimmed = name.trim()
       if (!trimmed) return ""
-      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+      
+      // 1. Primeira letra maiúscula, o resto minúscula
+      let formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+      
+      // 2. Garante que siglas fiquem sempre em maiúsculas (ex: CLT, PJ)
+      const acronyms = ["CLT", "PJ", "MEI", "FGTS", "INSS", "IRPF"]
+      acronyms.forEach(acronym => {
+        const regex = new RegExp(`\\b${acronym}\\b`, "gi")
+        formatted = formatted.replace(regex, acronym)
+      })
+
+      // 3. Capitaliza palavras dentro de parênteses (ex: (trabalho) -> (Trabalho))
+      formatted = formatted.replace(/\(([^)]+)\)/g, (match, group) => {
+        const capitalizedGroup = group.split(' ').map((word: string) => {
+          return word.charAt(0).toUpperCase() + word.slice(1)
+        }).join(' ')
+        return `(${capitalizedGroup})`
+      })
+
+      return formatted
     }
 
     const dataToSave = {

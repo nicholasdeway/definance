@@ -123,6 +123,14 @@ export default function DashboardPage() {
         formatted = formatted.replace(regex, acronym)
       })
 
+      // Capitaliza palavras dentro de parênteses (ex: (trabalho) -> (Trabalho))
+      formatted = formatted.replace(/\(([^)]+)\)/g, (match, group) => {
+        const capitalizedGroup = group.split(' ').map((word: string) => {
+          return word.charAt(0).toUpperCase() + word.slice(1)
+        }).join(' ')
+        return `(${capitalizedGroup})`
+      })
+
       if (formatted === name) {
         return name.charAt(0).toUpperCase() + name.slice(1)
       }
