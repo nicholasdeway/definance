@@ -6,7 +6,7 @@ import { Target, CreditCard, Sparkles, Check, Play, RotateCcw, Shield, Folder, E
 import { cn } from "@/lib/utils"
 
 // Tipos de chaves para cada funcionalidade exibida na aba esquerda
-type FeatureKey = "goals" | "ai" | "cards" | "categories" | "data"
+type FeatureKey = "goals" | "ai" | "categories" | "data"
 
 export function FeaturesShowcase() {
   // Define qual funcionalidade está ativa no momento (padrão: "goals")
@@ -21,8 +21,7 @@ export function FeaturesShowcase() {
     const interval = setInterval(() => {
       setActiveFeature((current) => {
         if (current === "goals") return "ai"
-        if (current === "ai") return "cards"
-        if (current === "cards") return "categories"
+        if (current === "ai") return "categories"
         if (current === "categories") return "data"
         return "goals"
       })
@@ -37,7 +36,7 @@ export function FeaturesShowcase() {
   }
 
   return (
-    <section className="relative py-24 overflow-hidden bg-muted/10 border-t border-border/50">
+    <section className="dark relative py-24 overflow-hidden bg-black dark:bg-muted/10 border-t border-border/50 text-foreground">
       {/* Gradientes decorativos de fundo */}
       <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full -z-10 pointer-events-none opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
       <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full -z-10 pointer-events-none opacity-5" style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }} />
@@ -121,31 +120,7 @@ export function FeaturesShowcase() {
               </div>
             </button>
 
-            {/* Aba 3: Controle de Cartões */}
-            <button
-              onClick={() => handleSelectFeature("cards")}
-              className={cn(
-                "w-full text-left p-6 rounded-[1.5rem] border transition-all duration-300 flex gap-4 cursor-pointer",
-                activeFeature === "cards"
-                  ? "bg-card border-primary/20 shadow-md shadow-primary/5"
-                  : "bg-transparent border-transparent hover:bg-card/30"
-              )}
-            >
-              <div className={cn(
-                "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border transition-colors",
-                activeFeature === "cards"
-                  ? "bg-primary/10 border-primary/20 text-primary"
-                  : "bg-muted/50 border-border/50 text-muted-foreground"
-              )}>
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-foreground">Controle de Cartões</h3>
-                <p className="text-xs text-muted-foreground leading-normal">
-                  Centralize faturas e limites em uma interface visual de alta precisão. Saiba de imediato o limite restante após cada compra.
-                </p>
-              </div>
-            </button>
+
 
             {/* Aba 4: Categorias e Limites */}
             <button
@@ -230,7 +205,6 @@ export function FeaturesShowcase() {
                 <AnimatePresence mode="wait">
                   {activeFeature === "goals" && <GoalsInteractiveMockup key="goals" />}
                   {activeFeature === "ai" && <IntegratedSystemMockup key="ai" />}
-                  {activeFeature === "cards" && <CreditCardMockup key="cards" />}
                   {activeFeature === "categories" && <CategoriesInteractiveMockup key="categories" />}
                   {activeFeature === "data" && <DataInteractiveMockup key="data" />}
                 </AnimatePresence>

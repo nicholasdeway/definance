@@ -132,12 +132,12 @@ export function Footer() {
               <h4 className="mb-6 text-[11px] font-black uppercase tracking-[0.2em] text-foreground/50">Legal</h4>
               <ul className="space-y-4 text-sm font-medium">
                 <li>
-                  <Link href="#" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link href="/termos" className="text-muted-foreground transition-colors hover:text-primary">
                     Termos
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link href="/privacidade" className="text-muted-foreground transition-colors hover:text-primary">
                     Privacidade
                   </Link>
                 </li>
@@ -164,18 +164,31 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-4">
-            <div
+            <a
+              href="mailto:suporte@definance.com.br"
               className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group"
               title="E-mail"
             >
               <Mail className="h-4 w-4 transition-transform group-hover:scale-110" />
-            </div>
-            <div className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group">
+            </a>
+            <a 
+              href="https://www.instagram.com/definance.ia/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group"
+              title="Instagram"
+            >
               <InstagramIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
-            </div>
-            <div className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group">
+            </a>
+            <a 
+              href="https://www.facebook.com/profile.php?id=61589448272611"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-9 w-9 rounded-full bg-foreground/5 border border-border/40 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all cursor-pointer group"
+              title="Facebook"
+            >
               <FacebookIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
-            </div>
+            </a>
           </div>
         </div>
       </div>

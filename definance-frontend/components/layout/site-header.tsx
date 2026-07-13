@@ -71,19 +71,19 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
     <header className={`fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-300 pointer-events-none ${isScrolled ? 'lg:pt-4 lg:px-4' : 'pt-0 px-0'}`}>
       {/* Mobile Floating Dock */}
       <div className="lg:hidden pointer-events-auto fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md z-50">
-        <div className="bg-background/40 backdrop-blur-2xl border border-white/10 rounded-full h-14 shadow-2xl flex items-center justify-between px-3">
+        <div className="bg-black/95 dark:bg-background/40 backdrop-blur-2xl border border-zinc-800 dark:border-white/10 rounded-full h-14 shadow-2xl flex items-center justify-between px-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" onClick={handleLogoClick}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
               <img src="/logo1.png" alt="Definance Logo" className="h-5 w-auto" />
             </div>
-            <span className="text-sm font-bold text-foreground">Definance</span>
+            <span className="text-sm font-bold text-white dark:text-foreground">Definance</span>
           </Link>
           {/* Actions */}
           <div className="flex items-center gap-1">
-            <ThemeToggle className="h-10 w-10 rounded-full" />
+            <ThemeToggle className="h-10 w-10 rounded-full hover:bg-white/10 dark:hover:bg-accent" />
             {!isOnboarding && (
-              <button className="h-10 w-10 rounded-full flex items-center justify-center text-foreground hover:bg-white/10 transition-all" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              <button className="h-10 w-10 rounded-full flex items-center justify-center text-white dark:text-foreground hover:bg-white/10 transition-all" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             )}
@@ -94,8 +94,10 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
       {/* Desktop Nav (original) */}
       <nav
         className={`pointer-events-auto hidden lg:flex relative items-center justify-between transition-all duration-250 border ${isScrolled
-            ? 'w-[96%] max-w-8xl bg-background/40 backdrop-blur-2xl border-border/40 rounded-2xl py-3 px-7 shadow-lg'
-            : `w-full max-w-none bg-background/95 border-border/40 border-b py-3 px-6 ${isOnboarding ? 'shadow-md' : ''}`
+            ? 'w-[96%] max-w-8xl bg-black/95 dark:bg-background/40 backdrop-blur-2xl border-zinc-800 dark:border-border/40 rounded-2xl py-3 px-7 shadow-lg'
+            : isOnboarding
+              ? 'w-full max-w-none bg-background/95 border-border/40 border-b py-3 px-6 shadow-md'
+              : 'w-full max-w-none bg-transparent border-transparent border-b py-3 px-6'
           }`}
       >
         {/* Logo */}
@@ -107,7 +109,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
             <img src="/logo1.png" alt="Definance Logo" className="h-5 w-auto" />
           </div>
-          <span className="text-xl font-bold text-foreground">Definance</span>
+          <span className="text-xl font-bold text-white dark:text-foreground">Definance</span>
         </Link>
 
         {/* Desktop Nav (Only in Landing) */}
@@ -118,7 +120,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => handleScrollClick(e, link.href)}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="text-sm font-medium text-zinc-300 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition-colors cursor-pointer"
               >
                 {link.name}
               </a>
@@ -127,14 +129,14 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
         )}
 
         <div className="flex items-center gap-3 z-10">
-          <ThemeToggle />
+          <ThemeToggle className="hover:bg-white/10 dark:hover:bg-accent" />
 
           {!mounted || isLoading ? (
             <div className="h-9 w-24 bg-muted/20 animate-pulse rounded-lg hidden md:block" />
           ) : !isAuthenticated && !isOnboarding ? (
             <>
               <Link href="/register" className="hidden lg:flex">
-                <Button variant="ghost" size="sm" className="cursor-pointer text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="sm" className="cursor-pointer text-zinc-300 dark:text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-white/10 dark:hover:bg-transparent">
                   Criar Conta
                 </Button>
               </Link>
@@ -151,7 +153,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
           ) : (isAuthenticated || isOnboarding) && (
             <div className="flex items-center gap-3">
               <div className="hidden lg:flex flex-col items-end">
-                <span className="text-sm font-semibold text-foreground leading-none">
+                <span className="text-sm font-semibold text-white dark:text-foreground leading-none">
                   {user?.firstName} {user?.lastName}
                 </span>
                 {isOnboarding ? (
@@ -159,7 +161,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                     Configurando Perfil
                   </span>
                 ) : (
-                  <Link href="/dashboard" className="text-[10px] font-medium mt-1 uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  <Link href="/dashboard" className="text-[10px] font-medium mt-1 uppercase tracking-wider text-zinc-400 dark:text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                     Dashboard
                   </Link>
                 )}
@@ -181,7 +183,7 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                 variant="ghost"
                 size={isOnboarding ? "sm" : "icon"}
                 onClick={handleLogout}
-                className={`cursor-pointer text-muted-foreground hover:text-destructive transition-colors ${isOnboarding ? 'gap-2 font-medium px-2' : 'hidden lg:flex'}`}
+                className={`cursor-pointer text-zinc-400 dark:text-muted-foreground hover:text-white dark:hover:text-destructive hover:bg-white/5 dark:hover:bg-transparent transition-colors ${isOnboarding ? 'gap-2 font-medium px-2' : 'hidden lg:flex'}`}
               >
                 <LogOut className="h-4 w-4" />
                 {isOnboarding && <span className="hidden sm:inline">Sair</span>}
@@ -203,14 +205,14 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className="pointer-events-auto fixed left-4 right-4 top-20 bg-background/95 backdrop-blur-xl border border-white/10 p-6 flex flex-col gap-4 lg:hidden rounded-2xl shadow-2xl z-40"
+              className="pointer-events-auto fixed left-4 right-4 top-20 bg-black/95 dark:bg-background/95 backdrop-blur-xl border border-zinc-800 dark:border-white/10 p-6 flex flex-col gap-4 lg:hidden rounded-2xl shadow-2xl z-40"
             >
               {navLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
                   onClick={(e) => handleScrollClick(e, link.href)}
-                  className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-lg font-medium text-zinc-300 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition-colors"
                 >
                   {link.name}
                 </a>
@@ -229,8 +231,8 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <p className="text-sm font-semibold text-white dark:text-foreground">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs text-zinc-400 dark:text-muted-foreground">{user?.email}</p>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/5 cursor-pointer" onClick={handleLogout}>
