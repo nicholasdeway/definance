@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-provider'
 import { SettingsProvider } from '@/lib/settings-context'
 import { SafeAnalytics } from '@/components/safe-analytics'
+import { MetaPixel } from '@/components/meta-pixel'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import "./globals.css";
@@ -76,6 +77,7 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         <SafeAnalytics />
+        <MetaPixel />
       </body>
     </html>
   )

@@ -1,17 +1,15 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  Home, 
-  Wallet, 
-  BarChart3, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  Calendar, 
-  History, 
-  CreditCard,
+import {
+  Home,
+  Wallet,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Calendar,
+  History,
   Target,
   LayoutGrid,
   Settings,
@@ -19,7 +17,8 @@ import {
   UserCircle,
   TrendingUp,
   PieChart,
-  Brain
+  Brain,
+  Receipt
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -44,7 +43,7 @@ export function MobileNav() {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md md:hidden">
       <div className="bg-background/40 backdrop-blur-2xl border border-border/50 rounded-full h-16 shadow-2xl flex items-center justify-around px-2 relative">
-        
+
         {/* 1. Visão Geral (Home) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -107,10 +106,11 @@ export function MobileNav() {
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl gap-3 cursor-pointer">
               <Link href="/dashboard/contas">
-                <CreditCard className="h-4 w-4 text-purple-500" />
+                <Receipt className="h-4 w-4 text-purple-500" />
                 <span className="font-medium">Minhas Contas</span>
               </Link>
             </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
 

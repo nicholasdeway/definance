@@ -81,7 +81,7 @@ function MarqueeRow({ items, direction = "left", speed = 2 }: { items: string[],
 
 export function MarqueeSection() {
   return (
-    <section className="relative bg-muted/20 py-24 md:py-32 overflow-hidden border-y border-border/50">
+    <section className="dark relative bg-black dark:bg-muted/20 py-24 md:py-32 overflow-hidden border-y border-border/50 text-foreground">
       {/* Subtle Background Glows */}
       <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full -z-10 opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
       <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full -z-10 opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />

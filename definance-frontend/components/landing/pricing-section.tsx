@@ -18,7 +18,7 @@ const features = [
 ]
 
 export function PricingSection() {
-  const [isAnnual, setIsAnnual] = useState(true)
+  const [isAnnual, setIsAnnual] = useState(false)
   const { isAuthenticated, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
 
@@ -27,15 +27,15 @@ export function PricingSection() {
   }, [])
 
   return (
-    <section id="precos" className="relative py-24 overflow-hidden bg-muted/20">
+    <section id="precos" className="dark relative py-24 overflow-hidden border-t border-border/50 text-foreground">
       <div className="container px-4 mx-auto">
 
-        <div className="mx-auto mb-10 max-w-xl text-center">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
           <h2 className="mb-4 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Um plano. <span className="animate-shimmer-text">Sem limites.</span>
+            Teste grátis por <span className="animate-shimmer-text">7 dias sem compromisso</span>
           </h2>
           <p className="text-[13px] text-muted-foreground font-medium">
-            7 dias de acesso total. Bloqueio automático após o trial.
+            Você não paga nada agora e não precisa de cartão de crédito para começar.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export function PricingSection() {
             <div className="p-8 text-center border-b border-border/50 relative z-10">
               <div className="flex justify-center gap-2 mb-6">
                 <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-widest border border-primary/20">Plano Único</span>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] font-semibold uppercase tracking-widest border border-emerald-500/20">7 Dias Trial</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] font-semibold uppercase tracking-widest border border-emerald-500/20">7 Dias Grátis</span>
               </div>
 
               <h3 className="text-[12px] font-medium text-foreground mb-6 uppercase tracking-[0.2em] opacity-80">Acesso completo ao Definance</h3>
@@ -114,22 +114,30 @@ export function PricingSection() {
                 {isAnnual ? "Equivale a R$ 16,65/mês" : "Plano mensal sem fidelidade"}
               </p>
 
-              {isAnnual && (
+              {isAnnual ? (
                 <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-semibold border border-emerald-500/20">
                   Economia de 15%
                 </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAnnual(true)}
+                  className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-semibold border border-emerald-500/20 cursor-pointer transition-all duration-200"
+                >
+                  Dica: Economize 15% no Plano Anual →
+                </button>
               )}
 
               <div className="mt-8 space-y-4">
                 {!mounted ? (
                   <Button disabled className="w-full h-12 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-xl bg-primary opacity-50 cursor-not-allowed flex items-center justify-center gap-2">
-                    Começar agora
+                    Começar Grátis
                     <span className="text-lg font-light">→</span>
                   </Button>
                 ) : (
                   <Button asChild className="w-full h-12 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2">
                     <Link href={isAuthenticated ? "/dashboard/perfil#plans-section" : "/login"}>
-                      Começar agora
+                      Começar Grátis
                       <span className="text-lg font-light">→</span>
                     </Link>
                   </Button>
