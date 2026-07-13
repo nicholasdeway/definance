@@ -20,18 +20,18 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   }, [])
 
   if (!mounted) {
-    return (
+    return null /* (
       <Button variant="ghost" size="icon" className={cn("h-9 w-9 opacity-0", className)}>
         <Sun className="h-4 w-4" />
       </Button>
-    )
+    ) */
   }
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
   }
 
-  return (
+  return null /* (
     <Button 
       variant="ghost" 
       size="icon" 
@@ -65,5 +65,5 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         )}
       </AnimatePresence>
     </Button>
-  )
+  ) */
 }

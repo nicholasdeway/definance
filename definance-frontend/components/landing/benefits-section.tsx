@@ -51,7 +51,7 @@ const itemVariants: Variants = {
 
 export function BenefitsSection() {
   return (
-    <section id="beneficios" className="border-t border-border bg-muted/30 py-20 md:py-32">
+    <section id="beneficios" className="dark border-t border-border bg-black dark:bg-muted/30 py-20 md:py-32 text-foreground">
       <div className="container px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

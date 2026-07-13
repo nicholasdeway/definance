@@ -48,13 +48,12 @@ export function WhatsAppIntegration() {
                 IA no WhatsApp para sua rotina
               </div>
 
-              <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl">
-                Esqueça as <span className="animate-shimmer-text">planilhas</span>. Controle tudo por mensagem.
+              <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl leading-tight">
+                Seu WhatsApp agora é seu <span className="animate-shimmer-text">gerente financeiro</span>
               </h2>
 
               <p className="mb-10 text-lg text-muted-foreground leading-relaxed">
-                Finanças, relatórios e gastos. Organizados por IA, direto no WhatsApp.
-                Sem apps complicados, apenas envie uma mensagem ou áudio e deixe que cuidamos do resto.
+                Economize até 4 horas por mês. Envie um áudio ou texto contando seus gastos e nossa inteligência artificial faz todo o trabalho de categorizar e organizar suas finanças instantaneamente.
               </p>
 
               <div className="grid gap-6 sm:grid-cols-2 mb-10">
@@ -74,9 +73,9 @@ export function WhatsAppIntegration() {
               </div>
 
               {mounted && !isAuthenticated && !isLoading && (
-                <Link href="/login">
-                  <button className="h-12 px-8 rounded-full bg-[#00a884] text-[#0b141a] font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-[#00a884]/20 active:scale-95 cursor-pointer">
-                    Começar agora
+                <Link href="/register">
+                  <button className="h-12 px-8 rounded-xl bg-[#00a884] hover:bg-[#008f70] text-[#0b141a] font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-[#00a884]/20 active:scale-95 cursor-pointer">
+                    Começar Grátis no WhatsApp
                   </button>
                 </Link>
               )}

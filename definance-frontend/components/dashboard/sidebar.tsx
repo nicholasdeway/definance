@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { Logo } from "@/components/logo"
 import { usePathname } from "next/navigation"
 import {
   Sidebar,
@@ -28,7 +27,6 @@ import {
   LayoutDashboard,
   ArrowDownLeft,
   ArrowUpRight,
-  CreditCard,
   Target,
   BarChart3,
   User,
@@ -40,7 +38,8 @@ import {
   Landmark,
   Tags,
   History,
-  Share2
+  Share2,
+  Receipt
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
 
@@ -50,7 +49,7 @@ const menuItems = [
   { title: "Saídas", url: "/dashboard/saidas", icon: ArrowUpRight },
   { title: "Histórico", url: "/dashboard/historico", icon: History },
   { title: "Gastos Diários", url: "/dashboard/gastos-diarios", icon: CalendarDays },
-  { title: "Minhas Contas", url: "/dashboard/contas", icon: CreditCard },
+  { title: "Minhas Contas", url: "/dashboard/contas", icon: Receipt },
   { title: "Metas", url: "/dashboard/metas", icon: Target },
   { title: "Categorias", url: "/dashboard/categorias", icon: Tags },
   { title: "Análises", url: "/dashboard/relatorios", icon: BarChart3 },
@@ -65,7 +64,7 @@ export function DashboardSidebar() {
 
   const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : user?.firstName 
+    : user?.firstName
       ? user.firstName.slice(0, 2).toUpperCase()
       : "US"
 
@@ -74,10 +73,10 @@ export function DashboardSidebar() {
       <SidebarHeader className="flex h-16 justify-center pt-0 pb-0">
         <Link href="/dashboard" className="flex items-center gap-3 px-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
-            <img 
-              src="/logo1.png" 
-              alt="Logo" 
-              className="h-6 w-auto" 
+            <img
+              src="/logo1.png"
+              alt="Logo"
+              className="h-6 w-auto"
             />
           </div>
           <span className="truncate text-lg md:group-data-[state=expanded]:text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
@@ -85,7 +84,7 @@ export function DashboardSidebar() {
           </span>
         </Link>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 md:group-data-[state=expanded]:text-xs md:group-data-[state=expanded]:mb-1">
@@ -112,7 +111,7 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
       <SidebarFooter className="pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -165,7 +164,7 @@ export function DashboardSidebar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => logout()}
                   className="flex cursor-pointer items-center gap-2 text-destructive"
                 >

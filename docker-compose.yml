@@ -11,6 +11,9 @@ services:
       - S3_BUCKET_NAME=definance-avatars
       - AiService__Url=http://ia-service:8000/parse-expense
       - AiService__Endpoint=http://ia-service:8000/api/chat
+      - ZApi__InstanceId=${ZAPI_INSTANCE_ID}
+      - ZApi__Token=${ZAPI_TOKEN}
+      - ZApi__ClientToken=${ZAPI_CLIENT_TOKEN}
     container_name: definance_api
     restart: always
     networks:
