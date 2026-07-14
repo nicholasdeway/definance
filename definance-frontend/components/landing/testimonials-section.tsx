@@ -44,13 +44,13 @@ const testimonials = [
 ]
 
 // Componente de Contador Animado que sobe de 0 ao valor final quando entra na tela
-function Counter({ 
-  value, 
-  duration = 1800, 
-  decimals = 0, 
-  prefix = "", 
-  suffix = "" 
-}: { 
+function Counter({
+  value,
+  duration = 1800,
+  decimals = 0,
+  prefix = "",
+  suffix = ""
+}: {
   value: number
   duration?: number
   decimals?: number
@@ -90,10 +90,10 @@ function Counter({
     const animate = (currentTime: number) => {
       const elapsedTime = currentTime - startTime
       const progress = Math.min(elapsedTime / duration, 1)
-      
+
       // Easing: easeOutQuad
       const easeProgress = progress * (2 - progress)
-      
+
       const currentValue = start + (end - start) * easeProgress
       setCount(currentValue)
 
@@ -162,7 +162,7 @@ export function TestimonialsSection() {
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] rounded-full -z-10 pointer-events-none opacity-5" style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
 
       <div className="container px-4 md:px-6 mx-auto">
-        
+
         {/* Header */}
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-4 py-1.5 text-xs font-semibold text-emerald-500 uppercase tracking-widest">
@@ -172,7 +172,7 @@ export function TestimonialsSection() {
             Quem usa a inteligência do <span className="animate-shimmer-text">Definance</span> aprova
           </h2>
           <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Veja como nossos membros fictícios transformaram sua relação com o dinheiro em poucos dias.
+            Veja como nossos membros transformaram sua relação com o dinheiro em poucos dias.
           </p>
         </div>
 
@@ -181,7 +181,7 @@ export function TestimonialsSection() {
           <div className="bg-card/45 border border-border/50 rounded-[2rem] p-6 md:p-8 backdrop-blur-md relative overflow-hidden">
             <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 divide-y md:divide-y-0 md:divide-x divide-border/20">
-              
+
               <div className="flex flex-col items-center justify-center text-center p-2">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Registros Processados</span>
                 <span className="text-3xl font-extrabold text-foreground mt-1.5">
@@ -224,7 +224,7 @@ export function TestimonialsSection() {
             {testimonials.map((item, idx) => {
               let diff = idx - activeIndex
               const len = testimonials.length
-              
+
               // Handle infinite wrapping for carousel offset calculations
               if (diff < -len / 2) diff += len
               if (diff > len / 2) diff -= len
@@ -240,7 +240,7 @@ export function TestimonialsSection() {
                   onClick={() => handleSelect(idx)}
                   className={cn(
                     "absolute w-full max-w-[280px] md:max-w-[460px] p-6 md:p-8 rounded-3xl border transition-all duration-500 cursor-pointer flex flex-col justify-between bg-card text-left",
-                    isActive 
+                    isActive
                       ? "border-emerald-500/40 bg-card shadow-xl shadow-emerald-500/5 z-20"
                       : "border-border/20 bg-card/20 opacity-30 scale-90 z-10 hover:opacity-50"
                   )}

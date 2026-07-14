@@ -20,6 +20,8 @@ services:
       - definance-net
     depends_on:
       - ia-service
+    volumes:
+      - ./appsettings.Production.json:/app/appsettings.Production.json:ro
 
   ia-service:
     build:
@@ -32,8 +34,6 @@ services:
       - S3_BUCKET_NAME=definance-avatars
       - GROQ_API_KEY=${GROQ_API_KEY}
       - MODEL_NAME=${MODEL_NAME}
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - BACKEND_URL=http://backend
     container_name: definance_ia
     restart: always
