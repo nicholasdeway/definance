@@ -130,7 +130,7 @@ export default function PrivacidadePage() {
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>OpenAI Inc. (API):</strong> Transmissão de áudios e textos enviados via WhatsApp para processamento de linguagem natural. As mensagens enviadas são anonimizadas para remover dados pessoais diretos.</li>
-              <li><strong>Twilio Inc. (WhatsApp API):</strong> Para recebimento e despacho das mensagens e arquivos de mídia do chatbot de IA.</li>
+              <li><strong>Z-API:</strong> Gateway de integração de mensagens para recebimento e despacho das notificações e mídias do chatbot de IA no WhatsApp.</li>
               <li><strong>Stripe e Mercado Pago (Gateways de Checkout):</strong> Para validação, processamento e renovação automática de planos Premium e processamento idempotente de notificações de webhook de estornos/reembolsos.</li>
               <li><strong>Meta Platforms, Inc. (Meta Pixel / WhatsApp):</strong> Rastreamento de eventos de conversão (acesso ao site, cliques e finalizações de checkout) para otimização de publicidade, além da infraestrutura de envio e recebimento de mensagens do chatbot no WhatsApp.</li>
             </ul>

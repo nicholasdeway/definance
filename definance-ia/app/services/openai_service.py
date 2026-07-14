@@ -135,22 +135,13 @@ def _get_error_response(message: str) -> ParsedExpense:
 async def transcribe_audio_url(audio_url: str) -> str:
     """
     Baixa um arquivo de áudio a partir de uma URL e faz a transcrição usando o Groq Whisper.
-    Suporta autenticação básica do Twilio caso as chaves estejam no environment.
     """
     import httpx
-    import os
     try:
         logger.info(f"Iniciando download do áudio: {audio_url}")
         
-        # Suporte opcional a autenticação para URLs privadas do Twilio
-        auth = None
-        twilio_sid = os.getenv("TWILIO_ACCOUNT_SID") or os.getenv("Twilio__AccountSID")
-        twilio_token = os.getenv("TWILIO_AUTH_TOKEN") or os.getenv("Twilio__AuthToken")
-        if twilio_sid and twilio_token and "twilio.com" in audio_url:
-            auth = (twilio_sid, twilio_token)
-            
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as http_client:
-            response = await http_client.get(audio_url, auth=auth)
+            response = await http_client.get(audio_url)
             response.raise_for_status()
             audio_bytes = response.content
 
