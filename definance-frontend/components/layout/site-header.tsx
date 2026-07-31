@@ -68,10 +68,13 @@ export function SiteHeader({ variant = 'landing' }: SiteHeaderProps) {
   ]
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-300 pointer-events-none ${isScrolled ? 'lg:pt-4 lg:px-4' : 'pt-0 px-0'}`}>
+    <header
+      className={`fixed left-0 right-0 z-50 flex flex-col justify-center transition-all duration-300 pointer-events-none ${isScrolled ? 'lg:pt-4 lg:px-4' : 'pt-0 px-0'}`}
+      style={{ top: 'var(--banner-h, 0px)' }}
+    >
       {/* Mobile Floating Dock */}
-      <div className="lg:hidden pointer-events-auto fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-md z-50">
-        <div className="bg-black/95 dark:bg-background/40 backdrop-blur-2xl border border-zinc-800 dark:border-white/10 rounded-full h-14 shadow-2xl flex items-center justify-between px-3">
+      <div className="lg:hidden pointer-events-auto w-full flex justify-center pt-2 px-2">
+        <div className="w-full max-w-md bg-black/95 dark:bg-background/40 backdrop-blur-2xl border border-zinc-800 dark:border-white/10 rounded-full h-14 shadow-2xl flex items-center justify-between px-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" onClick={handleLogoClick}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">

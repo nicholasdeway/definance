@@ -96,6 +96,27 @@ export function BenefitsSection() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* CTA de conversão após beneficios */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+          className="flex flex-col items-center gap-3 mt-14"
+        >
+          <a
+            href="/register"
+            className="inline-flex items-center gap-2 h-13 px-8 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-300 cursor-pointer"
+          >
+            Quero começar grátis por 7 dias
+            <Sparkles className="h-4 w-4" />
+          </a>
+          <p className="text-xs text-muted-foreground/60 font-medium">
+            Sem cartão de crédito • Setup em 2 minutos
+          </p>
+        </motion.div>
+
       </div>
     </section>
   )
