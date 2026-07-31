@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-provider'
 import { SettingsProvider } from '@/lib/settings-context'
 import { SafeAnalytics } from '@/components/safe-analytics'
 import { MetaPixel } from '@/components/meta-pixel'
+import { GoogleAnalytics } from '@/components/google-analytics'
 import { GoogleTagManager, GoogleTagManagerNoscript } from '@/components/google-tag-manager'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
@@ -80,6 +81,7 @@ export default function RootLayout({
         </ThemeProvider>
         <SafeAnalytics />
         <MetaPixel />
+        <GoogleAnalytics />
         <GoogleTagManager />
       </body>
     </html>
