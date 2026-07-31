@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-provider'
 import { SettingsProvider } from '@/lib/settings-context'
 import { SafeAnalytics } from '@/components/safe-analytics'
 import { MetaPixel } from '@/components/meta-pixel'
+import { GoogleTagManager, GoogleTagManagerNoscript } from '@/components/google-tag-manager'
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import "./globals.css";
@@ -60,6 +61,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${geistSans.variable} font-sans antialiased`}>
+        <GoogleTagManagerNoscript />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -78,6 +80,7 @@ export default function RootLayout({
         </ThemeProvider>
         <SafeAnalytics />
         <MetaPixel />
+        <GoogleTagManager />
       </body>
     </html>
   )
