@@ -51,37 +51,37 @@ export function HeroSection() {
           </div>
 
           <h1 className="mb-6 text-balance text-4xl font-bold tracking-tight text-foreground md:text-6xl leading-tight">
-            Coloque suas finanças no{" "}
-            <span className="animate-shimmer-text">piloto automático</span>
+            Pare de perder dinheiro.{" "}
+            <span className="animate-shimmer-text">Controle tudo pelo WhatsApp.</span>
           </h1>
 
           <p className="mb-10 text-pretty text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed">
-            Diga adeus às planilhas complexas. Controle seus gastos, economize mais e tome decisões inteligentes em segundos, enviando apenas uma mensagem de voz ou texto no seu WhatsApp.
+            Mande um áudio de 5 segundos e nossa IA organiza, categoriza e registra seus gastos automaticamente. Sem planilhas. Sem complicação. Em segundos.
           </p>
 
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            {!mounted ? (
-              <div className="h-12 w-[180px] bg-muted/20 animate-pulse rounded-md" />
-            ) : (
-              <Link href={href}>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href={mounted && !isLoading ? href : "/register"}>
                 <Button
-                  className="group cursor-pointer w-full sm:w-auto h-12 min-w-[200px] bg-emerald-500 hover:bg-emerald-600 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-105 font-bold text-sm rounded-xl"
-                  disabled={isLoading}
+                  className="group cursor-pointer w-full sm:w-auto h-14 min-w-[220px] bg-emerald-500 hover:bg-emerald-600 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-105 font-bold text-base rounded-xl"
                 >
-                  {label}
+                  Começar Agora — 7 Dias Grátis
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-            )}
-            <Link href="/#como-funciona" onClick={(e) => navigateToSection('/#como-funciona', e)}>
-              <Button
-                variant="outline"
-                className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/90 hover:bg-muted/50 transition-all rounded-xl"
-              >
-                <Play className="mr-2 h-4 w-4 fill-current" />
-                Ver como funciona
-              </Button>
-            </Link>
+              <Link href="/#como-funciona" onClick={(e) => navigateToSection('/#como-funciona', e)}>
+                <Button
+                  variant="outline"
+                  className="cursor-pointer w-full sm:w-auto h-12 min-w-[180px] border-border/50 bg-background/90 hover:bg-muted/50 transition-all rounded-xl"
+                >
+                  <Play className="mr-2 h-4 w-4 fill-current" />
+                  Ver como funciona
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground/70 font-medium">
+              ✓ Sem cartão de crédito &nbsp;·&nbsp; ✓ Cancela quando quiser &nbsp;·&nbsp; ✓ Setup em 2 minutos
+            </p>
           </div>
 
           {/* Social Proof */}
@@ -117,10 +117,10 @@ export function HeroSection() {
                   ))}
                 </div>
                 <span className="font-bold text-foreground">4.9/5</span>
-                <span className="text-muted-foreground text-xs">(+5.000 usuários ativos)</span>
+                <span className="text-muted-foreground text-xs">(+5.000 usuários)</span>
               </div>
               <p className="text-muted-foreground text-xs mt-0.5">
-                Mais de <span className="font-semibold text-emerald-500">R$ 2.4 Milhões</span> economizados pelos nossos membros.
+                Mais de <span className="font-semibold text-emerald-500">R$ 2.4 Milhões</span> economizados pelos membros.
               </p>
             </div>
           </div>

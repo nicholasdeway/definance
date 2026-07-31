@@ -176,6 +176,42 @@ export function TestimonialsSection() {
           </p>
         </div>
 
+        {/* Vídeo de Depoimento — proporção 9:16 (vertical/celular) */}
+        <div className="flex justify-center mb-16">
+          <div className="relative w-full max-w-[300px] sm:max-w-[320px]">
+            {/* Glow de fundo */}
+            <div className="absolute -inset-3 rounded-[3rem] bg-emerald-500/10 blur-2xl pointer-events-none" />
+
+            {/* Frame do celular */}
+            <div className="relative rounded-[2.5rem] overflow-hidden border-[3px] border-white/10 shadow-2xl shadow-black/60 ring-1 ring-white/5 bg-black">
+              {/* Entalhe do topo (notch decorativo) */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full bg-white/10 z-10" />
+
+              {/* Vídeo 9:16 */}
+              <div className="aspect-[9/16] w-full">
+                <video
+                  src="/depoimento.mp4"
+                  className="w-full h-full object-cover"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster=""
+                  aria-label="Depoimento de usuário do Definance"
+                />
+              </div>
+            </div>
+
+            {/* Badge "Depoimento real" */}
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-500/30 whitespace-nowrap">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+              </span>
+              Depoimento real
+            </div>
+          </div>
+        </div>
+
         {/* Stats Grid Dashboard Style */}
         <div className="max-w-4xl mx-auto mb-16">
           <div className="bg-card/45 border border-border/50 rounded-[2rem] p-6 md:p-8 backdrop-blur-md relative overflow-hidden">
@@ -193,7 +229,7 @@ export function TestimonialsSection() {
               <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Economia Gerada</span>
                 <span className="text-3xl font-extrabold text-emerald-500 mt-1.5">
-                  <Counter value={5.4} decimals={1} prefix="+R$ " suffix="M" />
+                  <Counter value={2.4} decimals={1} prefix="+R$ " suffix="M" />
                 </span>
                 <span className="text-[10px] text-muted-foreground mt-1">Para nossos usuários</span>
               </div>
@@ -314,6 +350,18 @@ export function TestimonialsSection() {
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
+        </div>
+
+        {/* CTA após depoimentos */}
+        <div className="flex flex-col items-center gap-3 mt-12">
+          <a
+            href="/register"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-300 cursor-pointer"
+          >
+            Quero organizar minhas finanças agora
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <p className="text-xs text-muted-foreground/60 font-medium">7 dias grátis &bull; Sem cartão de crédito</p>
         </div>
 
       </div>

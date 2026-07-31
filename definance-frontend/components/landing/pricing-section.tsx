@@ -129,19 +129,16 @@ export function PricingSection() {
               )}
 
               <div className="mt-8 space-y-4">
-                {!mounted ? (
-                  <Button disabled className="w-full h-12 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-xl bg-primary opacity-50 cursor-not-allowed flex items-center justify-center gap-2">
-                    Começar Grátis
+                <Button asChild className="w-full h-14 text-sm font-bold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                  <Link href={mounted && isAuthenticated ? "/dashboard/perfil#plans-section" : "/register"}>
+                    Começar Agora — 7 Dias Grátis
                     <span className="text-lg font-light">→</span>
-                  </Button>
-                ) : (
-                  <Button asChild className="w-full h-12 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2">
-                    <Link href={isAuthenticated ? "/dashboard/perfil#plans-section" : "/login"}>
-                      Começar Grátis
-                      <span className="text-lg font-light">→</span>
-                    </Link>
-                  </Button>
-                )}
+                  </Link>
+                </Button>
+
+                <p className="text-center text-[11px] text-muted-foreground/70 font-medium">
+                  Sem cartão de crédito • Cancela quando quiser
+                </p>
 
                 <div className="flex items-center justify-center gap-4 text-[9px] text-muted-foreground font-medium uppercase tracking-widest opacity-40">
                   <div className="flex items-center gap-1.5">
