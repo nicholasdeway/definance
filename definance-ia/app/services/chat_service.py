@@ -62,12 +62,13 @@ SYSTEM_PROMPT = """Você é o assistente financeiro do Definance no WhatsApp. Us
   2. Exatamente: Isso representa [porcentagem_limite]% do seu orçamento de [categoria_nome em minúsculo]. Fique de olho no teto mensal configurado para não se enrolar, em!
 
 # REGRAS E FERRAMENTAS
-1. Chame a ferramenta antes de responder.
-2. registrar_movimentacao: exige VALOR. Tipo é Entrada ou Saida. NUNCA invente, estime ou alucine o valor se ele não foi dito pelo usuário (ex: se disser "comprei uma roupa no shopping" sem dizer quanto custou, você deve perguntar o valor amigavelmente antes de chamar a ferramenta).
-3. registrar_conta: exige VALOR e VENCIMENTO.
-4. Baixa de conta: `listar_contas`. Se achar correspondente pendente, pergunte se quer dar baixa. Após confirmação, `pagar_conta`.
-5. Status: use "Pago" para compras/gastos que já ocorreram (uso de verbos no passado/presente como "comprei", "gastei", "paguei"). Use "Pendente" somente para contas futuras ou a pagar.
-6. Confirmação de Valores Altos (CRÍTICO): Se o valor de um gasto/despesa (Saida) ou conta a pagar for maior que R$ 2.000,00, você NUNCA deve registrar (não chame registrar_movimentacao nem registrar_conta) imediatamente. Pergunte primeiro se o valor de R$ X.XXX,XX está correto para o item/conta e peça a confirmação do usuário (ex: "O valor de R$ 10.000,00 para 'Figurinha da Copa' está correto?"). Só realize o registro após o usuário confirmar em mensagem subsequente.
+1. OBRIGATORIEDADE DE FERRAMENTA: Quando o usuário solicitar o registro ou cadastro de qualquer movimentação financeira (despesa, compra, gasto, receita, salário ou conta), você DEVE OBRIGATORIAMENTE chamar a ferramenta apropriada (ex: `registrar_movimentacao` ou `registrar_conta`).
+2. NUNCA INVENTE OU SIMULE CONFIRMAÇÃO: NUNCA afirme que uma movimentação foi registrada, cadastrada ou salva sem que a ferramenta correspondente tenha sido efetivamente executada com sucesso. NUNCA responda "registrado com sucesso" apenas em linguagem natural quando a solicitação exigir persistência de dados.
+3. registrar_movimentacao: exige VALOR. Tipo é Entrada ou Saida. NUNCA invente, estime ou alucine o valor se ele não foi dito pelo usuário (ex: se disser "comprei uma roupa no shopping" sem dizer quanto custou, você deve perguntar o valor amigavelmente antes de chamar a ferramenta).
+4. registrar_conta: exige VALOR e VENCIMENTO.
+5. Baixa de conta: `listar_contas`. Se achar correspondente pendente, pergunte se quer dar baixa. Após confirmação, `pagar_conta`.
+6. Status: use "Pago" para compras/gastos que já ocorreram (uso de verbos no passado/presente como "comprei", "gastei", "paguei"). Use "Pendente" somente para contas futuras ou a pagar.
+7. Confirmação de Valores Altos (CRÍTICO): Se o valor de um gasto/despesa (Saida) ou conta a pagar for maior que R$ 2.000,00, você NUNCA deve registrar (não chame registrar_movimentacao nem registrar_conta) imediatamente. Pergunte primeiro se o valor de R$ X.XXX,XX está correto para o item/conta e peça a confirmação do usuário (ex: "O valor de R$ 10.000,00 para 'Figurinha da Copa' está correto?"). Só realize o registro após o usuário confirmar em mensagem subsequente.
 
 # TEMPLATES OBRIGATÓRIOS (Você DEVE preencher todos os dados entre colchetes. NUNCA retorne os colchetes com os placeholders como '[Valor]', '[Nome]' ou a palavra '[SCHEMA]'/'[TEMPLATE]'):
 - Confirmação de Registro:
@@ -329,17 +330,31 @@ def _sanitize_date(date_str: str | None) -> str:
 # ----------------------------------------------------------------------
 # RESOLUÇÃO DE CATEGORIA (pode retornar None → pede esclarecimento)
 # ----------------------------------------------------------------------
+# Lista fallback de categorias e palavras-chave para resolução off-line/mock
+DEFAULT_FALLBACK_CATEGORIES = [
+    {"name": "Alimentação", "keywords": "lanche, almoço, almoco, janta, jantar, restaurante, comida, ifood, uber eats, cafe, café, mercado, feira, leite, pão, pao"},
+    {"name": "Lazer", "keywords": "netflix, spotify, cinema, jogo, jogos, steam, show, festa, clube, diversão, diversao, entretenimento"},
+    {"name": "Dívidas", "keywords": "dívidas, dividas, empréstimo, emprestimo, financiamento, juros, parcela, banco, mãe, mae"},
+    {"name": "Transporte", "keywords": "uber, 99, táxi, taxi, combustível, combustivel, gasolina, etanol, ônibus, onibus, metrô, metro, estacionamento"},
+    {"name": "Moradia", "keywords": "aluguel, condomínio, condominio, luz, água, agua, gás, gas, internet"},
+    {"name": "Saúde", "keywords": "farmácia, farmacia, remédio, remedio, médico, medico, consulta, exames, hospital"}
+]
+
 async def _resolve_category(
     sugesto: str | None,
     headers: dict,
     cat_names: Optional[List[str]] = None,
     cat_objects: Optional[List[dict]] = None,
+    nome_transacao: Optional[str] = None,
 ) -> Optional[str]:
     """
     Retorna:
         - str  : nome da categoria quando a confiança for alta.
         - None : quando a confiança for baixa → o chamador deve pedir ao usuário.
     """
+    if not sugesto and nome_transacao:
+        sugesto = nome_transacao
+
     if not sugesto:
         return None
 
@@ -348,23 +363,26 @@ async def _resolve_category(
         try:
             async with httpx.AsyncClient(timeout=30.0) as http:
                 resp = await http.get(f"{settings.BACKEND_URL}/api/Categories", headers=headers)
-                if resp.status_code != 200:
-                    return None
-                data = resp.json()
-                cat_names = []
-                cat_objects = []
-                for c in data:
-                    if isinstance(c, str):
-                        cat_names.append(c)
-                    elif isinstance(c, dict):
-                        n = c.get("name") or c.get("Name") or ""
-                        if n:
-                            cat_names.append(n)
-                            cat_objects.append(c)
-                cat_names = [c for c in cat_names if c]
+                if resp.status_code == 200:
+                    data = resp.json()
+                    cat_names = []
+                    cat_objects = []
+                    for c in data:
+                        if isinstance(c, str):
+                            cat_names.append(c)
+                        elif isinstance(c, dict):
+                            n = c.get("name") or c.get("Name") or ""
+                            if n:
+                                cat_names.append(n)
+                                cat_objects.append(c)
+                    cat_names = [c for c in cat_names if c]
+                else:
+                    cat_objects = DEFAULT_FALLBACK_CATEGORIES
+                    cat_names = [c["name"] for c in DEFAULT_FALLBACK_CATEGORIES]
         except Exception as e:
-            logger.warning(f"Não foi possível buscar categorias para resolver sugestão: {e}")
-            return None
+            logger.warning(f"Não foi possível buscar categorias no backend: {e}")
+            cat_objects = DEFAULT_FALLBACK_CATEGORIES
+            cat_names = [c["name"] for c in DEFAULT_FALLBACK_CATEGORIES]
     elif cat_names is not None and cat_objects is None:
         cat_objects = []
 
@@ -555,7 +573,7 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
 
                 # Resolve categoria (pode ser None) apenas se for Saida
                 if tipo != "Entrada":
-                    categoria = await _resolve_category(categoria, headers)
+                    categoria = await _resolve_category(categoria, headers, nome_transacao=nome)
                     if categoria is None:
                         # Pede esclarecimento ao usuário
                         async with httpx.AsyncClient(timeout=10.0) as h2:
@@ -591,7 +609,9 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                         "date": data,
                         "isRecurring": recorrente
                     }
+                    logger.info(f"[BACKEND] POST {url} -> Payload: name='{nome}', amount={valor}")
                     resp = await http.post(url, json=payload, headers=headers)
+                    logger.info(f"[BACKEND] Response: Status {resp.status_code}")
                 else:
                     url = f"{settings.BACKEND_URL}/api/Expenses"
                     payload = {
@@ -603,9 +623,12 @@ async def execute_tool(name: str, args: dict | None, headers: dict) -> Union[dic
                         "status": status,
                         "description": "Registrado via WhatsApp"
                     }
+                    logger.info(f"[BACKEND] POST {url} -> Payload: name='{nome}', amount={valor}, category='{categoria}'")
                     resp = await http.post(url, json=payload, headers=headers)
+                    logger.info(f"[BACKEND] Response: Status {resp.status_code}")
 
                 if resp.status_code in (200, 201):
+                    logger.info(f"[TOOL] registrar_movimentacao concluída com sucesso (status {resp.status_code})")
                     res_data = resp.json()
                     # Busca limite mensal da categoria (se houver)
                     if tipo != "Entrada":
@@ -1043,6 +1066,9 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
         categorias_disponiveis=categorias_disponiveis
     )
 
+    logger.info(f"[IA] Mensagem recebida de {phone_number} ({user_name}): '{message}'")
+    logger.info(f"[IA] Modelo configurado: {settings.MODEL_NAME}")
+
     run_messages: List[ChatCompletionMessageParam] = [
         {"role": "system", "content": system_prompt}
     ]
@@ -1051,6 +1077,9 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
 
     max_it = 5
     final_reply = ""
+    executed_mutation_tools: List[str] = []
+    executed_tool_calls_cache: Dict[str, dict] = {}
+
     for i in range(max_it):
         logger.info(f"Loop IA: Iteração {i+1}")
         try:
@@ -1066,12 +1095,15 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
             logger.error(f"Erro na completion da IA: {str(e)}")
             return "Desculpe, não consegui processar sua mensagem agora. Pode tentar novamente em instantes ou ser mais específico(a)? 🧠🤖"
 
-        msg = resp.choices[0].message
+        choice = resp.choices[0]
+        finish_reason = getattr(choice, "finish_reason", "unknown")
+        logger.info(f"[IA] finish_reason: {finish_reason}")
+
+        msg = choice.message
         tool_calls = msg.tool_calls
 
         # Caso o modelo devolva chamadas em formato de texto (<function>...)
         if not tool_calls and msg.content and "<function>" in msg.content:
-            import re
             from openai.types.chat.chat_completion_message_tool_call import Function
             matches = re.findall(r"<function>(\w+)>(.*?)(?:</?function>|$)", msg.content)
             if matches:
@@ -1092,7 +1124,48 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
                     )
 
         if not tool_calls:
-            final_reply = msg.content or ""
+            candidate_reply = msg.content or ""
+            
+            # PROTEÇÃO PROGRAMÁTICA (GUARDRAIL):
+            # Verifica se o modelo está tentando simular uma confirmação de registro sem ter executado nenhuma ferramenta de mutação no backend
+            confirmation_patterns = [
+                r"registrad[ao]\s+com\s+sucesso",
+                r"cadastrad[ao]\s+com\s+sucesso",
+                r"movimentaç[ãa]o\s+cadastrada",
+                r"pagamento\s+registrado",
+                r"despesa\s+.*?\s+registrada",
+                r"entrada\s+.*?\s+registrada",
+                r"conta\s+.*?\s+registrada",
+            ]
+            
+            has_fake_confirmation = any(
+                re.search(pat, candidate_reply, re.IGNORECASE) for pat in confirmation_patterns
+            )
+
+            if has_fake_confirmation and not executed_mutation_tools:
+                logger.warning(
+                    f"[SECURITY] Modelo inventou confirmação sem executar ferramenta no backend! "
+                    f"finish_reason: {finish_reason} | Content: '{candidate_reply}'"
+                )
+                if i < max_it - 1:
+                    logger.info("[SECURITY] Reinjetando mensagem para forçar o uso da ferramenta adequada.")
+                    run_messages.append({"role": "assistant", "content": candidate_reply})
+                    run_messages.append({
+                        "role": "user",
+                        "content": (
+                            "Sua resposta anterior afirmou que a movimentação foi registrada, mas nenhuma ferramenta de persistência foi executada no banco de dados. "
+                            "Você DEVE chamar obrigatoriamente a ferramenta apropriada (ex: `registrar_movimentacao` ou `registrar_conta`) agora para salvar os dados."
+                        )
+                    })
+                    continue
+                else:
+                    logger.error("[SECURITY] Limite de iterações atingido sem execução de ferramenta. Retornando mensagem segura.")
+                    final_reply = "⚠️ Não foi possível confirmar o registro da sua movimentação no sistema. Por favor, verifique se enviou a mensagem com a descrição e o valor corretos."
+                    run_messages.append({"role": "assistant", "content": final_reply})
+                    break
+
+            logger.info("[IA] Nenhuma tool solicitada. Finalizando loop.")
+            final_reply = candidate_reply
             run_messages.append({"role": "assistant", "content": final_reply})
             break
 
@@ -1118,12 +1191,27 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
             if not isinstance(tc, ChatCompletionMessageToolCall):
                 continue
             fname = tc.function.name
+            raw_args = tc.function.arguments or ""
             try:
-                fargs = json.loads(tc.function.arguments) if tc.function.arguments else {}
+                fargs = json.loads(raw_args) if raw_args else {}
             except Exception:
                 fargs = {}
-            tc_id = tc.id
-            result = await execute_tool(fname, fargs, headers)
+
+            logger.info(f"[IA] Tool solicitada: {fname}")
+            logger.info(f"[IA] Argumentos: {fargs}")
+
+            cache_key = f"{fname}:{raw_args}"
+            if cache_key in executed_tool_calls_cache:
+                logger.info(f"[IDEMPOTÊNCIA] Reutilizando resultado prévio de {fname} para evitar duplicidade no backend.")
+                result = executed_tool_calls_cache[cache_key]
+            else:
+                tc_id = tc.id
+                result = await execute_tool(fname, fargs, headers)
+                if isinstance(result, dict) and result.get("sucesso"):
+                    executed_tool_calls_cache[cache_key] = result
+                    if fname in ("registrar_movimentacao", "registrar_conta", "pagar_conta", "depositar_meta"):
+                        executed_mutation_tools.append(fname)
+                        logger.info(f"[TOOL] {fname} executada com sucesso.")
 
             # Se o resultado indicar que precisamos de esclarecimento (categoria)
             if isinstance(result, dict) and result.get("precisa_clarificar"):
@@ -1145,7 +1233,7 @@ async def process_chat(user_id: str, phone_number: str, user_name: str, message:
             # Caso contrário, registramos o resultado como mensagem de ferramenta
             tool_msg: ChatCompletionMessageParam = {
                 "role": "tool",
-                "tool_call_id": tc_id,
+                "tool_call_id": tc.id,
                 "content": json.dumps(result, ensure_ascii=False)
             }
             run_messages.append(tool_msg)
